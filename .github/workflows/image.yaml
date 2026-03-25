@@ -51,8 +51,12 @@ jobs:
           echo "image_namespace=$IMAGE_NAMESPACE" >> $GITHUB_OUTPUT
           echo "image_repository=$IMAGE_REPOSITORY" >> $GITHUB_OUTPUT
           
-          # Construct image name
-          echo "quay_image_name=quay.io/$IMAGE_NAMESPACE/$IMAGE_REPOSITORY:latest" >> $GITHUB_OUTPUT
+          # Construct image name - only set quay_image_name for the official repo
+          if [[ "${{ github.repository }}" == "argoproj/argo-cd" ]]; then
+            echo "quay_image_name=quay.io/$IMAGE_NAMESPACE/$IMAGE_REPOSITORY:latest" >> $GITHUB_OUTPUT
+          else
+            echo "quay_image_name=" >> $GITHUB_OUTPUT
+          fi
           echo "docker_image_name=mahammadrafireesh/aiserv-argocd:$TAG" >> $GITHUB_OUTPUT
           
           ALLOW_GHCR_PUBLISH=false
@@ -100,7 +104,7 @@ jobs:
       contents: read
       packages: write # for pushing packages to GHCR, which is used by cd.apps.argoproj.io to avoid polluting Quay with tags
       id-token: write # for creating OIDC tokens for signing.
-    if: ${{ (github.repository == 'argoproj/argo-cd' || needs.set-vars.outputs.image_namespace != 'argoproj') && github.event_name == 'push' }}
+    if: ${{ github.event_name == 'push' }}
     uses: ./.github/workflows/image-reuse.yaml
     with:
       quay_image_name: ${{ needs.set-vars.outputs.quay_image_name }}
