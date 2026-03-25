@@ -4,10 +4,6 @@ on:
   push:
     branches:
       - main
-  pull_request:
-    branches:
-      - main
-    types: [labeled, unlabeled, opened, synchronize, reopened]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -22,42 +18,21 @@ jobs:
     runs-on: ubuntu-24.04
     outputs:
       image-tag: ${{ steps.image.outputs.tag }}
-      platforms: ${{ steps.platforms.outputs.platforms }}
       ghcr_image_name: ${{ steps.image.outputs.ghcr_image_name }}
+      ghcr_repo: ${{ steps.image.outputs.ghcr_repo }}
       docker_image_name: ${{ steps.image.outputs.docker_image_name }}
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
-      - name: Set image tag and name
+      - name: Set image tag and names
         id: image
         run: |
           TAG="$(cat ./VERSION)-${GITHUB_SHA::8}"
           echo "tag=$TAG" >> $GITHUB_OUTPUT
           GHCR_NAMESPACE=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
+          echo "ghcr_repo=ghcr.io/$GHCR_NAMESPACE" >> $GITHUB_OUTPUT
           echo "ghcr_image_name=ghcr.io/$GHCR_NAMESPACE:$TAG" >> $GITHUB_OUTPUT
           echo "docker_image_name=mahammadrafireesh/aiserv-argocd:$TAG" >> $GITHUB_OUTPUT
-
-      - name: Determine image platforms
-        id: platforms
-        run: |
-          IMAGE_PLATFORMS=linux/amd64
-          if [[ "${{ github.event_name }}" == "push" || "${{ contains(github.event.pull_request.labels.*.name, 'test-multi-image') }}" == "true" ]]; then
-            IMAGE_PLATFORMS=linux/amd64,linux/arm64
-          fi
-          echo "platforms=$IMAGE_PLATFORMS" >> $GITHUB_OUTPUT
-
-  build-only:
-    needs: [set-vars]
-    permissions:
-      contents: read
-      packages: write
-      id-token: write
-    if: ${{ github.event_name != 'push' }}
-    uses: ./.github/workflows/image-reuse.yaml
-    with:
-      go-version: 1.26.0
-      platforms: ${{ needs.set-vars.outputs.platforms }}
-      push: false
 
   build-and-publish:
     needs: [set-vars]
@@ -65,13 +40,13 @@ jobs:
       contents: read
       packages: write
       id-token: write
-    if: ${{ github.event_name == 'push' }}
     uses: ./.github/workflows/image-reuse.yaml
     with:
       ghcr_image_name: ${{ needs.set-vars.outputs.ghcr_image_name }}
+      ghcr_cache_repo: ${{ needs.set-vars.outputs.ghcr_repo }}
       docker_image_name: ${{ needs.set-vars.outputs.docker_image_name }}
       go-version: 1.26.0
-      platforms: ${{ needs.set-vars.outputs.platforms }}
+      platforms: linux/amd64,linux/arm64
       push: true
     secrets:
       ghcr_username: ${{ github.actor }}
