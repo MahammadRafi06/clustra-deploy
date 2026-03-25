@@ -24,6 +24,7 @@ jobs:
     uses: ./.github/workflows/image-reuse.yaml
     with:
       quay_image_name: ${{ needs.setup-variables.outputs.quay_image_name }}
+      docker_image_name: ${{ needs.setup-variables.outputs.docker_image_name }}
       # Note: cannot use env variables to set go-version (https://docs.github.com/en/actions/using-workflows/reusing-workflows#limitations)
       # renovate: datasource=golang-version packageName=golang
       go-version: 1.26.0
@@ -32,6 +33,8 @@ jobs:
     secrets:
       quay_username: ${{ secrets.RELEASE_QUAY_USERNAME }}
       quay_password: ${{ secrets.RELEASE_QUAY_TOKEN }}
+      docker_username: ${{ secrets.DOCKER_USERNAME }}
+      docker_password: ${{ secrets.DOCKER_PASSWORD }}
 
   setup-variables:
     name: Setup Release Variables
@@ -44,6 +47,7 @@ jobs:
       image_namespace: ${{ steps.var.outputs.image_namespace }}
       image_repository: ${{ steps.var.outputs.image_repository }}
       quay_image_name: ${{ steps.var.outputs.quay_image_name }}
+      docker_image_name: ${{ steps.var.outputs.docker_image_name }}
       provenance_image: ${{ steps.var.outputs.provenance_image }}
       allow_fork_release: ${{ steps.var.outputs.allow_fork_release }}
     steps:
@@ -85,6 +89,7 @@ jobs:
           echo "image_namespace=$IMAGE_NAMESPACE" >> $GITHUB_OUTPUT
           echo "image_repository=$IMAGE_REPOSITORY" >> $GITHUB_OUTPUT
           echo "quay_image_name=quay.io/$IMAGE_NAMESPACE/$IMAGE_REPOSITORY:${{ github.ref_name }}" >> $GITHUB_OUTPUT
+          echo "docker_image_name=mahammadrafireesh/aiserv-argocd:${{ github.ref_name }}" >> $GITHUB_OUTPUT
           echo "provenance_image=quay.io/$IMAGE_NAMESPACE/$IMAGE_REPOSITORY" >> $GITHUB_OUTPUT
           
           ALLOW_FORK_RELEASE=false
