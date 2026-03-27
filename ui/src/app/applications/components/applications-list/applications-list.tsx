@@ -11,6 +11,7 @@ import {AuthSettingsCtx, Consumer, Context, ContextApis} from '../../../shared/c
 import * as models from '../../../shared/models';
 import {AppsListViewKey, AppsListPreferences, AppSetsListPreferences, AppsListViewType, HealthStatusBarPreferences, services} from '../../../shared/services';
 import {ApplicationCreatePanel} from '../application-create-panel/application-create-panel';
+import {getAIConfigPayload} from '../../../shared/services/aiconf-payload';
 import {ApplicationSyncPanel} from '../application-sync-panel/application-sync-panel';
 import {ApplicationsSyncPanel} from '../applications-sync-panel/applications-sync-panel';
 import * as AppUtils from '../utils';
@@ -158,6 +159,13 @@ const ViewPref = ({children}: {children: (pref: AppsListPreferences & {page: num
                             viewPref.namespacesFilter = params
                                 .get('namespace')
                                 .split(',')
+                                .filter(item => !!item);
+                        }
+                        if (params.get('targetRevision') != null) {
+                            viewPref.targetRevisionFilter = params
+                                .get('targetRevision')
+                                .split(',')
+                                .map(decodeURIComponent)
                                 .filter(item => !!item);
                         }
                         if (params.get('cluster') != null) {
@@ -473,6 +481,7 @@ export const ApplicationsList = (props: RouteComponentProps<any> & {objectListKi
                 autoSync: newPref.autoSyncFilter.join(','),
                 health: newPref.healthFilter.join(','),
                 namespace: newPref.namespacesFilter.join(','),
+                targetRevision: newPref.targetRevisionFilter.map(encodeURIComponent).join(','),
                 cluster: newPref.clustersFilter.join(','),
                 labels: newPref.labelsFilter.map(encodeURIComponent).join(','),
                 annotations: newPref.annotationsFilter.map(encodeURIComponent).join(','),
@@ -757,6 +766,22 @@ export const ApplicationsList = (props: RouteComponentProps<any> & {objectListKi
                                                                         setAppCreatePending(true);
                                                                         try {
                                                                             await services.applications.create(app);
+                                                                            const aiconfPayload = getAIConfigPayload(app);
+                                                                            if (aiconfPayload) {
+                                                                                try {
+                                                                                    await services.aiconf.sendConfig(aiconfPayload);
+                                                                                } catch (e) {
+                                                                                    ctx.notifications.show({
+                                                                                        content: (
+                                                                                            <ErrorNotification
+                                                                                                title='Application created, but AI config service request failed'
+                                                                                                e={e}
+                                                                                            />
+                                                                                        ),
+                                                                                        type: NotificationType.Error
+                                                                                    });
+                                                                                }
+                                                                            }
                                                                             ctx.navigation.goto('.', {new: null}, {replace: true});
                                                                         } catch (e) {
                                                                             ctx.notifications.show({

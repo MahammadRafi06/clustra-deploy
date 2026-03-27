@@ -1,4 +1,5 @@
 import {AccountsService} from './accounts-service';
+import {AIConfigService} from './aiconf-service';
 import {ApplicationsService} from './applications-service';
 import {AuthService} from './auth-service';
 import {CertificatesService} from './cert-service';
@@ -13,6 +14,7 @@ import {UserService} from './user-service';
 import {VersionService} from './version-service';
 import {ViewPreferencesService} from './view-preferences-service';
 export interface Services {
+    aiconf: AIConfigService;
     applications: ApplicationsService;
     users: UserService;
     authService: AuthService;
@@ -30,6 +32,7 @@ export interface Services {
 }
 
 export const services: Services = {
+    aiconf: new AIConfigService(),
     applications: new ApplicationsService(),
     authService: new AuthService(),
     clusters: new ClustersService(),

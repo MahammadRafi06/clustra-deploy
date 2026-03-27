@@ -3,7 +3,7 @@
 const MonacoWebpackPlugin = require('monaco-editor-webpack-plugin');
 const CopyWebpackPlugin = require('copy-webpack-plugin');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
-const {codecovWebpackPlugin} = require("@codecov/webpack-plugin");
+const {codecovWebpackPlugin} = require('@codecov/webpack-plugin');
 const webpack = require('webpack');
 
 const isProd = process.env.NODE_ENV === 'production';
@@ -11,7 +11,7 @@ const isProd = process.env.NODE_ENV === 'production';
 console.log(`Bundling in ${isProd ? 'production' : 'development'}...`);
 
 const proxyConf = {
-    target: process.env.ARGOCD_API_URL || 'http://localhost:8080',
+    target: process.env.ARGOCD_API_URL || 'https://localhost:8080',
     secure: false
 };
 
@@ -25,12 +25,14 @@ const config = {
 
     resolve: {
         extensions: ['.ts', '.tsx', '.js', '.json'],
-        alias: { react: require.resolve('react') },
-        fallback: { fs: false }
+        alias: {react: require.resolve('react')},
+        fallback: {fs: false}
     },
-    ignoreWarnings: [{
-        module: new RegExp('/node_modules/argo-ui/.*')
-    }],
+    ignoreWarnings: [
+        {
+            module: new RegExp('/node_modules/argo-ui/.*')
+        }
+    ],
     module: {
         rules: [
             {
@@ -46,7 +48,7 @@ const config = {
                 enforce: 'pre',
                 exclude: [/node_modules\/react-paginate/, /node_modules\/monaco-editor/],
                 test: /\.js$/,
-                use: ['esbuild-loader'],
+                use: ['esbuild-loader']
             },
             {
                 test: /\.scss$/,
@@ -68,9 +70,10 @@ const config = {
                 version: process.env.ARGO_VERSION || 'latest'
             })
         }),
-        new HtmlWebpackPlugin({ template: 'src/app/index.html' }),
+        new HtmlWebpackPlugin({template: 'src/app/index.html'}),
         new CopyWebpackPlugin({
-            patterns: [{
+            patterns: [
+                {
                     from: 'src/assets',
                     to: 'assets'
                 },
@@ -98,9 +101,9 @@ const config = {
         }),
         codecovWebpackPlugin({
             enableBundleAnalysis: process.env.CODECOV_TOKEN !== undefined,
-            bundleName: "argo-cd-ui",
-            uploadToken: process.env.CODECOV_TOKEN,
-        }),
+            bundleName: 'argo-cd-ui',
+            uploadToken: process.env.CODECOV_TOKEN
+        })
     ],
     devServer: {
         compress: false,
@@ -114,8 +117,8 @@ const config = {
             '/api': proxyConf,
             '/auth': proxyConf,
             '/terminal': {
-              target: process.env.ARGOCD_API_URL || 'ws://localhost:8080',
-              ws: true,
+                target: process.env.ARGOCD_API_URL || 'ws://localhost:8080',
+                ws: true
             },
             '/swagger-ui': proxyConf,
             '/swagger.json': proxyConf
@@ -128,11 +131,11 @@ if (isProd) {
         hints: 'error',
         // Max size is 6MB before gzip.
         maxEntrypointSize: 6 * 1024 * 1024,
-        maxAssetSize: 6 * 1024 * 1024,
+        maxAssetSize: 6 * 1024 * 1024
     };
 }
 
-if (! isProd) {
+if (!isProd) {
     config.devtool = 'eval-source-map';
 }
 

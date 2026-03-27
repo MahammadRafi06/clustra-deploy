@@ -16,6 +16,7 @@ import {SourcePanel} from './source-panel';
 import './application-create-panel.scss';
 import {getAppDefaultSource} from '../utils';
 import {debounce} from 'lodash-es';
+import {MODELS, getSystems, getBackends, getBackendVersions, getModes, isCombinationValid} from './model-config';
 
 const jsonMergePatch = require('json-merge-patch');
 
@@ -86,6 +87,36 @@ const AutoSyncFormField = ReactFormField((props: {fieldApi: FieldApi; className:
             )}
         </React.Fragment>
     );
+});
+
+const ModelAutocompleteFormField = ReactFormField((props: any) => {
+    const {fieldApi, onValueChange, ...rest} = props;
+    const value = fieldApi.getValue();
+    const previousValue = React.useRef(value);
+
+    React.useEffect(() => {
+        if (onValueChange && previousValue.current !== value) {
+            onValueChange(value, previousValue.current);
+        }
+        previousValue.current = value;
+    }, [onValueChange, value]);
+
+    return <AutocompleteField {...rest} fieldApi={fieldApi} />;
+});
+
+const ModelSelectFormField = ReactFormField((props: any) => {
+    const {fieldApi, onValueChange, ...rest} = props;
+    const value = fieldApi.getValue() || '';
+    const previousValue = React.useRef(value);
+
+    React.useEffect(() => {
+        if (onValueChange && previousValue.current !== value) {
+            onValueChange(value, previousValue.current);
+        }
+        previousValue.current = value;
+    }, [onValueChange, value]);
+
+    return <Select {...rest} value={value} onChange={opt => fieldApi.setValue(opt.value)} />;
 });
 
 function normalizeAppSource(app: models.Application, type: string): boolean {
@@ -232,7 +263,17 @@ export const ApplicationCreatePanel = (props: {
                                     const hasHydrator = !!a.spec.sourceHydrator;
                                     const source = a.spec.source;
 
+                                    const ann = (a as any).metadata?.annotations || {};
+                                    const modelComboInvalid =
+                                        ann.model_path &&
+                                        ann.system &&
+                                        ann.backend &&
+                                        ann.backend_version &&
+                                        ann.mode &&
+                                        !isCombinationValid(ann.model_path, ann.system, ann.backend, ann.backend_version, ann.mode);
+
                                     return {
+                                        'metadata.annotations.model_path': modelComboInvalid && 'Combination not supported',
                                         'metadata.name': !a.metadata.name && 'Application Name is required',
                                         'spec.project': !a.spec.project && 'Project Name is required',
                                         'spec.source.repoURL': !hasHydrator && !source?.repoURL && 'Repository URL is required',
@@ -267,14 +308,7 @@ export const ApplicationCreatePanel = (props: {
 
                                                     See https://github.com/argoproj/argo-cd/issues/4576
                                                 */}
-                                            {!yamlMode && (
-                                                <button
-                                                    type='button'
-                                                    className='argo-button argo-button--base application-create-panel__yaml-button'
-                                                    onClick={() => setYamlMode(true)}>
-                                                    Edit as YAML
-                                                </button>
-                                            )}
+                                            {/* Edit as YAML button hidden */}
                                             <div className='argo-form-row'>
                                                 <FormField formApi={api} label='Application Name' qeId='application-create-field-app-name' field='metadata.name' component={Text} />
                                             </div>
@@ -513,8 +547,171 @@ export const ApplicationCreatePanel = (props: {
                                         </DataLoader>
                                     );
 
+                                    const modelPanel = () => {
+                                        const ann = (api.getFormState().values as any)?.metadata?.annotations || {};
+                                        const selectedModel = ann.model_path || '';
+                                        const selectedSystem = ann.system || '';
+                                        const selectedBackend = ann.backend || '';
+                                        const selectedBackendVersion = ann.backend_version || '';
+                                        const selectedMode = ann.mode || '';
+                                        const systems = getSystems(selectedModel);
+                                        const backends = getBackends(selectedModel, selectedSystem);
+                                        const backendVersions = getBackendVersions(selectedModel, selectedSystem, selectedBackend);
+                                        const modes = getModes(selectedModel, selectedSystem, selectedBackend, selectedBackendVersion);
+                                        const combinationValid = isCombinationValid(selectedModel, selectedSystem, selectedBackend, selectedBackendVersion, selectedMode);
+                                        const allSelected = selectedModel && selectedSystem && selectedBackend && selectedBackendVersion && selectedMode;
+                                        const setAnnotation = (key: string, value: string, clearKeys?: string[]) => {
+                                            const updatedApp = deepMerge({}, api.getFormState().values as any);
+                                            updatedApp.metadata = updatedApp.metadata || {};
+                                            updatedApp.metadata.annotations = updatedApp.metadata.annotations || {};
+                                            updatedApp.metadata.annotations[key] = value;
+                                            if (clearKeys) {
+                                                clearKeys.forEach(k => {
+                                                    updatedApp.metadata.annotations[k] = '';
+                                                });
+                                            }
+                                            api.setAllValues(updatedApp);
+                                        };
+                                        return (
+                                            <div className='white-box'>
+                                                <p>MODEL</p>
+                                                {/* Row 1: Model | Total GPUs */}
+                                                <div className='row argo-form-row'>
+                                                    <div className='columns small-9'>
+                                                        <FormField
+                                                            formApi={api}
+                                                            label='Model'
+                                                            field='metadata.annotations.model_path'
+                                                            component={ModelAutocompleteFormField}
+                                                            componentProps={{
+                                                                items: MODELS,
+                                                                filterSuggestions: true,
+                                                                onValueChange: (val: string, prev: string) => {
+                                                                    if (val !== prev) {
+                                                                        setAnnotation('model_path', val, ['system', 'backend', 'backend_version', 'mode']);
+                                                                    }
+                                                                }
+                                                            }}
+                                                        />
+                                                    </div>
+                                                    <div className='columns small-3'>
+                                                        <FormField formApi={api} label='Total GPUs' field='metadata.annotations.total_gpus' component={Text} />
+                                                    </div>
+                                                </div>
+                                                {/* Row 2: System | Backend | Backend Version | Mode */}
+                                                <div className='row argo-form-row'>
+                                                    <div className='columns small-3'>
+                                                        <FormField
+                                                            formApi={api}
+                                                            label='System'
+                                                            field='metadata.annotations.system'
+                                                            component={ModelSelectFormField}
+                                                            componentProps={{
+                                                                options: systems.length > 0 ? systems : ['Select model first'],
+                                                                onValueChange: (val: string, prev: string) => {
+                                                                    if (val !== prev) {
+                                                                        setAnnotation('system', val, ['backend', 'backend_version', 'mode']);
+                                                                    }
+                                                                }
+                                                            }}
+                                                        />
+                                                    </div>
+                                                    <div className='columns small-3'>
+                                                        <FormField
+                                                            formApi={api}
+                                                            label='Backend'
+                                                            field='metadata.annotations.backend'
+                                                            component={ModelSelectFormField}
+                                                            componentProps={{
+                                                                options: backends.length > 0 ? backends : ['Select system first'],
+                                                                onValueChange: (val: string, prev: string) => {
+                                                                    if (val !== prev) {
+                                                                        setAnnotation('backend', val, ['backend_version', 'mode']);
+                                                                    }
+                                                                }
+                                                            }}
+                                                        />
+                                                    </div>
+                                                    <div className='columns small-3'>
+                                                        <FormField
+                                                            formApi={api}
+                                                            label='Backend Version'
+                                                            field='metadata.annotations.backend_version'
+                                                            component={ModelSelectFormField}
+                                                            componentProps={{
+                                                                options: backendVersions.length > 0 ? backendVersions : ['Select backend first'],
+                                                                onValueChange: (val: string, prev: string) => {
+                                                                    if (val !== prev) {
+                                                                        setAnnotation('backend_version', val, ['mode']);
+                                                                    }
+                                                                }
+                                                            }}
+                                                        />
+                                                    </div>
+                                                    <div className='columns small-3'>
+                                                        <FormField
+                                                            formApi={api}
+                                                            label='Mode'
+                                                            field='metadata.annotations.mode'
+                                                            component={ModelSelectFormField}
+                                                            componentProps={{
+                                                                options: modes.length > 0 ? modes : ['Select version first']
+                                                            }}
+                                                        />
+                                                    </div>
+                                                </div>
+                                                {allSelected && !combinationValid && (
+                                                    <div
+                                                        className='argo-form-row'
+                                                        style={{
+                                                            background: '#fff3cd',
+                                                            border: '1px solid #ffc107',
+                                                            borderRadius: '4px',
+                                                            padding: '8px 12px',
+                                                            color: '#856404',
+                                                            fontSize: '13px',
+                                                            marginTop: '0.5em'
+                                                        }}>
+                                                        Combination not supported: {selectedModel} on {selectedSystem} with {selectedBackend} {selectedBackendVersion} (
+                                                        {selectedMode})
+                                                    </div>
+                                                )}
+                                                <p style={{marginTop: '1em', marginBottom: '0.5em', fontSize: '13px', color: '#6d7f8b'}}>Optional fields</p>
+                                                {/* Decode System | Database Mode */}
+                                                <div className='row argo-form-row'>
+                                                    <div className='columns small-6'>
+                                                        <FormField formApi={api} label='Decode System' field='metadata.annotations.decode_system' component={Text} />
+                                                    </div>
+                                                    <div className='columns small-6'>
+                                                        <FormField formApi={api} label='Database Mode' field='metadata.annotations.database_mode' component={Text} />
+                                                    </div>
+                                                </div>
+                                                {/* ISL | OSL | TTFT | TPOT | Top N */}
+                                                <div className='row argo-form-row'>
+                                                    <div className='columns small-2'>
+                                                        <FormField formApi={api} label='ISL' field='metadata.annotations.isl' component={Text} />
+                                                    </div>
+                                                    <div className='columns small-2'>
+                                                        <FormField formApi={api} label='OSL' field='metadata.annotations.osl' component={Text} />
+                                                    </div>
+                                                    <div className='columns small-3'>
+                                                        <FormField formApi={api} label='TTFT' field='metadata.annotations.ttft' component={Text} />
+                                                    </div>
+                                                    <div className='columns small-3'>
+                                                        <FormField formApi={api} label='TPOT' field='metadata.annotations.tpot' component={Text} />
+                                                    </div>
+                                                    <div className='columns small-2'>
+                                                        <FormField formApi={api} label='Top N' field='metadata.annotations.top_n' component={Text} />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        );
+                                    };
+
                                     return (
                                         <form onSubmit={api.submitForm} role='form' className='width-control'>
+                                            {modelPanel()}
+
                                             {generalPanel()}
 
                                             {sourcePanel()}
