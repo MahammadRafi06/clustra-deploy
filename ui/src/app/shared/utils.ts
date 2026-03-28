@@ -1,3 +1,4 @@
+import type {CSSProperties} from 'react';
 import {Cluster} from './models';
 
 export function hashCode(str: string) {
@@ -36,6 +37,38 @@ export function isValidURL(url: string): boolean {
         }
     }
 }
+
+// managed-by-url is expected to mostly if not always point to another Argo CD instance URL,
+// so we only consider http/https valid for click-through behavior.
+export function isValidManagedByURL(url: string): boolean {
+    try {
+        const parsedUrl = new URL(url);
+        return parsedUrl.protocol === 'http:' || parsedUrl.protocol === 'https:';
+    } catch (err) {
+        return false;
+    }
+}
+
+export const MANAGED_BY_URL_INVALID_TEXT = 'managed-by-url: invalid url provided';
+export const MANAGED_BY_URL_INVALID_TOOLTIP = 'managed-by-url must be a valid http(s) URL for the managing Argo CD instance. The external link is disabled until this is fixed.';
+
+export const MANAGED_BY_URL_INVALID_COLOR = '#f4c030';
+
+export const managedByURLInvalidLabelStyle: CSSProperties = {
+    color: MANAGED_BY_URL_INVALID_COLOR,
+    marginLeft: '0.5em',
+    fontSize: '13px',
+    fontWeight: 500,
+    lineHeight: 1.35,
+    whiteSpace: 'nowrap'
+};
+
+export const managedByURLInvalidLabelStyleCompact: CSSProperties = {
+    ...managedByURLInvalidLabelStyle,
+    marginLeft: '4px',
+    fontSize: '12px',
+    fontWeight: 600
+};
 
 export const colorSchemes = {
     light: '(prefers-color-scheme: light)',

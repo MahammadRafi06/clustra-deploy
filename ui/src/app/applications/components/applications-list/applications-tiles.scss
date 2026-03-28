@@ -174,8 +174,25 @@ $border: $brand-border-subtle;
             color: $emerald;
         }
 
+        &.managed-by-url-invalid {
+            color: $brand-status-warning;
+
+            &:hover {
+                color: $brand-status-warning;
+            }
+        }
+
         i {
             font-size: 14px;
         }
+    }
+}
+
+/* Table / name column external-link (not under .applications-list__external-link) */
+.applications-list__table-row button.managed-by-url-invalid {
+    color: $brand-status-warning;
+
+    &:hover {
+        color: $brand-status-warning;
     }
 }
