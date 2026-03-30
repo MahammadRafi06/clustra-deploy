@@ -1,4 +1,4 @@
-import {useData, Checkbox} from 'argo-ui/v2';
+import {useData} from 'argo-ui/v2';
 import * as minimatch from 'minimatch';
 import * as React from 'react';
 import {
@@ -125,6 +125,7 @@ export interface AppFilterProps {
     onChange: (newPrefs: AppsListPreferences) => void;
     children?: React.ReactNode;
     collapsed?: boolean;
+    extra?: React.ReactNode;
 }
 
 // Props for ApplicationSet filters
@@ -134,6 +135,7 @@ export interface AppSetFilterProps {
     onChange: (newPrefs: AppSetsListPreferences) => void;
     children?: React.ReactNode;
     collapsed?: boolean;
+    extra?: React.ReactNode;
 }
 
 const getCounts = (apps: FilteredApp[], filterType: keyof FilterResult, filter: (app: Application) => string, init?: string[]) => {
@@ -393,25 +395,12 @@ const TargetRevisionFilter = (props: AppFilterProps) => {
 };
 
 const FavoriteFilter = (props: {value: boolean; onChange: (showFavorites: boolean) => void}) => {
-    const onChange = (val: boolean) => {
-        props.onChange(val);
-    };
     return (
         <div
-            className={`filter filter__item ${props.value ? 'filter__item--selected' : ''}`}
-            style={{margin: '0.5em 0', marginTop: '0.5em'}}
-            onClick={() => onChange(!props.value)}>
-            <Checkbox
-                value={!!props.value}
-                onChange={onChange}
-                style={{
-                    marginRight: '8px'
-                }}
-            />
-            <div style={{marginRight: '5px', textAlign: 'center', width: '25px'}}>
-                <i style={{color: '#FFCE25'}} className='fas fa-star' />
-            </div>
-            <div className='filter__item__label'>Favorites Only</div>
+            className={`filter-dropdown__trigger ${props.value ? 'filter-dropdown__trigger--active' : ''}`}
+            onClick={() => props.onChange(!props.value)}>
+            <span className='filter-dropdown__label'>Favorites</span>
+            {props.value && <i className='fa fa-check' style={{fontSize: '10px', color: '#10b981'}} />}
         </div>
     );
 };
@@ -515,7 +504,7 @@ export const ApplicationsFilter = (props: AppFilterProps) => {
     };
 
     return (
-        <FiltersGroup title='Application filters' content={props.children} appliedFilter={appliedFilter} onClearFilter={onClearFilter} collapsed={props.collapsed}>
+        <FiltersGroup title='Application filters' content={props.children} appliedFilter={appliedFilter} onClearFilter={onClearFilter} collapsed={props.collapsed} extra={props.extra}>
             <FavoriteFilter value={!!props.pref.showFavorites} onChange={val => props.onChange({...props.pref, showFavorites: val})} />
             <SyncFilter {...props} />
             <AppHealthFilter {...props} />
@@ -533,7 +522,7 @@ export const ApplicationsFilter = (props: AppFilterProps) => {
 
 export const AppSetsFilter = (props: AppSetFilterProps) => {
     return (
-        <FiltersGroup title='ApplicationSet filters' content={props.children} collapsed={props.collapsed}>
+        <FiltersGroup title='ApplicationSet filters' content={props.children} collapsed={props.collapsed} extra={props.extra}>
             <FavoriteFilter value={!!props.pref.showFavorites} onChange={val => props.onChange({...props.pref, showFavorites: val})} />
             <AppSetHealthFilter {...props} />
             <LabelsFilter apps={props.apps} pref={props.pref} onChange={labelsFilter => props.onChange({...props.pref, labelsFilter})} />

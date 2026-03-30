@@ -1,4 +1,4 @@
-import {DataLoader, DropDownMenu} from 'argo-ui';
+import {DataLoader} from 'argo-ui';
 
 import * as React from 'react';
 import ReactPaginate from 'react-paginate';
@@ -22,6 +22,44 @@ export interface PaginateProps<T> {
     showHeader?: boolean;
     sortOptions?: SortOption<T>[];
 }
+
+export const PaginateDropdown = (props: {label: string; value: string; items: {title: string; action: () => void}[]}) => {
+    const [isOpen, setIsOpen] = React.useState(false);
+    const ref = React.useRef<HTMLDivElement>(null);
+
+    React.useEffect(() => {
+        const handleClick = (e: MouseEvent) => {
+            if (ref.current && !ref.current.contains(e.target as Node)) {
+                setIsOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClick);
+        return () => document.removeEventListener('mousedown', handleClick);
+    }, []);
+
+    return (
+        <div className='paginate-dropdown' ref={ref}>
+            <div className='paginate-dropdown__trigger' onClick={() => setIsOpen(!isOpen)}>
+                <span className='paginate-dropdown__label'>{props.label}</span>
+                <span className='paginate-dropdown__value'>{props.value}</span>
+                <i className={`fa fa-chevron-${isOpen ? 'up' : 'down'} paginate-dropdown__arrow`} />
+            </div>
+            {isOpen && (
+                <div className='paginate-dropdown__menu'>
+                    {props.items.map((item, i) => (
+                        <div
+                            key={i}
+                            className={`paginate-dropdown__option ${item.title === props.value ? 'paginate-dropdown__option--selected' : ''}`}
+                            onClick={() => { item.action(); setIsOpen(false); }}>
+                            <span>{item.title}</span>
+                            {item.title === props.value && <i className='fa fa-check paginate-dropdown__option-check' />}
+                        </div>
+                    ))}
+                </div>
+            )}
+        </div>
+    );
+};
 
 export function Paginate<T>({page, onPageChange, children, data, emptyState, preferencesKey, header, showHeader, sortOptions}: PaginateProps<T>) {
     return (
@@ -49,47 +87,6 @@ export function Paginate<T>({page, onPageChange, children, data, emptyState, pre
                                         onPageChange={item => onPageChange(item.selected)}
                                     />
                                 )}
-                                <div className='paginate__size-menu'>
-                                    {sortOptions && (
-                                        <DropDownMenu
-                                            qeId={`paginate-sort-${preferencesKey}`}
-                                            anchor={() => (
-                                                <>
-                                                    <a>
-                                                        Sort: {sortOption.toLowerCase()} <i className='fa fa-caret-down' />
-                                                    </a>
-                                                    &nbsp;
-                                                </>
-                                            )}
-                                            items={sortOptions.map(so => ({
-                                                title: so.title,
-                                                action: () => {
-                                                    // sortOptions might not be set in the browser storage
-                                                    if (!pref.sortOptions) {
-                                                        pref.sortOptions = {};
-                                                    }
-                                                    pref.sortOptions[preferencesKey] = so.title;
-                                                    services.viewPreferences.updatePreferences(pref);
-                                                }
-                                            }))}
-                                        />
-                                    )}
-                                    <DropDownMenu
-                                        qeId={`paginate-items-per-page-${preferencesKey}`}
-                                        anchor={() => (
-                                            <a>
-                                                Items per page: {pageSize === -1 ? 'all' : pageSize} <i className='fa fa-caret-down' />
-                                            </a>
-                                        )}
-                                        items={[5, 10, 15, 20, -1].map(count => ({
-                                            title: count === -1 ? 'all' : count.toString(),
-                                            action: () => {
-                                                pref.pageSizes[preferencesKey] = count;
-                                                services.viewPreferences.updatePreferences(pref);
-                                            }
-                                        }))}
-                                    />
-                                </div>
                             </div>
                             {showHeader && header}
                         </div>

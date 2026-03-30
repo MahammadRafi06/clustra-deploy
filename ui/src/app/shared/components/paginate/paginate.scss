@@ -1,5 +1,9 @@
 @import 'node_modules/argo-ui/src/styles/config';
 
+$navy-light: #112240;
+$emerald: #10b981;
+$border: rgba(255, 255, 255, 0.1);
+
 .paginate {
     position: relative;
 
@@ -47,8 +51,93 @@
 
     &__size-menu {
         margin-left: auto;
+        display: flex;
+        gap: 8px;
+
         li {
             display: block;
+        }
+    }
+}
+
+.paginate-dropdown {
+    position: relative;
+    display: inline-block;
+
+    &__trigger {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 12px;
+        border: 1px solid $border;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 12px;
+        font-weight: 500;
+        color: rgba(255, 255, 255, 0.7);
+        background: rgba($navy-light, 0.6);
+        transition: all 0.15s ease;
+        white-space: nowrap;
+
+        &:hover {
+            border-color: rgba(255, 255, 255, 0.2);
+            color: white;
+        }
+    }
+
+    &__label {
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+        font-size: 11px;
+        color: rgba(255, 255, 255, 0.5);
+    }
+
+    &__value {
+        color: rgba(255, 255, 255, 0.9);
+    }
+
+    &__arrow {
+        font-size: 10px;
+        opacity: 0.5;
+    }
+
+    &__menu {
+        position: absolute;
+        top: calc(100% + 4px);
+        right: 0;
+        min-width: 140px;
+        background: $navy-light;
+        border: 1px solid $border;
+        border-radius: 8px;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+        z-index: 100;
+        overflow: hidden;
+        padding: 4px 0;
+    }
+
+    &__option {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 7px 12px;
+        cursor: pointer;
+        font-size: 13px;
+        color: rgba(255, 255, 255, 0.7);
+        transition: background 0.1s ease;
+
+        &:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        &--selected {
+            color: white;
+            background: rgba($emerald, 0.1);
+        }
+
+        &-check {
+            color: $emerald;
+            font-size: 11px;
+            margin-left: auto;
         }
     }
 }

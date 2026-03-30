@@ -1,12 +1,11 @@
 import {Autocomplete, ErrorNotification, MockupList, NotificationType, SlidingPanel, Toolbar, Tooltip} from 'argo-ui';
 import * as classNames from 'classnames';
 import * as React from 'react';
-import * as ReactDOM from 'react-dom';
 import {Key, KeybindingContext, KeybindingProvider} from 'argo-ui/v2';
 import {RouteComponentProps} from 'react-router';
 import {combineLatest, from, merge, Observable} from 'rxjs';
 import {bufferTime, delay, filter, map, mergeMap, repeat, retryWhen} from 'rxjs/operators';
-import {AddAuthToToolbar, ClusterCtx, DataLoader, EmptyState, Page, Paginate, Spinner} from '../../../shared/components';
+import {AddAuthToToolbar, ClusterCtx, DataLoader, EmptyState, Page, Paginate, PaginateDropdown, Spinner} from '../../../shared/components';
 import {AuthSettingsCtx, Consumer, Context, ContextApis} from '../../../shared/context';
 import * as models from '../../../shared/models';
 import {AppsListViewKey, AppsListPreferences, AppSetsListPreferences, AppsListViewType, HealthStatusBarPreferences, services} from '../../../shared/services';
@@ -21,7 +20,6 @@ import {ApplicationsSummary} from './applications-summary';
 import {ApplicationsTable} from './applications-table';
 import {ApplicationTiles} from './applications-tiles';
 import {ApplicationsRefreshPanel} from '../applications-refresh-panel/applications-refresh-panel';
-import {useSidebarTarget} from '../../../sidebar/sidebar';
 import {useQuery, useObservableQuery} from '../../../shared/hooks/query';
 
 import './applications-list.scss';
@@ -521,7 +519,6 @@ export const ApplicationsList = (props: RouteComponentProps<any> & {objectListKi
         return '';
     }
 
-    const sidebarTarget = useSidebarTarget();
 
     return (
         <ClusterCtx.Provider value={clusters}>
@@ -623,19 +620,50 @@ export const ApplicationsList = (props: RouteComponentProps<any> & {objectListKi
                                                                 </EmptyState>
                                                             ) : (
                                                                 <>
-                                                                    {ReactDOM.createPortal(
+                                                                    <div className='applications-list__filters'>
                                                                         <DataLoader load={() => services.viewPreferences.getPreferences()}>
-                                                                            {allpref => (
-                                                                                <ApplicationsFilter
-                                                                                    apps={filterResults}
-                                                                                    onChange={newPrefs => onAppFilterPrefChanged(ctx, newPrefs)}
-                                                                                    pref={pref}
-                                                                                    collapsed={allpref.hideSidebar}
-                                                                                />
-                                                                            )}
-                                                                        </DataLoader>,
-                                                                        sidebarTarget?.current
-                                                                    )}
+                                                                            {allpref => {
+                                                                                const preferencesKey = 'applications-list';
+                                                                                const pageSize = allpref.pageSizes[preferencesKey] || 10;
+                                                                                const sortOption = (allpref.sortOptions && allpref.sortOptions[preferencesKey]) || 'Name';
+                                                                                return (
+                                                                                    <ApplicationsFilter
+                                                                                        apps={filterResults}
+                                                                                        onChange={newPrefs => onAppFilterPrefChanged(ctx, newPrefs)}
+                                                                                        pref={pref}
+                                                                                        collapsed={false}
+                                                                                        extra={
+                                                                                            <>
+                                                                                                <PaginateDropdown
+                                                                                                    label='Sort'
+                                                                                                    value={sortOption.toLowerCase()}
+                                                                                                    items={['Name', 'Created At', 'Synchronized'].map(t => ({
+                                                                                                        title: t,
+                                                                                                        action: () => {
+                                                                                                            if (!allpref.sortOptions) allpref.sortOptions = {};
+                                                                                                            allpref.sortOptions[preferencesKey] = t;
+                                                                                                            services.viewPreferences.updatePreferences(allpref);
+                                                                                                        }
+                                                                                                    }))}
+                                                                                                />
+                                                                                                <PaginateDropdown
+                                                                                                    label='Per page'
+                                                                                                    value={pageSize === -1 ? 'all' : pageSize.toString()}
+                                                                                                    items={[5, 10, 15, 20, -1].map(c => ({
+                                                                                                        title: c === -1 ? 'all' : c.toString(),
+                                                                                                        action: () => {
+                                                                                                            allpref.pageSizes[preferencesKey] = c;
+                                                                                                            services.viewPreferences.updatePreferences(allpref);
+                                                                                                        }
+                                                                                                    }))}
+                                                                                                />
+                                                                                            </>
+                                                                                        }
+                                                                                    />
+                                                                                );
+                                                                            }}
+                                                                        </DataLoader>
+                                                                    </div>
 
                                                                     {(pref.view === 'summary' && <ApplicationsSummary applications={filteredApps} />) || (
                                                                         <Paginate
@@ -840,19 +868,35 @@ export const ApplicationsList = (props: RouteComponentProps<any> & {objectListKi
                                                                 </EmptyState>
                                                             ) : (
                                                                 <>
-                                                                    {ReactDOM.createPortal(
+                                                                    <div className='applications-list__filters'>
                                                                         <DataLoader load={() => services.viewPreferences.getPreferences()}>
-                                                                            {allpref => (
-                                                                                <AppSetsFilter
-                                                                                    apps={filterResults}
-                                                                                    onChange={newPrefs => onAppSetFilterPrefChanged(ctx, newPrefs)}
-                                                                                    pref={appSetPref}
-                                                                                    collapsed={allpref.hideSidebar}
-                                                                                />
-                                                                            )}
-                                                                        </DataLoader>,
-                                                                        sidebarTarget?.current
-                                                                    )}
+                                                                            {allpref => {
+                                                                                const preferencesKey = 'applications-list';
+                                                                                const pageSize = allpref.pageSizes[preferencesKey] || 10;
+                                                                                return (
+                                                                                    <AppSetsFilter
+                                                                                        apps={filterResults}
+                                                                                        onChange={newPrefs => onAppSetFilterPrefChanged(ctx, newPrefs)}
+                                                                                        pref={appSetPref}
+                                                                                        collapsed={false}
+                                                                                        extra={
+                                                                                            <PaginateDropdown
+                                                                                                label='Per page'
+                                                                                                value={pageSize === -1 ? 'all' : pageSize.toString()}
+                                                                                                items={[5, 10, 15, 20, -1].map(c => ({
+                                                                                                    title: c === -1 ? 'all' : c.toString(),
+                                                                                                    action: () => {
+                                                                                                        allpref.pageSizes[preferencesKey] = c;
+                                                                                                        services.viewPreferences.updatePreferences(allpref);
+                                                                                                    }
+                                                                                                }))}
+                                                                                            />
+                                                                                        }
+                                                                                    />
+                                                                                );
+                                                                            }}
+                                                                        </DataLoader>
+                                                                    </div>
 
                                                                     <Paginate
                                                                         header={filteredApps.length > 1 && <AppSetsStatusBar appSets={filteredApps} />}

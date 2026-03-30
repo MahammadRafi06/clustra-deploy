@@ -1,4 +1,4 @@
-import {Autocomplete, Checkbox} from 'argo-ui/v2';
+import {Autocomplete} from 'argo-ui/v2';
 import {Tooltip} from 'argo-ui';
 import * as React from 'react';
 
@@ -26,44 +26,7 @@ export interface CheckboxOption {
 }
 
 export const CheckboxRow = (props: {value: boolean; onChange?: (value: boolean) => void; option: CheckboxOption}) => {
-    const [value, setValue] = React.useState(props.value);
-
-    React.useEffect(() => {
-        setValue(props.value);
-    }, [props.value]);
-
-    const tooltipProps: Partial<React.ComponentProps<typeof Tooltip>> = {
-        placement: 'top',
-        popperOptions: {
-            modifiers: {
-                preventOverflow: {
-                    boundariesElement: 'window'
-                }
-            }
-        }
-    };
-
-    return (
-        <div className={`filter__item ${value ? 'filter__item--selected' : ''}`} onClick={() => setValue(!value)}>
-            <Checkbox
-                onChange={val => {
-                    setValue(val);
-                    if (props.onChange) {
-                        props.onChange(val);
-                    }
-                }}
-                value={value}
-                style={{
-                    marginRight: '8px'
-                }}
-            />
-            {props.option.icon && <div style={{marginRight: '5px'}}>{props.option.icon}</div>}
-            <Tooltip content={<div className='filter__tooltip'>{props.option.label}</div>} {...tooltipProps}>
-                <div className='filter__item__label'>{props.option.label}</div>
-            </Tooltip>
-            <div style={{marginLeft: 'auto'}}>{props.option.count}</div>
-        </div>
-    );
+    return null;
 };
 
 export const FiltersGroup = (props: {
@@ -73,19 +36,20 @@ export const FiltersGroup = (props: {
     onClearFilter?: () => void;
     collapsed?: boolean;
     title?: string;
+    extra?: React.ReactNode;
 }) => {
     return (
         !props.collapsed && (
             <div className='filters-group'>
-                {props.title && <div className='filters-group__title'>{props.title}</div>}
-                {props.appliedFilter?.length > 0 && props.onClearFilter && (
-                    <div className='filters-group__header'>
-                        <button onClick={() => props.onClearFilter()} className='argo-button argo-button--base argo-button--sm'>
-                            <i className='fa fa-times-circle' /> CLEAR ALL
+                <div className='filters-group__filters'>
+                    {props.children}
+                    {props.appliedFilter?.length > 0 && props.onClearFilter && (
+                        <button onClick={() => props.onClearFilter()} className='filters-group__clear-btn'>
+                            <i className='fa fa-times' /> Clear
                         </button>
-                    </div>
-                )}
-                {props.children}
+                    )}
+                </div>
+                {props.extra && <div className='filters-group__extra'>{props.extra}</div>}
                 <div className='filters-group__content'>{props.content}</div>
             </div>
         )
@@ -93,115 +57,120 @@ export const FiltersGroup = (props: {
 };
 
 export const Filter = (props: FilterProps) => {
-    const init = {} as {[label: string]: boolean};
-    props.selected.forEach(s => (init[s] = true));
-
-    const [values, setValues] = React.useState(init);
-    const [tags, setTags] = React.useState([]);
+    const [isOpen, setIsOpen] = React.useState(false);
     const [input, setInput] = React.useState('');
-    const [collapsed, setCollapsed] = React.useState(props.collapsed || false);
-    const [options, setOptions] = React.useState(props.options);
+    const ref = React.useRef<HTMLDivElement>(null);
 
-    React.useEffect(() => {
-        setOptions(props.options);
-    }, [props.options]);
-
+    const options = props.options || [];
     const labels = props.labels || options.map(o => o.label);
 
     React.useEffect(() => {
-        const {cleanedValues, selectedKeys} = Object.entries(values).reduce(
-            (acc, [key, value]) => {
-                if (value !== undefined) {
-                    acc.cleanedValues[key] = value;
-                    if (value) {
-                        acc.selectedKeys.push(key);
-                    }
-                }
-                return acc;
-            },
-            {cleanedValues: {} as {[label: string]: boolean}, selectedKeys: [] as string[]}
-        );
+        const handleClick = (e: MouseEvent) => {
+            if (ref.current && !ref.current.contains(e.target as Node)) {
+                setIsOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClick);
+        return () => document.removeEventListener('mousedown', handleClick);
+    }, []);
 
-        if (Object.keys(cleanedValues).length !== Object.keys(values).length) {
-            setValues(cleanedValues);
-            return;
+    const toggleOption = (label: string) => {
+        if (props.selected.includes(label)) {
+            props.setSelected(props.selected.filter(s => s !== label));
+        } else {
+            if (props.radio) {
+                props.setSelected([label]);
+            } else {
+                props.setSelected([...props.selected, label]);
+            }
         }
+    };
 
-        props.setSelected(selectedKeys);
-        if (props.field) {
-            setTags(
-                Object.keys(values).map(v => {
-                    if (options?.find(x => x.label === v)) return {label: v, count: options?.find(x => x.label === v).count} as CheckboxOption;
-                    else return {label: v} as CheckboxOption;
-                })
-            );
-        }
-    }, [values]);
+    const removeTag = (label: string) => {
+        props.setSelected(props.selected.filter(s => s !== label));
+    };
 
-    React.useEffect(() => {
-        if (props.selected.length === 0) {
-            setValues({} as {[label: string]: boolean});
-            setInput('');
-        }
-    }, [props.selected.length]);
+    if (props.collapsed) {
+        return null;
+    }
+
+    const filteredOptions = props.field
+        ? labels.filter(l => !input || l.toLowerCase().includes(input.toLowerCase())).map(l => {
+            const opt = options.find(o => o.label === l);
+            return opt || {label: l};
+        })
+        : options;
 
     return (
-        <div className='filter'>
-            <div className='filter__header'>
-                <span className='filter__header__label' title={props.label || 'FILTER'}>
-                    {props.label || 'FILTER'}
-                </span>
-                {(props.selected || []).length > 0 || (props.field && Object.keys(values).length > 0) ? (
-                    <button
-                        className='argo-button argo-button--base argo-button--sm argo-button--right'
-                        onClick={() => {
-                            setValues({} as {[label: string]: boolean});
-                            setInput('');
-                        }}>
-                        <i className='fa fa-times-circle' /> CLEAR
-                    </button>
-                ) : (
-                    <i className={`fa fa-caret-${collapsed ? 'down' : 'up'} filter__collapse`} onClick={() => setCollapsed(!collapsed)} />
+        <div className='filter-dropdown' ref={ref}>
+            <div className='filter-dropdown__trigger' onClick={() => setIsOpen(!isOpen)}>
+                <span className='filter-dropdown__label'>{props.label}</span>
+                {props.selected.length > 0 && (
+                    <span className='filter-dropdown__badge'>{props.selected.length}</span>
                 )}
+                <i className={`fa fa-chevron-${isOpen ? 'up' : 'down'} filter-dropdown__arrow`} />
             </div>
-            {!collapsed &&
-                (props.loading ? (
-                    <FilterLoading />
-                ) : props.error ? (
-                    <FilterError retry={props.retry} />
-                ) : (
-                    <React.Fragment>
-                        {props.field && (
-                            <Autocomplete
-                                placeholder={props.label}
-                                items={labels}
-                                abbreviations={props.abbreviations}
-                                value={input}
-                                onChange={e => setInput(e.target.value)}
-                                onItemClick={val => {
-                                    const update = {...values};
-                                    update[val ? val : input] = true;
-                                    setInput('');
-                                    setValues(update);
-                                }}
-                                style={{width: '100%'}}
-                                inputStyle={{marginBottom: '0.5em', backgroundColor: 'black', border: 'none', color: '#fff'}}
-                            />
-                        )}
-                        {((props.field ? tags : options) || []).map((opt, i) => (
-                            <CheckboxRow
-                                key={i}
-                                value={values[opt.label]}
-                                onChange={val => {
-                                    const update = props.radio && val ? {} : {...values};
-                                    update[opt.label] = val;
-                                    setValues(update);
-                                }}
-                                option={opt}
-                            />
-                        ))}
-                    </React.Fragment>
-                ))}
+
+            {props.selected.length > 0 && (
+                <div className='filter-dropdown__tags'>
+                    {props.selected.map(s => (
+                        <span key={s} className='filter-dropdown__tag'>
+                            {options.find(o => o.label === s)?.icon}
+                            <span>{s}</span>
+                            <i className='fa fa-times' onClick={e => { e.stopPropagation(); removeTag(s); }} />
+                        </span>
+                    ))}
+                </div>
+            )}
+
+            {isOpen && (
+                <div className='filter-dropdown__menu'>
+                    {props.loading ? (
+                        <div className='filter-dropdown__status'><i className='fa fa-circle-notch fa-spin' /> Loading...</div>
+                    ) : props.error ? (
+                        <div className='filter-dropdown__status filter-dropdown__status--error'>
+                            <i className='fa fa-exclamation-circle' /> Error
+                            <span onClick={() => props.retry && props.retry()} className='filter-dropdown__retry'> Retry</span>
+                        </div>
+                    ) : (
+                        <>
+                            {props.field && (
+                                <input
+                                    className='filter-dropdown__search'
+                                    placeholder={`Search ${props.label?.toLowerCase()}...`}
+                                    value={input}
+                                    onChange={e => setInput(e.target.value)}
+                                    autoFocus
+                                    onClick={e => e.stopPropagation()}
+                                />
+                            )}
+                            <div className='filter-dropdown__options'>
+                                {filteredOptions.map((opt, i) => (
+                                    <div
+                                        key={i}
+                                        className={`filter-dropdown__option ${props.selected.includes(opt.label) ? 'filter-dropdown__option--selected' : ''}`}
+                                        onClick={() => toggleOption(opt.label)}>
+                                        {opt.icon && <span className='filter-dropdown__option-icon'>{opt.icon}</span>}
+                                        <span className='filter-dropdown__option-label'>{opt.label}</span>
+                                        {opt.count !== undefined && <span className='filter-dropdown__option-count'>{opt.count}</span>}
+                                        {props.selected.includes(opt.label) && <i className='fa fa-check filter-dropdown__option-check' />}
+                                    </div>
+                                ))}
+                                {filteredOptions.length === 0 && (
+                                    <div className='filter-dropdown__empty'>No matches</div>
+                                )}
+                            </div>
+                            {props.field && input && !labels.includes(input) && (
+                                <div
+                                    className='filter-dropdown__option filter-dropdown__option--add'
+                                    onClick={() => { toggleOption(input); setInput(''); }}>
+                                    <i className='fa fa-plus' /> Add "{input}"
+                                </div>
+                            )}
+                        </>
+                    )}
+                </div>
+            )}
         </div>
     );
 };
