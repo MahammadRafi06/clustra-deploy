@@ -11,6 +11,7 @@
     "test": "jest"
   },
   "dependencies": {
+    "@fontsource/inter": "^5.2.8",
     "@fortawesome/fontawesome-free": "^6.7.2",
     "@types/react-virtualized": "^9.21.21",
     "@types/superagent": "^8.1.6",

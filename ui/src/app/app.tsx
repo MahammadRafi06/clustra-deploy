@@ -6,7 +6,6 @@ import {Helmet} from 'react-helmet';
 import {Redirect, Route, RouteComponentProps, Router, Switch} from 'react-router';
 import {Subscription} from 'rxjs';
 import applications from './applications';
-import help from './help';
 import login from './login';
 import settings from './settings';
 import {Layout, ThemeWrapper} from './shared/components/layout/layout';
@@ -35,8 +34,7 @@ const routes: Routes = {
     // TODO: Uncomment when ApplicationSet details page is fully implemented
     // '/applicationsets': {component: applications.component},
     '/settings': {component: settings.component},
-    '/user-info': {component: userInfo.component},
-    '/help': {component: help.component}
+    '/user-info': {component: userInfo.component}
 };
 
 interface NavItem {
@@ -44,6 +42,7 @@ interface NavItem {
     tooltip?: string;
     path: string;
     iconClassName: string;
+    children?: NavItem[];
 }
 
 const navItems: NavItem[] = [
@@ -54,22 +53,52 @@ const navItems: NavItem[] = [
         iconClassName: 'argo-icon argo-icon-application'
     },
     {
-        title: 'Settings',
-        tooltip: 'Manage your repositories, projects, settings',
-        path: '/settings',
-        iconClassName: 'argo-icon argo-icon-settings'
+        title: 'Repositories',
+        tooltip: 'Configure connected repositories',
+        path: '/settings/repos',
+        iconClassName: 'fa fa-code-branch'
+    },
+    {
+        title: 'Certificates',
+        tooltip: 'Configure repository certificates and known hosts',
+        path: '/settings/certs',
+        iconClassName: 'fa fa-certificate'
+    },
+    {
+        title: 'GnuPG Keys',
+        tooltip: 'Configure GnuPG public keys for commit verification',
+        path: '/settings/gpgkeys',
+        iconClassName: 'fa fa-key'
+    },
+    {
+        title: 'Clusters',
+        tooltip: 'Configure connected Kubernetes clusters',
+        path: '/settings/clusters',
+        iconClassName: 'fa fa-server'
+    },
+    {
+        title: 'Projects',
+        tooltip: 'Configure Clustra Deploy projects',
+        path: '/settings/projects',
+        iconClassName: 'fa fa-folder'
+    },
+    {
+        title: 'Accounts',
+        tooltip: 'Configure accounts',
+        path: '/settings/accounts',
+        iconClassName: 'fa fa-users'
+    },
+    {
+        title: 'Appearance',
+        tooltip: 'Configure themes in UI',
+        path: '/settings/appearance',
+        iconClassName: 'fa fa-palette'
     },
     {
         title: 'User Info',
         path: '/user-info',
         iconClassName: 'fa fa-user-circle'
     },
-    {
-        title: 'Documentation',
-        tooltip: 'Read the documentation, and get help and assistance.',
-        path: '/help',
-        iconClassName: 'argo-icon argo-icon-docs'
-    }
 ];
 
 const versionLoader = services.version.version();
@@ -183,7 +212,7 @@ export class App extends React.Component<{}, {popupProps: PopupProps; showVersio
                     <link rel='icon' type='image/png' href={`${base}assets/favicon/favicon-32x32.png`} sizes='32x32' />
                     <link rel='icon' type='image/png' href={`${base}assets/favicon/favicon-16x16.png`} sizes='16x16' />
                 </Helmet>
-                <PageContext.Provider value={{title: 'Argo CD'}}>
+                <PageContext.Provider value={{title: 'Clustra Deploy'}}>
                     <Provider value={{history, popup: this.popupManager, notifications: this.notificationsManager, navigation: this.navigationManager, baseHref: base}}>
                         <DataLoader load={() => services.viewPreferences.getPreferences()}>
                             {pref => <ThemeWrapper theme={pref.theme}>{this.state.popupProps && <Popup {...this.state.popupProps} />}</ThemeWrapper>}
@@ -268,7 +297,7 @@ export class App extends React.Component<{}, {popupProps: PopupProps; showVersio
         const component = () => (
             <>
                 <Helmet>
-                    <title>{extension.title} - Argo CD</title>
+                    <title>{extension.title} - Clustra Deploy</title>
                 </Helmet>
                 <Page title={extension.title}>
                     <extension.component />

@@ -1,205 +1,190 @@
 @import 'node_modules/argo-ui/src/styles/config';
 
-$logoPath: 'assets/images/argologo.svg';
-$logoNegativePath: 'assets/images/argo.png';
-
-//for input fields
-
-.argo-field {
-    border-bottom: 2px solid $argo-color-gray-3;
-}
+// Desero / Clustra brand colors
+$navy: #0a192f;
+$navy-light: #112240;
+$navy-dark: #020c1b;
+$emerald: #10b981;
+$emerald-light: #34d399;
+$emerald-dark: #059669;
+$gold: #d4af37;
 
 .login {
-    min-height:100vh;
-    background: linear-gradient(to top left, 
-        rgba(122, 139, 207, 0.8) 0%, 
-        rgba(46, 50, 90, 0.8) 100%), 
-        url("assets/images/stars.gif");
+    min-height: 100vh;
+    background-color: $navy;
+    background-image:
+        radial-gradient(at 40% 20%, rgba($emerald, 0.15) 0px, transparent 50%),
+        radial-gradient(at 80% 0%, rgba($gold, 0.1) 0px, transparent 50%),
+        radial-gradient(at 0% 50%, rgba($emerald, 0.1) 0px, transparent 50%);
     display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    padding: 40px;
 
-    &__content {
-        float: left;
-        margin: auto;
-        width: calc(100% - 320px);
+    &__hero-logo {
+        height: 80px;
+        filter: drop-shadow(0 0 20px rgba($emerald, 0.3));
+    }
+
+    &__text-logo {
+        height: 40px;
+    }
+
+    &__text {
+        color: rgba(255, 255, 255, 0.7);
+        font-size: 1.4rem;
+        font-weight: 300;
         text-align: center;
-    }
-
-    .argo__logo {
-        background-image: url($logoNegativePath);
-        background-repeat: no-repeat;
-        background-size: contain;
-        min-height: 200px;
-        margin: auto;
-        background-position: center;
-        height: 50vh;
-    }
-
-    &__text{
-        position: relative;
-        margin: auto;
-        top: -10vh;
-        color: #FFF;
-        font-size: 2.5rem;
-        font-weight: 100; 
-    }
-
-
-    &__box-wrapper {
-        display: table;
-        width: 100%;
-        height: calc(100% - 60px - 70px - 40px);
-        padding: 20px 0 80px;
-    }
-
-    &__box-outer {
-        display: table-cell;
-        vertical-align: middle;
-        overflow: hidden;
-        float: right;
+        letter-spacing: 0.05em;
+        margin-bottom: 10px;
     }
 
     &__box {
-        min-width: 320px;
-        width: 20%;
-        margin: 0 auto;
-        padding: 40px;
-        background-color: #fff;
-        position: relative;
-        float: right;
-        min-height: 100vh;
+        width: 360px;
+        padding: 32px 36px;
+        background: rgba($navy-light, 0.6);
+        backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 12px;
+        color: rgba(255, 255, 255, 0.9);
 
-        .width-control{
-            max-width: 200px;
+        .width-control {
+            max-width: 100%;
             margin: auto;
         }
 
         &_saml {
-            padding: 40px 0;
+            padding: 20px 0;
         }
 
         h3, h4, h5 {
-            color: #b268a7;
+            color: rgba(255, 255, 255, 0.7);
             text-align: center;
-            padding-top: 1em;
-            padding-bottom: 1em;
+            padding-top: 0.5em;
+            padding-bottom: 0.5em;
         }
 
         h6 {
             text-align: center;
+            color: rgba(255, 255, 255, 0.5);
         }
 
-        h3 {
-            font-size: 2.25em;
-            font-weight: 100;
-            padding-bottom: 66px;
+        // Override argo-ui form row spacing
+        .argo-form-row {
+            margin-bottom: 8px;
+        }
 
-            @media screen and (max-height: 774px) {
-                padding-bottom: 20px;
+        // Override argo-ui input styles for dark theme
+        .argo-field {
+            border-bottom: 2px solid rgba(255, 255, 255, 0.2) !important;
+            background: transparent !important;
+            color: white !important;
+            padding: 10px 0 8px !important;
+
+            &:focus {
+                border-bottom-color: $emerald !important;
+            }
+        }
+
+        // Float labels up when input has value or focused
+        .argo-field-container > label.argo-label-placeholder {
+            color: rgba(255, 255, 255, 0.4) !important;
+        }
+
+        .argo-field-container > .argo-field.argo-has-value + label.argo-label-placeholder,
+        .argo-field-container > .argo-field.argo-focus-out + label.argo-label-placeholder,
+        .argo-field-container > .argo-field:focus + label.argo-label-placeholder,
+        .argo-field-container > .argo-field:not([value=""]) + label.argo-label-placeholder,
+        .argo-field-container > .argo-field:not(:placeholder-shown) + label.argo-label-placeholder {
+            color: rgba(255, 255, 255, 0.5) !important;
+            transform: translateY(-25px) !important;
+            font-size: 11px !important;
+        }
+
+        .argo-field-container > .argo-field:focus + label.argo-label-placeholder {
+            color: $emerald !important;
+        }
+
+        // Also handle labels rendered before inputs (non-placeholder labels)
+        .argo-form-row label {
+            color: rgba(255, 255, 255, 0.4) !important;
+            font-size: 11px !important;
+        }
+
+        input, input[type="text"], input[type="password"] {
+            color: white !important;
+            background: transparent !important;
+            -webkit-text-fill-color: white !important;
+            font-size: 15px;
+
+            &::placeholder {
+                color: rgba(255, 255, 255, 0.4) !important;
+            }
+
+            &:-webkit-autofill {
+                -webkit-text-fill-color: white !important;
+                -webkit-box-shadow: 0 0 0 1000px $navy-light inset !important;
+                transition: background-color 5000s ease-in-out 0s;
+            }
+        }
+
+        label {
+            color: rgba(255, 255, 255, 0.4) !important;
+        }
+
+        // Button styles
+        .argo-button {
+            background-color: $emerald !important;
+            border: none !important;
+            color: white !important;
+            border-radius: 8px !important;
+            padding: 12px 20px !important;
+            font-size: 14px !important;
+            font-weight: 500 !important;
+            letter-spacing: 0.02em;
+            line-height: 1.4 !important;
+            transition: all 0.2s ease;
+
+            &:not(.disabled):not([disabled]):hover {
+                background-color: $emerald-dark !important;
+                box-shadow: 0 0 20px rgba($emerald, 0.3);
+            }
+
+            &[disabled] {
+                opacity: 0.5;
+                background-color: $emerald !important;
+                color: white !important;
             }
         }
     }
 
     &__form-row {
-        padding: 20px 0;
-    }
-
-    &__more-row {
-        padding: 20px 0;
-        text-align: center;
-        font-weight: bold;
-
-        @media screen and (max-height: 774px) {
-            padding: 0;
-        }
-
-        a {
-            font-size: 13px;
-            text-transform: uppercase;
-            color: $argo-color-gray-7;
-            font-weight: 300;
-        }
-
-        p {
-            font-size: 13px;
-        }
+        padding: 12px 0;
     }
 
     &__saml-separator {
         margin-top: 15px;
-        color: $argo-color-gray-7;
-        border-bottom: 1px solid $argo-color-gray-4;
+        color: rgba(255, 255, 255, 0.4);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         text-align: center;
         & > span {
             position: relative;
             top: 0.8em;
             display: inline-block;
             padding: 0 6px;
-            background: #fff;
+            background: $navy-light;
         }
     }
 
-    &__logo {
-        display: block;
-        background-repeat: no-repeat;
-        background-position: center;
-        text-align: center;
-
-        &--neg {
-            height: 40px;
-            background-size: contain;
-            background-image: url($logoPath);
-            background-repeat: no-repeat;
-            margin-left: 4.5rem;
-            position: relative;
-            top: 1.5rem;
-            width: 10rem;
-        }
-        &--argo{
-            height: 5rem;
-            background-size: contain;
-            background-image: url(assets/images/Argo.svg);
-            background-repeat: no-repeat;
-            float: left;
-            width: 4rem;  
-        }
-
-        img.logo-image{
-            max-width: 50%;
-            color: #F77530;
-        }
-    }
-
-    &__footer {
-        color: $argo-color-gray-2;
-        bottom: 20px;
-        position: absolute;
-        width: 90%;
-        text-align: center;
-        left: 20px;        
-
-        & a {
-            color: $argo-color-gray-2;
-            img{
-                width: 36px;
-                filter: invert(50%);
-                -webkit-filter: invert(50%);
-            }
-        }
-
-        .ver {
-            font-size:12px;
-            color: $argo-color-gray-7;
-        }
-
-        &__link {
-            font-size:12px;
-            padding:0px 5px;
-        }
+    // Error messages
+    .argo-form-row__error-msg {
+        color: #f87171;
     }
 
     ::after {
         content: '';
         clear: both;
     }
-
 }

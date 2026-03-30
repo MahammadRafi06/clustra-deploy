@@ -1,0 +1,267 @@
+// Clustra AI / Desero Systems Theme Overrides
+// Dark navy + emerald design system
+
+$clustra-navy: #0a192f;
+$clustra-navy-light: #112240;
+$clustra-navy-dark: #020c1b;
+$clustra-emerald: #10b981;
+$clustra-emerald-light: #34d399;
+$clustra-emerald-dark: #059669;
+$clustra-gold: #d4af37;
+$clustra-slate-border: rgba(255, 255, 255, 0.08);
+
+// ── Global dark theme overrides ──────────────────────────────────
+
+.theme-dark {
+
+    // Body & layout backgrounds
+    .cd-layout {
+        background-color: $clustra-navy !important;
+    }
+
+    // Top bar / toolbar
+    .page .top-bar,
+    .page__top-bar,
+    .flex-top-bar {
+        background-color: $clustra-navy !important;
+        border-bottom: 1px solid $clustra-slate-border;
+    }
+
+    // Cards, panels, white boxes
+    .white-box {
+        background-color: $clustra-navy-light !important;
+        border: 1px solid $clustra-slate-border;
+
+        &__details-row {
+            border-bottom-color: rgba(255, 255, 255, 0.06) !important;
+        }
+    }
+
+    // Applications tiles
+    .argo-table-list {
+        background-color: $clustra-navy-light !important;
+
+        .argo-table-list__row {
+            border-bottom-color: rgba(255, 255, 255, 0.06) !important;
+
+            &:hover {
+                background-color: rgba($clustra-emerald, 0.05) !important;
+            }
+        }
+    }
+
+    // Application tiles view
+    .applications-tiles {
+        .argo-table-list {
+            background-color: transparent !important;
+        }
+    }
+
+    .application-summary {
+        background-color: $clustra-navy-light !important;
+    }
+
+    // Sliding panels
+    .sliding-panel__body,
+    .sliding-panel__header {
+        background-color: $clustra-navy-light !important;
+        color: rgba(255, 255, 255, 0.9) !important;
+    }
+
+    .sliding-panel__header {
+        border-bottom: 1px solid $clustra-slate-border;
+    }
+
+    // Status panel for application details
+    .application-details__status-panel {
+        background-color: $clustra-navy-light !important;
+        border-bottom: 1px solid $clustra-slate-border;
+    }
+
+    // Tabs
+    .argo-tab-group .argo-tab {
+        &--active {
+            border-bottom-color: $clustra-emerald !important;
+            color: $clustra-emerald !important;
+        }
+    }
+
+    // Buttons - teal to emerald
+    .argo-button {
+        &--base {
+            background-color: $clustra-emerald !important;
+            color: white !important;
+            border-color: $clustra-emerald !important;
+
+            &:hover:not(.disabled):not([disabled]) {
+                background-color: $clustra-emerald-dark !important;
+                border-color: $clustra-emerald-dark !important;
+            }
+        }
+
+        &--base-o {
+            color: $clustra-emerald !important;
+            box-shadow: inset 0 0 0 1px $clustra-emerald !important;
+
+            &:hover:not(.disabled):not([disabled]) {
+                background-color: $clustra-emerald !important;
+                color: white !important;
+            }
+        }
+    }
+
+    // Links
+    a {
+        color: $clustra-emerald-light;
+
+        &:hover {
+            color: $clustra-emerald;
+        }
+    }
+
+    h1, h2 {
+        color: $clustra-emerald-light;
+    }
+
+    // Health status colors - keep but adjust context
+    .health-status-icon--Healthy {
+        color: $clustra-emerald !important;
+    }
+
+    // Filters
+    .filter,
+    .filter__container {
+        background-color: $clustra-navy-light !important;
+        border-color: $clustra-slate-border !important;
+    }
+
+    .filter__selected {
+        background-color: rgba($clustra-emerald, 0.15) !important;
+        color: $clustra-emerald-light !important;
+    }
+
+    // Inputs
+    .argo-field {
+        border-bottom-color: rgba(255, 255, 255, 0.15) !important;
+        color: rgba(255, 255, 255, 0.9) !important;
+        background: transparent !important;
+
+        &:focus {
+            border-bottom-color: $clustra-emerald !important;
+        }
+    }
+
+    // Dropdowns
+    .select__value,
+    .argo-form-row select {
+        background-color: $clustra-navy-light !important;
+        color: rgba(255, 255, 255, 0.9) !important;
+        border-color: $clustra-slate-border !important;
+    }
+
+    // Popups / Modals
+    .popup-container .popup-overlay {
+        background: rgba($clustra-navy-dark, 0.7) !important;
+    }
+
+    .popup-container .popup-content {
+        background-color: $clustra-navy-light !important;
+        border: 1px solid $clustra-slate-border;
+        color: rgba(255, 255, 255, 0.9);
+    }
+
+    // Notifications
+    .argo-notification {
+        background-color: $clustra-navy-light !important;
+        border: 1px solid $clustra-slate-border;
+    }
+
+    // Empty states
+    .empty-state {
+        color: rgba(255, 255, 255, 0.6);
+    }
+
+    // Settings overview cards
+    .settings-overview__redirect-panel {
+        background-color: $clustra-navy-light !important;
+        border: 1px solid $clustra-slate-border;
+
+        &:hover {
+            border-color: rgba($clustra-emerald, 0.3) !important;
+            box-shadow: 0 0 15px rgba($clustra-emerald, 0.1);
+        }
+    }
+
+    // Breadcrumbs
+    .breadcrumbs a {
+        color: rgba(255, 255, 255, 0.6) !important;
+
+        &:hover {
+            color: $clustra-emerald-light !important;
+        }
+    }
+
+    // Scrollbar
+    ::-webkit-scrollbar {
+        width: 10px;
+    }
+
+    ::-webkit-scrollbar-track {
+        background: $clustra-navy-dark;
+    }
+
+    ::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.15);
+        border-radius: 5px;
+
+        &:hover {
+            background: rgba($clustra-emerald, 0.4);
+        }
+    }
+
+    // Tooltips
+    .tippy-tooltip {
+        background-color: $clustra-navy-light !important;
+        border: 1px solid $clustra-slate-border;
+    }
+
+    // Application resource tree
+    .application-resource-tree__node {
+        .application-resource-tree__node-kind-icon {
+            background-color: $clustra-navy-light;
+        }
+    }
+
+    // Pod view
+    .pod-view__node {
+        background-color: $clustra-navy-light !important;
+        border: 1px solid $clustra-slate-border;
+    }
+
+    // Log viewer
+    .pod-logs-viewer {
+        background-color: $clustra-navy-dark !important;
+    }
+}
+
+// ── Sidebar overrides ───────────────────────────────────────────
+
+.sidebar {
+    background-color: $clustra-navy-dark !important;
+    border-right: 1px solid $clustra-slate-border;
+
+    &__nav-item {
+        &--active {
+            i {
+                color: $clustra-emerald !important;
+            }
+        }
+    }
+
+    &__subnav-item--active {
+        border-left-color: $clustra-emerald !important;
+        i {
+            color: $clustra-emerald !important;
+        }
+    }
+}

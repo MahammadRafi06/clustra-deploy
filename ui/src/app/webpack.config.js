@@ -74,16 +74,23 @@ const config = {
         new CopyWebpackPlugin({
             patterns: [
                 {
-                    from: 'src/assets',
+                    from: 'node_modules/argo-ui/src/assets',
                     to: 'assets'
                 },
                 {
-                    from: 'node_modules/argo-ui/src/assets',
+                    from: 'src/assets',
                     to: 'assets'
                 },
                 {
                     from: 'node_modules/@fortawesome/fontawesome-free/webfonts',
                     to: 'assets/fonts'
+                },
+                {
+                    from: 'node_modules/@fontsource/inter/files',
+                    to: 'assets/fonts/inter',
+                    globOptions: {
+                        ignore: ['**/*cyrillic*', '**/*greek*', '**/*vietnamese*', '**/*ext*', '**/*italic*', '**/*.woff']
+                    }
                 },
                 {
                     from: 'node_modules/redoc/bundles/redoc.standalone.js',
