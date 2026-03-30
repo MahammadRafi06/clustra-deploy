@@ -8,7 +8,8 @@
     "build": "find ./dist -type f -not -name gitkeep -delete && webpack --config ./src/app/webpack.config.js --mode production",
     "lint": "tsc --noEmit --project ./src/app && eslint",
     "lint:fix": "eslint --fix",
-    "test": "jest"
+    "test": "jest",
+    "postinstall": "cp -f src/assets/favicon/* node_modules/argo-ui/src/assets/favicon/ 2>/dev/null || true"
   },
   "dependencies": {
     "@fontsource/inter": "^5.2.8",
