@@ -111,18 +111,6 @@ export const Filter = (props: FilterProps) => {
                 <i className={`fa fa-chevron-${isOpen ? 'up' : 'down'} filter-dropdown__arrow`} />
             </div>
 
-            {props.selected.length > 0 && (
-                <div className='filter-dropdown__tags'>
-                    {props.selected.map(s => (
-                        <span key={s} className='filter-dropdown__tag'>
-                            {options.find(o => o.label === s)?.icon}
-                            <span>{s}</span>
-                            <i className='fa fa-times' onClick={e => { e.stopPropagation(); removeTag(s); }} />
-                        </span>
-                    ))}
-                </div>
-            )}
-
             {isOpen && (
                 <div className='filter-dropdown__menu'>
                     {props.loading ? (

@@ -1,54 +1,64 @@
-name: Image
+name: Build and Push to ECR
 
 on:
+  push:
+    branches:
+      - main
   workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
-permissions: {}
+permissions:
+  contents: read
+
+env:
+  AWS_REGION: us-east-1
+  ECR_REGISTRY: 703671901662.dkr.ecr.us-east-1.amazonaws.com
+  ECR_REPOSITORY: clustra-deploy
 
 jobs:
-  set-vars:
-    permissions:
-      contents: read
+  build-and-push:
     runs-on: ubuntu-24.04
-    outputs:
-      image-tag: ${{ steps.image.outputs.tag }}
-      ghcr_image_name: ${{ steps.image.outputs.ghcr_image_name }}
-      docker_image_name: ${{ steps.image.outputs.docker_image_name }}
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-      - name: Set image tag and names
-        id: image
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Set image tag
+        id: vars
+        run: echo "tag=${GITHUB_SHA::8}" >> $GITHUB_OUTPUT
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ steps.vars.outputs.tag }}
+            ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            GIT_COMMIT=${{ github.sha }}
+            BUILD_DATE=${{ github.event.head_commit.timestamp }}
+            GIT_TREE_STATE=clean
+
+      - name: Summary
         run: |
-          TAG="$(cat ./VERSION)-${GITHUB_SHA::8}"
-          echo "tag=$TAG" >> $GITHUB_OUTPUT
-          GHCR_NAMESPACE=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
-          echo "ghcr_repo=ghcr.io/$GHCR_NAMESPACE" >> $GITHUB_OUTPUT
-          echo "ghcr_image_name=ghcr.io/$GHCR_NAMESPACE:$TAG
-ghcr.io/$GHCR_NAMESPACE:latest" >> $GITHUB_OUTPUT
-          echo "docker_image_name=mahammadrafireesh/aiserv-argocd:$TAG
-mahammadrafireesh/aiserv-argocd:latest" >> $GITHUB_OUTPUT
-
-  build-and-publish:
-    needs: [set-vars]
-    permissions:
-      contents: read
-      packages: write
-      id-token: write
-    uses: ./.github/workflows/image-reuse.yaml
-    with:
-      ghcr_image_name: ${{ needs.set-vars.outputs.ghcr_image_name }}
-      ghcr_cache_repo: ${{ needs.set-vars.outputs.ghcr_repo }}
-      docker_image_name: ${{ needs.set-vars.outputs.docker_image_name }}
-      go-version: 1.26.0
-      platforms: linux/amd64,linux/arm64
-      push: true
-    secrets:
-      ghcr_username: ${{ github.actor }}
-      ghcr_password: ${{ secrets.GITHUB_TOKEN }}
-      docker_username: ${{ secrets.DOCKER_USERNAME }}
-      docker_password: ${{ secrets.DOCKER_PASSWORD }}
+          echo "### Image pushed to ECR" >> $GITHUB_STEP_SUMMARY
+          echo "\`${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ steps.vars.outputs.tag }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "\`${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:latest\`" >> $GITHUB_STEP_SUMMARY

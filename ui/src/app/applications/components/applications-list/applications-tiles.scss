@@ -1,9 +1,16 @@
 @import 'node_modules/argo-ui/src/styles/config';
 
+$navy: #0a192f;
+$navy-light: #112240;
+$navy-dark: #020c1b;
+$emerald: #10b981;
+$emerald-light: #34d399;
+$border: rgba(255, 255, 255, 0.08);
+
 .applications-tiles {
     display: grid;
-    gap: 24px;
-    grid-template-columns: repeat(auto-fill,minmax(370px,1fr));
+    gap: 16px;
+    grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
     padding: 0 12px;
 
     &__wrapper {
@@ -13,6 +20,7 @@
     &__item {
         display: flex;
         flex-direction: column;
+
         &__small {
             font-size: 14px;
             margin-bottom: 3px;
@@ -23,21 +31,120 @@
         margin-top: auto;
     }
 
+    // Glass card style for each tile
     .argo-table-list__row {
-        padding-top: 0;
-        padding-bottom: 0;
-    }
-    &__selected {
-        box-shadow: 0 0 0 1px $argo-color-teal-5;
+        background: rgba($navy-light, 0.6) !important;
+        backdrop-filter: blur(8px);
+        border: 1px solid $border !important;
+        border-radius: 10px !important;
+        padding: 16px !important;
+        transition: all 0.2s ease;
+        cursor: pointer;
+
+        &:hover {
+            border-color: rgba($emerald, 0.25) !important;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            transform: translateY(-1px);
+        }
     }
 
+    &__selected {
+        border-color: $emerald !important;
+        box-shadow: 0 0 0 1px $emerald, 0 4px 20px rgba($emerald, 0.15) !important;
+    }
+
+    // Title styling
     .applications-list__title {
         white-space: normal !important;
-        word-break: break-word; 
-        overflow-wrap: break-word; 
-        hyphens: auto; 
-        line-height: 1.4; 
-        width: 100%; 
+        word-break: break-word;
+        overflow-wrap: break-word;
+        hyphens: auto;
+        line-height: 1.4;
+        width: 100%;
+        color: white !important;
+        font-weight: 600;
+    }
+
+    // Row labels
+    .row {
+        margin-bottom: 2px;
+
+        .columns.small-3 {
+            color: rgba(255, 255, 255, 0.4);
+            font-size: 12px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.02em;
+        }
+
+        .columns.small-9 {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 13px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+    }
+
+    // Source icon
+    .icon {
+        color: $emerald;
+        margin-right: 6px;
+    }
+
+    // Health border colors - use left border accent
+    .applications-list__entry {
+        border-left: 3px solid transparent !important;
+        border-radius: 10px !important;
+
+        &--health-Healthy {
+            border-left-color: $emerald !important;
+        }
+
+        &--health-Progressing {
+            border-left-color: $argo-running-color !important;
+        }
+
+        &--health-Suspended {
+            border-left-color: $argo-suspended-color !important;
+        }
+
+        &--health-Degraded {
+            border-left-color: $argo-failed-color !important;
+        }
+
+        &--health-Unknown {
+            border-left-color: rgba(255, 255, 255, 0.2) !important;
+        }
+
+        &--health-Missing {
+            border-left-color: $argo-status-warning-color !important;
+        }
+    }
+
+    // Action buttons
+    .applications-list__entry--actions {
+        padding-top: 12px !important;
+        border-top: 1px solid $border;
+        margin-top: 8px;
+        display: flex;
+        gap: 6px;
+
+        .argo-button {
+            background: rgba(255, 255, 255, 0.06) !important;
+            border: 1px solid $border !important;
+            border-radius: 6px !important;
+            color: rgba(255, 255, 255, 0.7) !important;
+            font-size: 12px !important;
+            padding: 5px 12px !important;
+            line-height: 1.4 !important;
+
+            &:hover {
+                background: rgba($emerald, 0.1) !important;
+                border-color: rgba($emerald, 0.3) !important;
+                color: $emerald-light !important;
+            }
+        }
     }
 }
 
@@ -55,22 +162,22 @@
 .applications-list__external-link {
     align-items: center;
     display: flex;
-    
+
     button {
         background: none;
         border: none;
         cursor: pointer;
         padding: 0;
         margin: 0;
-        color: inherit;
+        color: rgba(255, 255, 255, 0.5);
         display: flex;
         align-items: center;
         justify-content: center;
-        
+
         &:hover {
-            color: $argo-color-teal-5;
+            color: $emerald;
         }
-        
+
         i {
             font-size: 14px;
         }
