@@ -18,7 +18,7 @@ export interface AIConfigPayload {
     [key: string]: string | number | undefined;
 }
 
-const AICONF_SERVICE_URL = 'http://127.0.0.1:8081/api/v1/default';
+const AICONF_SERVICE_URL = 'http://clustra-ai-service:80/api/v1/default';
 
 export class AIConfigService {
     constructor() {}
