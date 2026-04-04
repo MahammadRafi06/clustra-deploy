@@ -1,0 +1,25 @@
+apiVersion: v2
+appVersion: v3.3.6
+dependencies:
+- condition: redis-ha.enabled
+  name: redis-ha
+  repository: https://dandydeveloper.github.io/charts/
+  version: 4.34.11
+description: Clustra's customized Argo CD chart based on the official argo-cd Helm chart.
+home: https://github.com/MahammadRafi06/clustra-platform
+icon: https://argo-cd.readthedocs.io/en/stable/assets/logo.png
+keywords:
+- argoproj
+- argocd
+- gitops
+- clustra
+kubeVersion: '>=1.25.0-0'
+maintainers:
+- name: clustra
+  url: https://github.com/MahammadRafi06
+name: clustra-deploy
+sources:
+- https://github.com/argoproj/argo-helm/tree/main/charts/argo-cd
+- https://github.com/argoproj/argo-cd
+- https://github.com/MahammadRafi06/clustra-platform
+version: 1.0.0

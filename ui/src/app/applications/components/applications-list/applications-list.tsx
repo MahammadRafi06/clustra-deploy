@@ -793,11 +793,11 @@ export const ApplicationsList = (props: RouteComponentProps<any> & {objectListKi
                                                                     createApp={async app => {
                                                                         setAppCreatePending(true);
                                                                         try {
-                                                                            await services.applications.create(app);
+                                                                            const createdApp = (await services.applications.create(app)) as models.Application;
                                                                             const aiconfPayload = getAIConfigPayload(app);
                                                                             if (aiconfPayload) {
                                                                                 try {
-                                                                                    await services.aiconf.sendConfig(aiconfPayload);
+                                                                                    await services.aiconf.sendConfig(createdApp, aiconfPayload);
                                                                                 } catch (e) {
                                                                                     ctx.notifications.show({
                                                                                         content: (
