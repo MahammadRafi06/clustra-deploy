@@ -22,4 +22,4 @@ sources:
 - https://github.com/argoproj/argo-helm/tree/main/charts/argo-cd
 - https://github.com/argoproj/argo-cd
 - https://github.com/MahammadRafi06/clustra-platform
-version: 1.0.0
+version: 1.0.1
