@@ -809,6 +809,12 @@ export const ApplicationsList = (props: RouteComponentProps<any> & {objectListKi
                                                                                         type: NotificationType.Error
                                                                                     });
                                                                                 }
+                                                                            } else {
+                                                                                ctx.notifications.show({
+                                                                                    content:
+                                                                                        'Application was created, but AI config was skipped because one or more required AI fields were missing.',
+                                                                                    type: NotificationType.Warning
+                                                                                });
                                                                             }
                                                                             ctx.navigation.goto('.', {new: null}, {replace: true});
                                                                         } catch (e) {

@@ -655,7 +655,12 @@ export const ApplicationCreatePanel = (props: {
                                                             field='metadata.annotations.mode'
                                                             component={ModelSelectFormField}
                                                             componentProps={{
-                                                                options: modes.length > 0 ? modes : ['Select version first']
+                                                                options: modes.length > 0 ? modes : ['Select version first'],
+                                                                onValueChange: (val: string, prev: string) => {
+                                                                    if (val !== prev) {
+                                                                        setAnnotation('mode', val);
+                                                                    }
+                                                                }
                                                             }}
                                                         />
                                                     </div>
