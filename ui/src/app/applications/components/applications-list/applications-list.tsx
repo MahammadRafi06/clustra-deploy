@@ -10,7 +10,6 @@ import {AuthSettingsCtx, Consumer, Context, ContextApis} from '../../../shared/c
 import * as models from '../../../shared/models';
 import {AppsListViewKey, AppsListPreferences, AppSetsListPreferences, AppsListViewType, HealthStatusBarPreferences, services} from '../../../shared/services';
 import {ApplicationCreatePanel} from '../application-create-panel/application-create-panel';
-import {getAIConfigPayload} from '../../../shared/services/aiconf-payload';
 import {ApplicationSyncPanel} from '../application-sync-panel/application-sync-panel';
 import {ApplicationsSyncPanel} from '../applications-sync-panel/applications-sync-panel';
 import * as AppUtils from '../utils';
@@ -793,29 +792,7 @@ export const ApplicationsList = (props: RouteComponentProps<any> & {objectListKi
                                                                     createApp={async app => {
                                                                         setAppCreatePending(true);
                                                                         try {
-                                                                            const createdApp = (await services.applications.create(app)) as models.Application;
-                                                                            const aiconfPayload = getAIConfigPayload(app);
-                                                                            if (aiconfPayload) {
-                                                                                try {
-                                                                                    await services.aiconf.sendConfig(createdApp, aiconfPayload);
-                                                                                } catch (e) {
-                                                                                    ctx.notifications.show({
-                                                                                        content: (
-                                                                                            <ErrorNotification
-                                                                                                title='Application created, but AI config service request failed'
-                                                                                                e={e}
-                                                                                            />
-                                                                                        ),
-                                                                                        type: NotificationType.Error
-                                                                                    });
-                                                                                }
-                                                                            } else {
-                                                                                ctx.notifications.show({
-                                                                                    content:
-                                                                                        'Application was created, but AI config was skipped because one or more required AI fields were missing.',
-                                                                                    type: NotificationType.Warning
-                                                                                });
-                                                                            }
+                                                                            await services.applications.create(app);
                                                                             ctx.navigation.goto('.', {new: null}, {replace: true});
                                                                         } catch (e) {
                                                                             ctx.notifications.show({

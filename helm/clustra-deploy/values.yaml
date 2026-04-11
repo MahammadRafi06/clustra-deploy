@@ -286,16 +286,7 @@ configs:
 
     # Extension Configuration
     ## Ref: https://argo-cd.readthedocs.io/en/latest/developer-guide/extensions/proxy-extensions/
-    extension.config: |
-      extensions:
-      - name: aiconf
-        backend:
-          connectionTimeout: 5s
-          keepAlive: 15s
-          idleConnectionTimeout: 60s
-          maxIdleConnections: 30
-          services:
-          - url: http://clustra-ai-service.clustra.svc.cluster.local
+    extension.config: ''
 
     ## Default configuration for ignoreResourceUpdates.
     ## The ignoreResourceUpdates list contains K8s resource's properties that are known to be frequently updated
@@ -454,8 +445,7 @@ configs:
 
     # -- File containing user-defined policies and role definitions.
     # @default -- `''` (See [values.yaml])
-    policy.csv: |
-      p, role:admin, extensions, invoke, aiconf, allow
+    policy.csv: ''
     # Policy rules are in the form:
     #  p, subject, resource, action, object, effect
     # Role definitions and bindings are in the form:
