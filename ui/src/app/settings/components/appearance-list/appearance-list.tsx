@@ -1,10 +1,12 @@
 import * as React from 'react';
-import {DataLoader, Page} from '../../../shared/components';
-import {services} from '../../../shared/services';
-import {Select, SelectOption} from 'argo-ui';
+import {Page} from '../../../shared/components';
 
 require('./appearance-list.scss');
 
+// Clustra Deploy is dark-only (see ui/BRANDING.md). The theme selector
+// has been removed; this page is kept so /settings/appearance routes
+// still resolve and stays a natural home for any future appearance
+// settings we might add.
 export const AppearanceList = () => {
     return (
         <Page
@@ -12,27 +14,13 @@ export const AppearanceList = () => {
             toolbar={{
                 breadcrumbs: [{title: 'Settings', path: '/settings'}, {title: 'Appearance'}]
             }}>
-            <DataLoader load={() => services.viewPreferences.getPreferences()}>
-                {pref => (
-                    <div className='appearance-list'>
-                        <div className='argo-container'>
-                            <div className='appearance-list__panel'>
-                                <div className='row'>
-                                    <span>Theme</span>
-                                    <Select
-                                        value={pref.theme}
-                                        onChange={(value: SelectOption) => services.viewPreferences.updatePreferences({theme: value.value})}
-                                        options={[
-                                            {value: 'auto', title: 'Auto'},
-                                            {value: 'light', title: 'Light'},
-                                            {value: 'dark', title: 'Dark'}
-                                        ]}></Select>
-                                </div>
-                            </div>
-                        </div>
+            <div className='appearance-list'>
+                <div className='argo-container'>
+                    <div className='appearance-list__panel'>
+                        <p>Clustra Deploy uses a dark-mode-only theme.</p>
                     </div>
-                )}
-            </DataLoader>
+                </div>
+            </div>
         </Page>
     );
 };

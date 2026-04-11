@@ -1,4 +1,3 @@
-import React from 'react';
 import {Cluster} from './models';
 
 export function hashCode(str: string) {
@@ -80,30 +79,13 @@ export const useSystemTheme = (cb: (theme: string) => void) => {
     };
 };
 
-export const useTheme = (props: {theme: string}) => {
-    const [theme, setTheme] = React.useState(getTheme(props.theme));
-
-    React.useEffect(() => {
-        let destroyListener: (() => void) | undefined;
-
-        // change theme by system, only register listener when theme is auto
-        if (props.theme === 'auto') {
-            destroyListener = useSystemTheme(systemTheme => {
-                setTheme(systemTheme);
-            });
-        }
-
-        // change theme manually
-        if (props.theme !== theme) {
-            setTheme(getTheme(props.theme));
-        }
-
-        return () => {
-            destroyListener?.();
-        };
-    }, [props.theme]);
-
-    return [theme];
+// Clustra Deploy is dark-only. This hook used to branch on user
+// preference / system theme; now it unconditionally returns 'dark'
+// so that any remaining call sites keep working without changes.
+// See ui/BRANDING.md for context on the dark-only decision.
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export const useTheme = (_props: {theme: string}) => {
+    return ['dark'];
 };
 
 export const formatClusterQueryParam = (cluster: Cluster) => {

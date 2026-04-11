@@ -12,22 +12,22 @@ export interface LayoutProps {
     pref: ViewPreferences;
 }
 
-const getBGColor = (theme: string): string => (theme === 'light' ? '#dee6eb' : '#0a192f');
+// Clustra Deploy is dark-only; body bg is always navy. See ui/BRANDING.md.
+// Value must match $brand-navy in ui/src/app/shared/brand-tokens.scss.
+const CLUSTRA_BODY_BG = '#0a192f';
 
 export const ThemeWrapper = (props: {children: React.ReactNode; theme: string}) => {
-    const [systemTheme] = useTheme({
-        theme: props.theme
-    });
+    // useTheme is a no-op shim that always returns 'dark'; kept so the
+    // existing call-site shape doesn't have to change.
+    const [systemTheme] = useTheme({theme: props.theme});
     return <div className={'theme-' + systemTheme}>{props.children}</div>;
 };
 
 export const Layout = (props: LayoutProps) => {
     const [theme] = useTheme({theme: props.pref.theme});
     React.useEffect(() => {
-        if (theme) {
-            document.body.style.background = getBGColor(theme);
-        }
-    }, [theme]);
+        document.body.style.background = CLUSTRA_BODY_BG;
+    }, []);
 
     return (
         <div className={`theme-${theme}`}>
