@@ -1,13 +1,85 @@
 version: 2
-# Dependabot config is intentionally narrow for the Clustra Deploy fork:
-# we only scan npm deps under /ui/, because that's the one tree we
-# meaningfully diverge from upstream argocd on. Go modules, GitHub
-# Actions, and Docker base images are deliberately NOT scanned here —
-# those bumps flow in via upstream argo-cd merges (upstream's own
-# Dependabot handles them coherently, with coordinated updates).
-# See ui/BRANDING.md and commit history for context.
+# Dependabot config for the Clustra Deploy fork.
+#
+# Scope: we ship a full argocd server image (Go binary + Ubuntu base +
+# vendored tools + UI), so every layer of the supply chain matters.
+# Coverage intentionally broad:
+#
+#   gomod           → Go modules compiled into the argocd binary
+#   docker          → runtime image base (Ubuntu + helm/kustomize/git-lfs)
+#   github-actions  → CI workflow that builds and pushes the image
+#   npm /ui/        → UI bundle embedded into the binary
+#
+# Volume is tamed by `open-pull-requests-limit` + `groups` + weekly
+# schedule (instead of upstream's daily). Test-only Docker trees
+# (test/container, test/remote, test/e2e/multiarch-container) are
+# intentionally excluded — they're upstream's E2E fixtures and don't
+# ship in the runtime image.
+#
+# This file controls *version updates*. Security updates flow through
+# a separate GitHub feature ("Dependabot security updates" repo
+# setting) which opens PRs only when a CVE is published for a dep
+# currently in use — enabled via `gh api -X PUT .../automated-security-fixes`.
+#
+# See ui/BRANDING.md for the broader upstream-tracking strategy.
 updates:
+  # -----------------------------------------------------------------
+  # Go modules — the argocd binary
+  # -----------------------------------------------------------------
+  - package-ecosystem: "gomod"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 3
+    ignore:
+      # k8s.io/* can't be bumped in isolation — the API group versions
+      # need to move together. Upstream argocd handles this; we follow.
+      - dependency-name: "k8s.io/*"
+    groups:
+      # Bundle OpenTelemetry bumps — they always need to move together.
+      otel:
+        patterns:
+          - "go.opentelemetry.io/*"
+      # Bundle AWS SDK v2 bumps — they release in lockstep.
+      aws-sdk:
+        patterns:
+          - "github.com/aws/aws-sdk-go-v2"
+          - "github.com/aws/aws-sdk-go-v2/*"
+      # Bundle gRPC + protobuf bumps — they're tightly coupled.
+      grpc-protobuf:
+        patterns:
+          - "google.golang.org/grpc"
+          - "google.golang.org/protobuf"
+
+  # -----------------------------------------------------------------
+  # GitHub Actions — the CI pipeline that builds and publishes images
+  # -----------------------------------------------------------------
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 3
+
+  # -----------------------------------------------------------------
+  # Docker — the runtime image (Ubuntu + tools shipped in argocd container)
+  # -----------------------------------------------------------------
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 3
+    ignore:
+      # Consistent go and node versions are managed across multiple
+      # files; renovate handles those coherently, Dependabot causes
+      # drift. Upstream convention, preserved.
+      - dependency-name: "library/golang"
+      - dependency-name: "library/node"
+
+  # -----------------------------------------------------------------
+  # NPM — the UI bundle (the tree we meaningfully diverge from upstream on)
+  # -----------------------------------------------------------------
   - package-ecosystem: "npm"
     directory: "/ui/"
     schedule:
-      interval: "daily"
+      interval: "weekly"
+    open-pull-requests-limit: 5
