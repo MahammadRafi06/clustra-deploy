@@ -1,6 +1,7 @@
 @import 'node_modules/argo-ui/src/styles/config';
 @import 'node_modules/foundation-sites/scss/util/util';
 @import 'node_modules/argo-ui/src/styles/theme';
+@import '../../../shared/brand-tokens';
 
 .applications-list {
     padding: 1em;
@@ -43,7 +44,7 @@
         color: rgba(255, 255, 255, 0.8);
 
         &--health-Healthy {
-            border-left-color: #10b981;
+            border-left-color: $brand-emerald;
         }
 
         &--health-Progressing {

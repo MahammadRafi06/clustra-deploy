@@ -1,4 +1,5 @@
 @import 'node_modules/argo-ui/src/styles/config';
+@import '../../../shared/brand-tokens';
 
 .application-fullscreen-logs {
     position: fixed;
@@ -10,9 +11,9 @@
     height: 100%;
     padding: 20px 30px;
     background-color: $argo-color-gray-3;
-    
+
     .theme-dark & {
-        background-color: #28292a;
-        color: #fff;
+        background-color: $brand-navy-light;
+        color: $brand-text-primary;
     }
 }

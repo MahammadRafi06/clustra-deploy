@@ -1,5 +1,6 @@
 @import 'node_modules/argo-ui/v2/styles/colors.scss';
 @import '../shared/config.scss';
+@import '../shared/brand-tokens';
 
 $deselected-text: #818d94;
 
@@ -13,7 +14,7 @@ $deselected-text: #818d94;
     height: 100vh;
     max-height: 100vh;
     color: white;
-    background-color: #020c1b;
+    background-color: $brand-navy-dark;
     overflow: auto;
     z-index: 2;
     display: flex;
@@ -87,7 +88,7 @@ $deselected-text: #818d94;
         &--active {
             color: white;
             i {
-                color: #10b981;
+                color: $brand-emerald;
             }
         }
     }
@@ -127,9 +128,9 @@ $deselected-text: #818d94;
 
         &--active {
             color: white;
-            border-left-color: #10b981;
+            border-left-color: $brand-emerald;
             i {
-                color: #10b981;
+                color: $brand-emerald;
             }
         }
     }

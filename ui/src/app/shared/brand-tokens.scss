@@ -1,0 +1,70 @@
+// ─────────────────────────────────────────────────────────────────────
+// Clustra Deploy brand tokens — single source of truth.
+//
+// To rebrand the app, change the values in this file. Every SCSS
+// file in ui/src/ consumes these tokens via @import.
+//
+// NEVER declare brand-color variables in component files. Always
+// @import from here. Stylelint does not currently enforce this.
+// ─────────────────────────────────────────────────────────────────────
+
+// Primary palette
+$brand-navy:       #0a192f;
+$brand-navy-light: #112240;
+$brand-navy-dark:  #020c1b;
+
+$brand-emerald:       #10b981;
+$brand-emerald-light: #34d399;
+$brand-emerald-dark:  #059669;
+
+$brand-gold:       #d4af37;
+$brand-gold-light: #f4d03f;
+
+// Slate scale — text, borders, subtle surfaces
+$brand-slate-100: #f1f5f9;
+$brand-slate-300: #cbd5e1;
+$brand-slate-400: #94a3b8;
+$brand-slate-500: #64748b;
+$brand-slate-700: #334155;
+$brand-slate-800: #1e293b;
+$brand-slate-900: #0f172a;
+
+// Status semantics — intentionally separate from brand accents,
+// so "success" can diverge from "emerald" later if needed.
+$brand-status-success: #10b981;
+$brand-status-error:   #ef4444;
+$brand-status-warning: #d4af37;
+$brand-status-info:    #58a6fe;
+
+// Borders / divisions on dark surfaces
+$brand-border-subtle: rgba(255, 255, 255, 0.08);
+$brand-border-muted:  rgba(255, 255, 255, 0.1);
+$brand-border-strong: rgba(255, 255, 255, 0.15);
+
+// Text on dark surfaces
+$brand-text-primary:   rgba(255, 255, 255, 0.9);
+$brand-text-secondary: rgba(255, 255, 255, 0.7);
+$brand-text-muted:     rgba(255, 255, 255, 0.6);
+
+// ─────────────────────────────────────────────────────────────────────
+// Legacy short aliases — so existing files can @import this without
+// renaming every variable reference. Consider these deprecated; new
+// code should use $brand-* names.
+// ─────────────────────────────────────────────────────────────────────
+
+$clustra-navy:          $brand-navy;
+$clustra-navy-light:    $brand-navy-light;
+$clustra-navy-dark:     $brand-navy-dark;
+$clustra-emerald:       $brand-emerald;
+$clustra-emerald-light: $brand-emerald-light;
+$clustra-emerald-dark:  $brand-emerald-dark;
+$clustra-gold:          $brand-gold;
+$clustra-slate-border:  $brand-border-subtle;
+
+$navy:          $brand-navy;
+$navy-light:    $brand-navy-light;
+$navy-dark:     $brand-navy-dark;
+$emerald:       $brand-emerald;
+$emerald-light: $brand-emerald-light;
+$emerald-dark:  $brand-emerald-dark;
+$gold:          $brand-gold;

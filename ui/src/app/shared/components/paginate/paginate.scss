@@ -1,8 +1,7 @@
 @import 'node_modules/argo-ui/src/styles/config';
+@import '../../brand-tokens';
 
-$navy-light: #112240;
-$emerald: #10b981;
-$border: rgba(255, 255, 255, 0.1);
+$border: $brand-border-muted;
 
 .paginate {
     position: relative;

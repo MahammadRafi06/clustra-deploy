@@ -1,14 +1,10 @@
 // Clustra AI / Desero Systems Theme Overrides
-// Dark navy + emerald design system
+// Dark navy + emerald design system.
+//
+// Brand colors come from ./brand-tokens.scss — this file is the
+// override *layer*, not the source of truth for palette values.
 
-$clustra-navy: #0a192f;
-$clustra-navy-light: #112240;
-$clustra-navy-dark: #020c1b;
-$clustra-emerald: #10b981;
-$clustra-emerald-light: #34d399;
-$clustra-emerald-dark: #059669;
-$clustra-gold: #d4af37;
-$clustra-slate-border: rgba(255, 255, 255, 0.08);
+@import './brand-tokens';
 
 // ── Global dark theme overrides ──────────────────────────────────
 

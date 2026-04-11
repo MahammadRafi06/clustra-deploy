@@ -1,12 +1,8 @@
 @import 'node_modules/argo-ui/src/styles/config';
 @import 'node_modules/argo-ui/src/styles/theme';
+@import '../../../shared/brand-tokens';
 
-$navy: #0a192f;
-$navy-light: #112240;
-$navy-dark: #020c1b;
-$emerald: #10b981;
-$emerald-light: #34d399;
-$border: rgba(255, 255, 255, 0.1);
+$border: $brand-border-muted;
 
 .filter-dropdown {
     position: relative;
