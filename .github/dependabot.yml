@@ -1,60 +1,13 @@
 version: 2
+# Dependabot config is intentionally narrow for the Clustra Deploy fork:
+# we only scan npm deps under /ui/, because that's the one tree we
+# meaningfully diverge from upstream argocd on. Go modules, GitHub
+# Actions, and Docker base images are deliberately NOT scanned here —
+# those bumps flow in via upstream argo-cd merges (upstream's own
+# Dependabot handles them coherently, with coordinated updates).
+# See ui/BRANDING.md and commit history for context.
 updates:
-  - package-ecosystem: "gomod"
-    directory: "/"
-    schedule:
-      interval: "daily"
-    open-pull-requests-limit: 20
-    ignore:
-    - dependency-name: k8s.io/*
-    groups:
-      otel:
-        patterns:
-          - "go.opentelemetry.io/*"
-
-  - package-ecosystem: "github-actions"
-    directory: "/"
-    schedule:
-      interval: "daily"
-
   - package-ecosystem: "npm"
     directory: "/ui/"
     schedule:
       interval: "daily"
-
-# Disabled since this code is rarely used.
-#  - package-ecosystem: "npm"
-#    directory: "/ui-test/"
-#    schedule:
-#      interval: "daily"
-
-  - package-ecosystem: "docker"
-    directory: "/"
-    schedule:
-      interval: "daily"
-    ignore:
-      # We use consistent go and node versions across a lot of different files, and updating via dependabot would cause
-      # drift among those files, instead we let renovate bot handle them.
-      - dependency-name: "library/golang"
-      - dependency-name: "library/node"
-
-  - package-ecosystem: "docker"
-    directory: "/test/container/"
-    schedule:
-      interval: "daily"
-
-  - package-ecosystem: "docker"
-    directory: "/test/e2e/multiarch-container/"
-    schedule:
-      interval: "daily"
-
-  - package-ecosystem: "docker"
-    directory: "/test/remote/"
-    schedule:
-      interval: "daily"
-
-# Disabled since this code is rarely used.
-#  - package-ecosystem: "docker"
-#    directory: "/ui-test/"
-#    schedule:
-#      interval: "daily"
