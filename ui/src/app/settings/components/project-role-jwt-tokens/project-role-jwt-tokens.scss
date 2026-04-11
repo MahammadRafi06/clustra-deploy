@@ -1,3 +1,5 @@
+@import '../../../shared/brand-tokens';
+
 .project-role-jwt-tokens__hide-token {
     position: absolute;
     right: 1em;
@@ -22,7 +24,7 @@
     padding-left: 0.5em;
     padding-right: 0.5em;
     line-height: 1.4em;
-    background-color: #8FA4B1;
+    background-color: $brand-slate-700;
     margin-left: 0.2em;
     border-radius: 0.2em;
     transform: scale(0.8);

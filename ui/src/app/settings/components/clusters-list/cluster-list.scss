@@ -1,5 +1,6 @@
 @import 'node_modules/argo-ui/src/styles/config';
 @import 'node_modules/argo-ui/src/styles/theme';
+@import '../../../shared/brand-tokens';
 
 
 .help-text {
@@ -8,7 +9,7 @@
         color: themed('text-2');
     }
     a {
-        color: #007bff; /* Blue color for the link */
+        color: $brand-emerald;
         @include themify($themes) {
             color: themed('light-argo-teal-7');
         }
@@ -16,7 +17,7 @@
         transition: color 0.3s ease; /* Smooth transition for color change */
 
         &:hover {
-            color: #0056b3; /* Darker blue color on hover */
+            color: $brand-emerald-dark;
             @include themify($themes) {
                 color: themed('light-argo-teal-5');
             }

@@ -2,6 +2,7 @@
 @import 'node_modules/foundation-sites/scss/util/util';
 @import 'node_modules/argo-ui/src/styles/theme';
 @import '../../../shared/config.scss';
+@import '../../../shared/brand-tokens';
 
 $header: 120px;
 
@@ -165,7 +166,7 @@ $header: 120px;
     &__dropdown-anchor-inner {
         cursor: pointer;
         border-radius: 0px 24px 24px 0px;
-        border-left: 1px solid #ccc;
+        border-left: 1px solid $brand-slate-700;
         justify-content: center;
         position: absolute;
         margin-left: 5px;
@@ -274,7 +275,7 @@ $header: 120px;
                 transition: background-color 0.2s, border 0.2s, color 0.2s;
                 text-transform: uppercase;
                 &:hover {
-                    background-color: #d1d5d9;
+                    background-color: $brand-slate-800;
                 }
                 &:active {
                     transition: background-color 0.2s, border 0.2s, color 0.2s;

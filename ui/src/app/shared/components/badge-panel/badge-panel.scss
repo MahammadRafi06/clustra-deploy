@@ -1,7 +1,9 @@
+@import '../../brand-tokens';
+
 .badge-panel {
     display: inline-block;
     width: 100%;
     padding: .4em;
-    border: 1px solid #dbdcdc;
+    border: 1px solid $brand-slate-700;
     border-radius: 2px;
 }

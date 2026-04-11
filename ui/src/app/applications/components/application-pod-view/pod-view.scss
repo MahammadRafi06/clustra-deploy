@@ -1,4 +1,5 @@
 @import 'node_modules/argo-ui/src/styles/config';
+@import '../../../shared/brand-tokens';
 
 $pod-size: 25px;
 $gutter: 3px;
@@ -7,7 +8,7 @@ $pods-per-column: 4;
 $max-rows: 5;
 $num-stats: 2;
 
-$pod-age-icon-clr: #ffce25;
+$pod-age-icon-clr: $brand-status-warning;
 
 .circle-icon {
     color: $pod-age-icon-clr;

@@ -1,9 +1,11 @@
+@import '../../brand-tokens';
+
 .progress-popup__title {
     font-family: 'Inter', system-ui, sans-serif;
     font-weight: normal;
     font-size: 16px;
     font-style: normal;
-    color: #495763;
+    color: $brand-slate-300;
 }
 
 .progress-popup__footer {

@@ -1,4 +1,5 @@
 @import 'node_modules/argo-ui/src/styles/config';
+@import '../../../shared/brand-tokens';
 
 .application-sync-panel__resource {
     margin-top: 0.5em;
@@ -13,7 +14,7 @@
     }
 
     &:nth-of-type(odd) {
-        background: #e0e0e0;
+        background: $brand-slate-800;
     }
 
     .container {

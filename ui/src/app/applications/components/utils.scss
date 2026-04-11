@@ -1,4 +1,5 @@
 @import 'node_modules/argo-ui/src/styles/theme';
+@import '../../shared/brand-tokens';
 
 .propagation-policy-list {
     display: flex;
@@ -63,10 +64,10 @@ i.utils-health-status-icon {
 
 .delete-dialog-icon {
     &.warning {
-        color: #f4c030;
+        color: $brand-status-warning;
     }
-    
+
     &.info {
-        color: #0DADEA;
+        color: $brand-status-info;
     }
 }

@@ -1,3 +1,5 @@
+@import '../../../shared/brand-tokens';
+
 .pod-terminal-viewer {
     height: 780px;
 
@@ -39,9 +41,9 @@
 .theme-light {
     .pod-terminal-viewer__container {
         .tooltip {
-            background-color: #fff;
-            border-color: #fff;
-            color: #191826;
+            background-color: $brand-navy-light;
+            border-color: $brand-navy-light;
+            color: $brand-text-primary;
         }
     }
 }
