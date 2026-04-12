@@ -1,10 +1,11 @@
+ARG GO_IMAGE=docker.io/library/golang:1.26.2@sha256:2a2b4b5791cea8ae09caecba7bad0bd9631def96e5fe362e4a5e67009fe4ae61
 ARG BASE_IMAGE=docker.io/library/ubuntu:25.10@sha256:4a9232cc47bf99defcc8860ef6222c99773330367fcecbf21ba2edb0b810a31e
 ####################################################################################################
 # Builder image
 # Initial stage which pulls prepares build dependencies and CLI tooling we need for our final image
 # Also used as the image in CI jobs so needs all dependencies
 ####################################################################################################
-FROM docker.io/library/golang:1.26.0@sha256:fb612b7831d53a89cbc0aaa7855b69ad7b0caf603715860cf538df854d047b84 AS builder
+FROM $GO_IMAGE AS builder
 
 WORKDIR /tmp
 
@@ -24,18 +25,24 @@ RUN apt-get update && apt-get install --no-install-recommends -y \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-COPY hack/install.sh hack/tool-versions.sh ./
-COPY hack/installers installers
+COPY hack/tool-versions.sh ./
 
 RUN . ./tool-versions.sh && \
-    ./install.sh helm && \
+    git clone --depth 1 --branch v${helm3_version} https://github.com/helm/helm.git /tmp/helm-src && \
+    cd /tmp/helm-src && \
+    make build && \
+    install -m 0755 ./bin/helm /usr/local/bin/helm && \
+    cd /tmp && \
     GOBIN=/usr/local/bin go install sigs.k8s.io/kustomize/kustomize/v5@v${kustomize5_version} && \
     git clone --depth 1 --branch v${git_lfs_version} https://github.com/git-lfs/git-lfs.git /tmp/git-lfs-src && \
     cd /tmp/git-lfs-src && \
+    go get golang.org/x/crypto@v0.43.0 && \
+    go mod tidy && \
     go build -o /usr/local/bin/git-lfs . && \
+    /usr/local/bin/helm version && \
     /usr/local/bin/kustomize version && \
     /usr/local/bin/git-lfs version && \
-    rm -rf /tmp/git-lfs-src
+    rm -rf /tmp/helm-src /tmp/git-lfs-src
 
 ####################################################################################################
 # Argo CD Base - used as the base for both the release and dev argocd images
@@ -57,7 +64,7 @@ RUN groupadd -g $ARGOCD_USER_ID argocd && \
     apt-get update && \
     apt-get dist-upgrade -y && \
     apt-get install --no-install-recommends -y \
-    git tini ca-certificates gpg gpg-agent tzdata connect-proxy openssh-client && \
+    git tini ca-certificates gpg gpg-agent tzdata connect-proxy openssh-client openssl && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* /usr/share/doc/*
 
@@ -116,7 +123,7 @@ RUN HOST_ARCH=$TARGETARCH NODE_ENV='production' NODE_ONLINE_ENV='online' NODE_OP
 ####################################################################################################
 # Argo CD Build stage which performs the actual build of Argo CD binaries
 ####################################################################################################
-FROM --platform=$BUILDPLATFORM docker.io/library/golang:1.26.0@sha256:fb612b7831d53a89cbc0aaa7855b69ad7b0caf603715860cf538df854d047b84 AS argocd-build
+FROM --platform=$BUILDPLATFORM $GO_IMAGE AS argocd-build
 
 WORKDIR /go/src/github.com/argoproj/argo-cd
 
