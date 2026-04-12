@@ -27,9 +27,15 @@ RUN apt-get update && apt-get install --no-install-recommends -y \
 COPY hack/install.sh hack/tool-versions.sh ./
 COPY hack/installers installers
 
-RUN ./install.sh helm && \
-    INSTALL_PATH=/usr/local/bin ./install.sh kustomize && \
-    ./install.sh git-lfs
+RUN . ./tool-versions.sh && \
+    ./install.sh helm && \
+    GOBIN=/usr/local/bin go install sigs.k8s.io/kustomize/kustomize/v5@v${kustomize5_version} && \
+    git clone --depth 1 --branch v${git_lfs_version} https://github.com/git-lfs/git-lfs.git /tmp/git-lfs-src && \
+    cd /tmp/git-lfs-src && \
+    go build -o /usr/local/bin/git-lfs . && \
+    /usr/local/bin/kustomize version && \
+    /usr/local/bin/git-lfs version && \
+    rm -rf /tmp/git-lfs-src
 
 ####################################################################################################
 # Argo CD Base - used as the base for both the release and dev argocd images
@@ -129,10 +135,13 @@ ARG GIT_TAG \
     BUILD_DATE \
     GIT_TREE_STATE \
     GIT_COMMIT
+# The Docker build context omits tracked files via .dockerignore, so Go's VCS
+# stamping can misidentify the main module as an older dirty pseudo-version.
 RUN GIT_COMMIT=$GIT_COMMIT \
     GIT_TREE_STATE=$GIT_TREE_STATE \
     GIT_TAG=$GIT_TAG \
     BUILD_DATE=$BUILD_DATE \
+    GOFLAGS='-buildvcs=false' \
     GOOS=$TARGETOS \
     GOARCH=$TARGETARCH \
     make argocd-all
