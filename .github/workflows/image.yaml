@@ -50,6 +50,13 @@ jobs:
             ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
+          # Disable SLSA provenance + SBOM attestations: BuildKit emits them
+          # as extra manifests in an OCI image index, which ECR Basic scan
+          # and Inspector v2 (ENHANCED scanning) cannot walk — they return
+          # UnsupportedMediaType and skip the image. Without this, no CVE
+          # scanning happens on push.
+          provenance: false
+          sbom: false
           build-args: |
             GIT_COMMIT=${{ github.sha }}
             BUILD_DATE=${{ github.event.repository.updated_at }}
