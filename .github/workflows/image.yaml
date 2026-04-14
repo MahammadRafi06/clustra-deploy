@@ -20,6 +20,7 @@ env:
   AWS_REGION: us-east-1
   ECR_REGISTRY: 703671901662.dkr.ecr.us-east-1.amazonaws.com
   ECR_REPOSITORY: clustra-deploy
+  ECR_HELM_REPOSITORY: clustra-deploy-helm
 
 jobs:
   build-and-push:
@@ -48,6 +49,11 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: v3.16.4
+
       - name: Build and push image
         uses: docker/build-push-action@v6
         with:
@@ -71,8 +77,35 @@ jobs:
             BUILD_DATE=${{ github.event.repository.updated_at }}
             GIT_TREE_STATE=clean
 
+      - name: Package and push Helm chart
+        shell: bash
+        run: |
+          set -euo pipefail
+          CHART_VERSION="${{ inputs.image_tag }}"
+          CHART_VERSION="${CHART_VERSION#v}"
+          if [[ ! "$CHART_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+([.-][0-9A-Za-z.-]+)?$ ]]; then
+            echo "image_tag must be semver-like, e.g. v1.3.4 or 1.3.4" >&2
+            exit 1
+          fi
+
+          helm dependency update ./helm/clustra-deploy
+          mkdir -p dist/charts
+          helm package ./helm/clustra-deploy \
+            --app-version "${{ inputs.image_tag }}" \
+            --version "$CHART_VERSION" \
+            -d dist/charts
+
+          aws ecr get-login-password --region "${AWS_REGION}" \
+            | helm registry login --username AWS --password-stdin "${ECR_REGISTRY}"
+
+          helm push "dist/charts/clustra-deploy-${CHART_VERSION}.tgz" \
+            "oci://${ECR_REGISTRY}/${ECR_HELM_REPOSITORY}"
+
       - name: Summary
         run: |
           echo "### Image pushed to ECR" >> $GITHUB_STEP_SUMMARY
           echo "\`${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ inputs.image_tag }}\`" >> $GITHUB_STEP_SUMMARY
           echo "\`${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:latest\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Helm chart pushed to ECR OCI" >> $GITHUB_STEP_SUMMARY
+          echo "\`oci://${{ env.ECR_REGISTRY }}/${{ env.ECR_HELM_REPOSITORY }}/clustra-deploy:${{ inputs.image_tag }}\`" >> $GITHUB_STEP_SUMMARY
