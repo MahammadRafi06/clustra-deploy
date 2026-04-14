@@ -1,3 +1,5 @@
+{{- $effectiveExtensions := include "argo-cd.server.extensions.list" . | fromYamlArray | default list -}}
+{{- $hasEffectiveExtensions := gt (len $effectiveExtensions) 0 -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -410,7 +412,7 @@ spec:
           name: tmp
         - name: argocd-cmd-params-cm
           mountPath: /home/argocd/params
-        {{- if .Values.server.extensions.enabled }}
+        {{- if $hasEffectiveExtensions }}
         - mountPath: /tmp/extensions
           name: extensions
         {{- end }}
@@ -456,13 +458,13 @@ spec:
       {{- with .Values.server.extraContainers }}
         {{- tpl (toYaml .) $ | nindent 6 }}
       {{- end }}
-      {{- if or .Values.server.initContainers (and .Values.server.extensions.enabled .Values.server.extensions.extensionList) }}
+      {{- if or .Values.server.initContainers $hasEffectiveExtensions }}
       initContainers:
       {{- with .Values.server.initContainers }}
         {{- tpl (toYaml .) $ | nindent 6 }}
       {{- end }}
-      {{- if .Values.server.extensions.enabled }}
-      {{- range .Values.server.extensions.extensionList }}
+      {{- if $hasEffectiveExtensions }}
+      {{- range $effectiveExtensions }}
       - name: {{ .name }}
         image: {{ $.Values.server.extensions.image.repository }}:{{ $.Values.server.extensions.image.tag }}
         imagePullPolicy: {{ default $.Values.global.image.imagePullPolicy $.Values.server.extensions.image.imagePullPolicy }}
@@ -509,7 +511,7 @@ spec:
       {{- with (concat .Values.global.extraVolumes .Values.server.volumes) }}
         {{- toYaml . | nindent 6}}
       {{- end }}
-      {{- if .Values.server.extensions.enabled }}
+      {{- if $hasEffectiveExtensions }}
       - name: extensions
         {{- if .Values.server.emptyDir.sizeLimit }}
         emptyDir:

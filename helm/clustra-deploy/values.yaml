@@ -747,6 +747,36 @@ extraObjects: []
   #         app.kubernetes.io/part-of: argocd
 
 ## Application controller
+platformExtensions:
+  # -- Generate Argo CD proxy config, extension installer init containers, and RBAC entries
+  # -- from a single declarative extension list.
+  enabled: false
+
+  # -- Declarative platform extensions to expose through Argo CD.
+  items: []
+    # - name: clustra-ai-service
+    #   backend:
+    #     services:
+    #       - url: http://clustra-ai-service.argocd.svc:80
+    #   ui:
+    #     extensionUrl: https://artifacts.example.com/clustra-ai-service/extension.tar.gz
+    #     checksumUrl: https://artifacts.example.com/clustra-ai-service/extension_checksums.txt
+    #     env: []
+    #   rbac:
+    #     allowRoles:
+    #       - role:admin
+    #     policy: []
+    # - name: model-cache
+    #   backend:
+    #     services:
+    #       - url: http://model-cache-backend.model-cache.svc:80
+    #   ui:
+    #     extensionUrl: https://artifacts.example.com/model-cache/extension.tar.gz
+    #     checksumUrl: https://artifacts.example.com/model-cache/extension_checksums.txt
+    #   rbac:
+    #     allowRoles:
+    #       - role:admin
+
 controller:
   # -- Application controller name string
   name: application-controller

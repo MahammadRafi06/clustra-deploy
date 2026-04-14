@@ -214,7 +214,14 @@ Argo Configuration Preset Values (Influenced by Values configuration)
 Merge Argo Configuration with Preset Configuration
 */}}
 {{- define "argo-cd.config.cm" -}}
-{{- $config := omit .Values.configs.cm "create" "annotations" -}}
+{{- $config := deepCopy (omit .Values.configs.cm "create" "annotations") -}}
+{{- $generatedExtensionConfig := include "argo-cd.platformExtensions.proxyConfig" . | fromYaml | default dict -}}
+{{- $manualExtensionConfig := (get $config "extension.config" | default "" | fromYaml) | default dict -}}
+{{- $generatedExtensions := get $generatedExtensionConfig "extensions" | default list -}}
+{{- $manualExtensions := get $manualExtensionConfig "extensions" | default list -}}
+{{- if gt (len (concat $generatedExtensions $manualExtensions)) 0 -}}
+{{- $_ := set $config "extension.config" ((dict "extensions" (concat $generatedExtensions $manualExtensions)) | toYaml | trim) -}}
+{{- end -}}
 {{- $preset := include "argo-cd.config.cm.presets" . | fromYaml | default dict -}}
 {{- range $key, $value := mergeOverwrite $preset $config }}
 {{- $fmted := $value | toString }}
@@ -222,6 +229,88 @@ Merge Argo Configuration with Preset Configuration
 {{ $key }}: {{ $fmted | toYaml }}
 {{- end }}
 {{- end }}
+{{- end -}}
+
+{{/*
+Generate proxy extension configuration from declarative platform extensions
+*/}}
+{{- define "argo-cd.platformExtensions.proxyConfig" -}}
+{{- $extensions := list -}}
+{{- if .Values.platformExtensions.enabled -}}
+  {{- range $item := (.Values.platformExtensions.items | default list) -}}
+    {{- if and $item.name $item.backend -}}
+      {{- $extensions = append $extensions (dict "name" $item.name "backend" $item.backend) -}}
+    {{- end -}}
+  {{- end -}}
+{{- end -}}
+{{- if gt (len $extensions) 0 -}}
+extensions:
+{{- range $extension := $extensions }}
+  - name: {{ $extension.name }}
+    backend:
+{{ toYaml $extension.backend | nindent 6 }}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+Generate installer init container entries for declarative platform extensions
+*/}}
+{{- define "argo-cd.server.extensions.list" -}}
+{{- $extensions := list -}}
+{{- range $item := (.Values.server.extensions.extensionList | default list) -}}
+  {{- $extensions = append $extensions $item -}}
+{{- end -}}
+{{- if .Values.platformExtensions.enabled -}}
+  {{- range $item := (.Values.platformExtensions.items | default list) -}}
+    {{- $ui := ($item.ui | default dict) -}}
+    {{- $extensionUrl := (get $ui "extensionUrl" | default "") -}}
+    {{- if and $item.name (ne $extensionUrl "") -}}
+      {{- $env := list (dict "name" "EXTENSION_URL" "value" $extensionUrl) -}}
+      {{- $checksumUrl := (get $ui "checksumUrl" | default "") -}}
+      {{- if ne $checksumUrl "" -}}
+        {{- $env = append $env (dict "name" "EXTENSION_CHECKSUM_URL" "value" $checksumUrl) -}}
+      {{- end -}}
+      {{- range $extraEnv := (get $ui "env" | default list) -}}
+        {{- $env = append $env $extraEnv -}}
+      {{- end -}}
+      {{- $extensions = append $extensions (dict "name" $item.name "env" $env) -}}
+    {{- end -}}
+  {{- end -}}
+{{- end -}}
+{{ toYaml $extensions }}
+{{- end -}}
+
+{{/*
+Generate extension RBAC lines for declarative platform extensions
+*/}}
+{{- define "argo-cd.platformExtensions.rbacPolicy" -}}
+{{- $lines := list -}}
+{{- if .Values.platformExtensions.enabled -}}
+  {{- range $item := (.Values.platformExtensions.items | default list) -}}
+    {{- $rbac := ($item.rbac | default dict) -}}
+    {{- range $role := (get $rbac "allowRoles" | default list) -}}
+      {{- $lines = append $lines (printf "p, %s, extensions, invoke, %s, allow" $role $item.name) -}}
+    {{- end -}}
+    {{- range $policy := (get $rbac "policy" | default list) -}}
+      {{- $lines = append $lines $policy -}}
+    {{- end -}}
+  {{- end -}}
+{{- end -}}
+{{ join "\n" $lines }}
+{{- end -}}
+
+{{/*
+Merge RBAC configuration with generated extension policies
+*/}}
+{{- define "argo-cd.config.rbac" -}}
+{{- $config := deepCopy (omit .Values.configs.rbac "create" "annotations") -}}
+{{- $generatedPolicy := include "argo-cd.platformExtensions.rbacPolicy" . | trim -}}
+{{- if ne $generatedPolicy "" -}}
+{{- $manualPolicy := get $config "policy.csv" | default "" -}}
+{{- $_ := set $config "policy.csv" (trim (printf "%s\n%s" $generatedPolicy $manualPolicy)) -}}
+{{- end -}}
+{{ toYaml $config }}
 {{- end -}}
 
 {{/*

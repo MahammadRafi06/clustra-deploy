@@ -12,7 +12,7 @@ metadata:
     {{ $key }}: {{ $value | quote }}
     {{- end }}
   {{- end }}
-{{- with (omit .Values.configs.rbac "create" "annotations") }}
+{{- with (include "argo-cd.config.rbac" . | fromYaml) }}
 data:
   {{- toYaml . | nindent 2 }}
 {{- end }}

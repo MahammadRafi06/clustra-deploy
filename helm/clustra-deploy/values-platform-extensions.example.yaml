@@ -1,0 +1,28 @@
+server:
+  extensions:
+    enabled: true
+
+platformExtensions:
+  enabled: true
+  items:
+    - name: clustra-ai-service
+      backend:
+        services:
+          - url: http://clustra-ai-service.argocd.svc:80
+      ui:
+        extensionUrl: https://artifacts.example.com/clustra-ai-service/extension.tar.gz
+        checksumUrl: https://artifacts.example.com/clustra-ai-service/extension_checksums.txt
+      rbac:
+        allowRoles:
+          - role:admin
+
+    - name: model-cache
+      backend:
+        services:
+          - url: http://model-cache-backend.model-cache.svc:80
+      ui:
+        extensionUrl: https://artifacts.example.com/model-cache/extension.tar.gz
+        checksumUrl: https://artifacts.example.com/model-cache/extension_checksums.txt
+      rbac:
+        allowRoles:
+          - role:admin
