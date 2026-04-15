@@ -6,7 +6,9 @@ import {Helmet} from 'react-helmet';
 import {Redirect, Route, RouteComponentProps, Router, Switch} from 'react-router';
 import {Subscription} from 'rxjs';
 import applications from './applications';
+import deployModels from './deploy-models';
 import login from './login';
+import modelCache from './model-cache';
 import settings from './settings';
 import {Layout, ThemeWrapper} from './shared/components/layout/layout';
 import {Page} from './shared/components/page/page';
@@ -31,6 +33,8 @@ type Routes = {[path: string]: {component: React.ComponentType<RouteComponentPro
 const routes: Routes = {
     '/login': {component: login.component as any, noLayout: true},
     '/applications': {component: applications.component},
+    '/model-cache': {component: modelCache.component},
+    '/deploy-models': {component: deployModels.component},
     // TODO: Uncomment when ApplicationSet details page is fully implemented
     // '/applicationsets': {component: applications.component},
     '/settings': {component: settings.component},
@@ -98,8 +102,22 @@ const navItems: NavItem[] = [
         title: 'User Info',
         path: '/user-info',
         iconClassName: 'fa fa-user-circle'
-    },
+    }
 ];
+
+const modelCacheNavItem: NavItem = {
+    title: 'Model Cache',
+    tooltip: 'Manage the shared model cache and operational jobs.',
+    path: '/model-cache',
+    iconClassName: 'fa fa-database'
+};
+
+const deployModelsNavItem: NavItem = {
+    title: 'Deploy Models',
+    tooltip: 'Run model sizing and deployment workflows.',
+    path: '/deploy-models',
+    iconClassName: 'fa fa-rocket'
+};
 
 const versionLoader = services.version.version();
 
@@ -140,8 +158,8 @@ export class App extends React.Component<{}, {popupProps: PopupProps; showVersio
         this.popupManager = new PopupManager();
         this.notificationsManager = new NotificationsManager();
         this.navigationManager = new NavigationManager(history);
-        this.navItems = navItems;
-        this.routes = routes;
+        this.navItems = [...navItems];
+        this.routes = {...routes};
         this.popupPropsSubscription = null;
         this.unauthorizedSubscription = null;
         services.extensions.addEventListener('systemLevel', this.onAddSystemLevelExtension.bind(this));
@@ -152,6 +170,10 @@ export class App extends React.Component<{}, {popupProps: PopupProps; showVersio
         this.subscribeUnauthorized().then(subscription => {
             this.unauthorizedSubscription = subscription;
         });
+        const [canSeeModelCache, canSeeDeployModels] = await Promise.all([
+            services.accounts.canI('clustra-pages', 'get', 'model-cache').catch(() => false),
+            services.accounts.canI('clustra-pages', 'get', 'deploy-models').catch(() => false)
+        ]);
         const authSettings = await services.authService.settings();
         const {trackingID, anonymizeUsers} = authSettings.googleAnalytics || {trackingID: '', anonymizeUsers: true};
         const {loggedIn, username} = await services.users.get();
@@ -176,7 +198,16 @@ export class App extends React.Component<{}, {popupProps: PopupProps; showVersio
             document.head.appendChild(link);
         }
 
-        this.setState({...this.state, navItems: this.navItems, routes: this.routes, authSettings});
+        const featureNavItems = [] as NavItem[];
+        if (canSeeModelCache) {
+            featureNavItems.push(modelCacheNavItem);
+        }
+        if (canSeeDeployModels) {
+            featureNavItems.push(deployModelsNavItem);
+        }
+        const visibleNavItems = [...this.navItems.slice(0, 1), ...featureNavItems, ...this.navItems.slice(1)];
+
+        this.setState({...this.state, navItems: visibleNavItems, routes: this.routes, authSettings});
     }
 
     public componentWillUnmount() {
