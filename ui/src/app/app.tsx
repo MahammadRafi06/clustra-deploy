@@ -154,7 +154,7 @@ export class App extends React.Component<{}, {popupProps: PopupProps; showVersio
 
     constructor(props: {}) {
         super(props);
-        this.state = {popupProps: null, error: null, showVersionPanel: false, navItems: [], routes: null, authSettings: null};
+        this.state = {popupProps: null, error: null, showVersionPanel: false, navItems: [...navItems], routes: {...routes}, authSettings: null};
         this.popupManager = new PopupManager();
         this.notificationsManager = new NotificationsManager();
         this.navigationManager = new NavigationManager(history);
@@ -207,6 +207,7 @@ export class App extends React.Component<{}, {popupProps: PopupProps; showVersio
         }
         const visibleNavItems = [...this.navItems.slice(0, 1), ...featureNavItems, ...this.navItems.slice(1)];
 
+        this.navItems = visibleNavItems;
         this.setState({...this.state, navItems: visibleNavItems, routes: this.routes, authSettings});
     }
 
@@ -253,8 +254,8 @@ export class App extends React.Component<{}, {popupProps: PopupProps; showVersio
                             <Router history={history}>
                                 <Switch>
                                     <Redirect exact={true} path='/' to='/applications' />
-                                    {Object.keys(this.routes).map(path => {
-                                        const route = this.routes[path];
+                                    {Object.keys(this.state.routes || {}).map(path => {
+                                        const route = this.state.routes[path];
                                         return (
                                             <Route
                                                 key={path}
@@ -267,7 +268,10 @@ export class App extends React.Component<{}, {popupProps: PopupProps; showVersio
                                                     ) : (
                                                         <DataLoader load={() => services.viewPreferences.getPreferences()}>
                                                             {pref => (
-                                                                <Layout onVersionClick={() => this.setState({showVersionPanel: true})} navItems={this.navItems} pref={pref}>
+                                                                <Layout
+                                                                    onVersionClick={() => this.setState({showVersionPanel: true})}
+                                                                    navItems={this.state.navItems || this.navItems}
+                                                                    pref={pref}>
                                                                     <Banner>
                                                                         <route.component {...routeProps} />
                                                                     </Banner>
@@ -319,8 +323,8 @@ export class App extends React.Component<{}, {popupProps: PopupProps; showVersio
     }
 
     private onAddSystemLevelExtension(extension: SystemLevelExtension) {
-        const extendedNavItems = this.navItems;
-        const extendedRoutes = this.routes;
+        const extendedNavItems = [...(this.state.navItems || this.navItems)];
+        const extendedRoutes = {...(this.state.routes || this.routes)};
         extendedNavItems.push({
             title: extension.title,
             path: extension.path,
@@ -339,6 +343,8 @@ export class App extends React.Component<{}, {popupProps: PopupProps; showVersio
         extendedRoutes[extension.path] = {
             component: component as React.ComponentType<React.ComponentProps<any>>
         };
+        this.navItems = extendedNavItems;
+        this.routes = extendedRoutes;
         this.setState({...this.state, navItems: extendedNavItems, routes: extendedRoutes});
     }
 }
