@@ -12,7 +12,7 @@ const DeployModelsContainer = () => (
         <Helmet>
             <title>Deploy Models - Clustra Deploy</title>
         </Helmet>
-        <Page title='Deploy Models'>
+        <Page title='Deploy Models' toolbar={{breadcrumbs: [{title: 'Deploy Models'}]}}>
             <DeployModelsPage />
         </Page>
     </>

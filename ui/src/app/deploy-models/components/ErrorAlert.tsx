@@ -2,13 +2,9 @@ import {ErrorNotification} from 'argo-ui';
 import React from 'react';
 
 interface ErrorAlertProps {
-  message: string;
+    message: string;
 }
 
-export function ErrorAlert({ message }: ErrorAlertProps) {
-  return (
-    <div className="cext-error" role="alert">
-      <ErrorNotification e={{message}} />
-    </div>
-  );
+export function ErrorAlert({message}: ErrorAlertProps) {
+    return <ErrorNotification e={{message}} />;
 }

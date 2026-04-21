@@ -12,7 +12,7 @@ const ModelCacheContainer = () => (
         <Helmet>
             <title>Model Cache - Clustra Deploy</title>
         </Helmet>
-        <Page title='Model Cache'>
+        <Page title='Model Cache' toolbar={{breadcrumbs: [{title: 'Model Cache'}]}}>
             <ModelCachePage />
         </Page>
     </>

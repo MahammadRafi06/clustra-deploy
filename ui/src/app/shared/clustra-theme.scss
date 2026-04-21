@@ -104,6 +104,29 @@
                 color: white !important;
             }
         }
+
+        &--base-o.model-cache__button--warning {
+            color: $brand-gold-light !important;
+            box-shadow: inset 0 0 0 1px $brand-gold-light !important;
+
+            &:hover:not(.disabled):not([disabled]) {
+                background-color: $brand-gold-light !important;
+                border-color: $brand-gold-light !important;
+                color: $clustra-navy-dark !important;
+            }
+        }
+
+        &--base-o.model-cache__button--danger,
+        &--base-o.deploy-models__danger-button {
+            color: $brand-status-error !important;
+            box-shadow: inset 0 0 0 1px $brand-status-error !important;
+
+            &:hover:not(.disabled):not([disabled]) {
+                background-color: $brand-status-error !important;
+                border-color: $brand-status-error !important;
+                color: white !important;
+            }
+        }
     }
 
     // Links

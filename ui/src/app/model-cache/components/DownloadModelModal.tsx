@@ -1,180 +1,138 @@
-import {Select} from 'argo-ui';
-import React, { useState } from "react";
-import type { DownloadRequest } from "../api/types";
+import {Select, SlidingPanel} from 'argo-ui';
+import React, {useState} from 'react';
+
+import type {DownloadRequest} from '../api/types';
+import {StatusBadge} from './common/StatusBadge';
 
 interface Props {
-  onSubmit: (req: DownloadRequest) => void;
-  onClose: () => void;
-  isLoading: boolean;
-  error: string | null;
+    onSubmit: (req: DownloadRequest) => void;
+    onClose: () => void;
+    isLoading: boolean;
+    error: string | null;
 }
 
-export const DownloadModelModal: React.FC<Props> = ({ onSubmit, onClose, isLoading, error }) => {
-  const [form, setForm] = useState<DownloadRequest>({
-    repo_id: "",
-    source: "huggingface",
-    revision: "main",
-    target_pvc: "model-cache",
-    target_namespace: "model-cache",
-    labels: {},
-    display_name: "",
-  });
-  const [labelKey, setLabelKey] = useState("");
-  const [labelValue, setLabelValue] = useState("");
+export const DownloadModelModal: React.FC<Props> = ({onSubmit, onClose, isLoading, error}) => {
+    const [form, setForm] = useState<DownloadRequest>({
+        repo_id: '',
+        source: 'huggingface',
+        revision: 'main',
+        target_pvc: 'model-cache',
+        target_namespace: 'model-cache',
+        labels: {},
+        display_name: ''
+    });
+    const [labelKey, setLabelKey] = useState('');
+    const [labelValue, setLabelValue] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    onSubmit(form);
-  };
-
-  const addLabel = () => {
-    if (labelKey && labelValue) {
-      setForm({ ...form, labels: { ...form.labels, [labelKey]: labelValue } });
-      setLabelKey("");
-      setLabelValue("");
+    function handleSubmit(event: React.FormEvent) {
+        event.preventDefault();
+        onSubmit(form);
     }
-  };
 
-  const removeLabel = (key: string) => {
-    const next = { ...form.labels };
-    delete next[key];
-    setForm({ ...form, labels: next });
-  };
+    function addLabel() {
+        if (!labelKey || !labelValue) {
+            return;
+        }
+        setForm({...form, labels: {...form.labels, [labelKey]: labelValue}});
+        setLabelKey('');
+        setLabelValue('');
+    }
 
-  return (
-    <div style={overlayStyle}>
-      <div style={modalStyle}>
-        <h3 style={{ margin: "0 0 16px 0", color: "var(--mc-text)" }}>Download New Model</h3>
+    function removeLabel(key: string) {
+        const next = {...form.labels};
+        delete next[key];
+        setForm({...form, labels: next});
+    }
 
-        <form onSubmit={handleSubmit}>
-          <div style={fieldStyle}>
-            <label style={labelStyle}>Source</label>
-            <div className="model-cache-argo-select">
-              <Select
-                value={form.source}
-                options={[
-                  {title: 'Hugging Face', value: 'huggingface'},
-                  {title: 'Git Repository', value: 'git'},
-                ]}
-                placeholder="Choose a source"
-                onChange={option => setForm({...form, source: option.value})}
-              />
-            </div>
-          </div>
+    return (
+        <SlidingPanel hasCloseButton={true} header={<strong>Download Model</strong>} isMiddle={true} isShown={true} onClose={onClose}>
+            <form className='model-cache__drawer-body model-cache__form' onSubmit={handleSubmit}>
+                <div className='argo-form-row'>
+                    <label>Source</label>
+                    <div className='model-cache__select'>
+                        <Select
+                            value={form.source}
+                            options={[
+                                {title: 'Hugging Face', value: 'huggingface'},
+                                {title: 'Git Repository', value: 'git'}
+                            ]}
+                            placeholder='Choose a source'
+                            onChange={option => setForm({...form, source: option.value})}
+                        />
+                    </div>
+                </div>
 
-          <div style={fieldStyle}>
-            <label style={labelStyle}>
-              {form.source === "huggingface" ? "Model ID" : "Repository URL"}
-            </label>
-            <input
-              type="text"
-              value={form.repo_id}
-              onChange={(e) => setForm({ ...form, repo_id: e.target.value })}
-              placeholder={form.source === "huggingface" ? "nvidia/DeepSeek-V3.2-NVFP4" : "https://github.com/org/model.git"}
-              style={inputStyle}
-              required
-              autoFocus
-            />
-          </div>
+                <div className='argo-form-row'>
+                    <label>{form.source === 'huggingface' ? 'Model ID' : 'Repository URL'}</label>
+                    <input
+                        type='text'
+                        className='argo-field'
+                        value={form.repo_id}
+                        onChange={event => setForm({...form, repo_id: event.target.value})}
+                        placeholder={form.source === 'huggingface' ? 'nvidia/DeepSeek-V3.2-NVFP4' : 'https://github.com/org/model.git'}
+                        required
+                        autoFocus
+                    />
+                </div>
 
-          <div style={fieldStyle}>
-            <label style={labelStyle}>Revision / Branch / Tag</label>
-            <input
-              type="text"
-              value={form.revision}
-              onChange={(e) => setForm({ ...form, revision: e.target.value })}
-              placeholder="main"
-              style={inputStyle}
-            />
-          </div>
+                <div className='argo-form-row'>
+                    <label>Revision / Branch / Tag</label>
+                    <input type='text' className='argo-field' value={form.revision} onChange={event => setForm({...form, revision: event.target.value})} placeholder='main' />
+                </div>
 
-          <div style={fieldStyle}>
-            <label style={labelStyle}>Display Name (optional)</label>
-            <input
-              type="text"
-              value={form.display_name || ""}
-              onChange={(e) => setForm({ ...form, display_name: e.target.value || undefined })}
-              placeholder="Friendly name for the model"
-              style={inputStyle}
-            />
-          </div>
+                <div className='argo-form-row'>
+                    <label>Display Name</label>
+                    <input
+                        type='text'
+                        className='argo-field'
+                        value={form.display_name || ''}
+                        onChange={event => setForm({...form, display_name: event.target.value || undefined})}
+                        placeholder='Friendly name for the model'
+                    />
+                </div>
 
-          <div style={{ display: "flex", gap: "8px" }}>
-            <div style={{ ...fieldStyle, flex: 1 }}>
-              <label style={labelStyle}>Target PVC</label>
-              <input type="text" value={form.target_pvc} onChange={(e) => setForm({ ...form, target_pvc: e.target.value })} style={inputStyle} />
-            </div>
-            <div style={{ ...fieldStyle, flex: 1 }}>
-              <label style={labelStyle}>Namespace</label>
-              <input type="text" value={form.target_namespace} onChange={(e) => setForm({ ...form, target_namespace: e.target.value })} style={inputStyle} />
-            </div>
-          </div>
+                <div className='model-cache__two-column'>
+                    <div className='argo-form-row'>
+                        <label>Target PVC</label>
+                        <input type='text' className='argo-field' value={form.target_pvc} onChange={event => setForm({...form, target_pvc: event.target.value})} />
+                    </div>
+                    <div className='argo-form-row'>
+                        <label>Namespace</label>
+                        <input type='text' className='argo-field' value={form.target_namespace} onChange={event => setForm({...form, target_namespace: event.target.value})} />
+                    </div>
+                </div>
 
-          <div style={fieldStyle}>
-            <label style={labelStyle}>Labels</label>
-            <div style={{ display: "flex", gap: "4px", marginBottom: "4px" }}>
-              <input type="text" value={labelKey} onChange={(e) => setLabelKey(e.target.value)} placeholder="key" style={{ ...inputStyle, flex: 1 }} />
-              <input type="text" value={labelValue} onChange={(e) => setLabelValue(e.target.value)} placeholder="value" style={{ ...inputStyle, flex: 1 }} />
-              <button type="button" onClick={addLabel} style={addBtnStyle}>Add</button>
-            </div>
-            {form.labels && Object.entries(form.labels).map(([k, v]) => (
-              <span key={k} style={labelBadge}>
-                {k}: {v}
-                <i className="fa fa-times" style={{ marginLeft: "4px", cursor: "pointer" }} onClick={() => removeLabel(k)} />
-              </span>
-            ))}
-          </div>
+                <div className='argo-form-row'>
+                    <label>Labels</label>
+                    <div className='model-cache__inline-fields'>
+                        <input type='text' className='argo-field' value={labelKey} onChange={event => setLabelKey(event.target.value)} placeholder='key' />
+                        <input type='text' className='argo-field' value={labelValue} onChange={event => setLabelValue(event.target.value)} placeholder='value' />
+                        <button type='button' className='argo-button argo-button--base-o model-cache__button' onClick={addLabel}>
+                            Add
+                        </button>
+                    </div>
+                    {!!form.labels && Object.keys(form.labels).length > 0 && (
+                        <div className='model-cache__chip-list'>
+                            {Object.entries(form.labels).map(([key, value]) => (
+                                <StatusBadge key={key} tone='muted' onClick={() => removeLabel(key)} iconClassName='fa fa-times'>
+                                    {key}: {value}
+                                </StatusBadge>
+                            ))}
+                        </div>
+                    )}
+                </div>
 
-          {error && <div style={{ color: "var(--mc-danger)", fontSize: "13px", marginBottom: "12px" }}>{error}</div>}
+                {error && <div className='argo-form-row__error-msg'>{error}</div>}
 
-          <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px", marginTop: "16px" }}>
-            <button type="button" onClick={onClose} style={cancelBtnStyle}>Cancel</button>
-            <button type="submit" disabled={isLoading || !form.repo_id} style={submitBtnStyle}>
-              {isLoading ? "Starting..." : "Download"}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
-};
-
-const overlayStyle: React.CSSProperties = {
-  position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
-  backgroundColor: "rgba(0,0,0,0.5)", display: "flex",
-  alignItems: "center", justifyContent: "center", zIndex: 1000,
-};
-
-const modalStyle: React.CSSProperties = {
-  backgroundColor: "var(--mc-bg-card)", borderRadius: "8px", padding: "24px",
-  width: "520px", maxHeight: "80vh", overflowY: "auto", color: "var(--mc-text)",
-};
-
-const fieldStyle: React.CSSProperties = { marginBottom: "12px" };
-const labelStyle: React.CSSProperties = { display: "block", fontSize: "12px", color: "var(--mc-text-soft)", marginBottom: "4px" };
-
-const inputStyle: React.CSSProperties = {
-  width: "100%", padding: "8px 10px", backgroundColor: "var(--mc-bg)",
-  border: "1px solid var(--mc-border-surface)", borderRadius: "4px", color: "var(--mc-text)",
-  fontSize: "13px", boxSizing: "border-box",
-};
-
-const addBtnStyle: React.CSSProperties = {
-  padding: "8px 12px", backgroundColor: "var(--mc-surface-muted)", border: "1px solid var(--mc-border-surface)",
-  borderRadius: "4px", color: "var(--mc-text)", cursor: "pointer", fontSize: "12px",
-};
-
-const labelBadge: React.CSSProperties = {
-  display: "inline-block", padding: "2px 8px", marginRight: "4px", marginBottom: "4px",
-  backgroundColor: "var(--mc-surface-muted)", borderRadius: "3px", fontSize: "11px", color: "var(--mc-text-soft)",
-};
-
-const cancelBtnStyle: React.CSSProperties = {
-  padding: "8px 16px", borderRadius: "4px", border: "1px solid var(--mc-border-surface)",
-  backgroundColor: "transparent", color: "var(--mc-text)", cursor: "pointer",
-};
-
-const submitBtnStyle: React.CSSProperties = {
-  padding: "8px 20px", borderRadius: "4px", border: "none",
-  backgroundColor: "var(--mc-accent)", color: "var(--mc-text-inverse)", cursor: "pointer", fontWeight: 600,
+                <div className='model-cache__drawer-actions'>
+                    <button type='button' className='argo-button argo-button--base-o model-cache__button' onClick={onClose}>
+                        Cancel
+                    </button>
+                    <button type='submit' className='argo-button argo-button--base model-cache__button' disabled={isLoading || !form.repo_id}>
+                        {isLoading ? 'Starting…' : 'Download'}
+                    </button>
+                </div>
+            </form>
+        </SlidingPanel>
+    );
 };

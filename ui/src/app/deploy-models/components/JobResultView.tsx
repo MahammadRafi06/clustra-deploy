@@ -1,126 +1,126 @@
 import React from 'react';
-import type { JobResult } from '../types';
+
+import type {JobResult} from '../types';
 
 interface JobResultViewProps {
-  job: JobResult;
+    job: JobResult;
 }
 
-function GitStatus({ result }: { result: Record<string, unknown> }) {
-  const committed = result.git_committed;
-  if (committed === null || committed === undefined) return null;
-
-  const label = committed === true
-    ? 'Committed to repo'
-    : typeof result.git_commit_error === 'string'
-      ? 'Commit queued for retry'
-      : (result.git_commit_message as string) ?? 'Nothing committed';
-
-  const badgeCls = committed === true
-    ? 'cext-badge--success'
-    : typeof result.git_commit_error === 'string'
-      ? 'cext-badge--warning'
-      : 'cext-badge--muted';
-
-  return (
-    <div className="cext-result__git-row">
-      <i className="fa fa-code-fork" />
-      <span className={`cext-badge ${badgeCls}`}>{label}</span>
-      {typeof result.git_repo_artifact_name === 'string' && (
-        <span style={{ color: 'var(--brand-text-muted)', fontSize: 11 }}>
-          {result.git_repo_artifact_name}
-        </span>
-      )}
-    </div>
-  );
+function renderValue(value: unknown): string {
+    if (value === null || value === undefined) {
+        return '—';
+    }
+    if (typeof value === 'number') {
+        return Number.isInteger(value) ? String(value) : value.toFixed(2);
+    }
+    return String(value);
 }
 
-interface MetricGridProps {
-  items: { label: string; value: string | number }[];
-}
-function MetricGrid({ items }: MetricGridProps) {
-  return (
-    <div className="cext-result__grid">
-      {items.map(({ label, value }) => (
-        <div key={label} className="cext-result__metric">
-          <div className="cext-result__metric-label">{label}</div>
-          <div className="cext-result__metric-value">{value}</div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function renderValue(v: unknown): string {
-  if (v === null || v === undefined) return '—';
-  if (typeof v === 'number') return Number.isInteger(v) ? String(v) : v.toFixed(2);
-  return String(v);
-}
-
-export function JobResultView({ job }: JobResultViewProps) {
-  const { result, error } = job;
-
-  if (error) {
+function MetricGrid({items}: {items: Array<{label: string; value: string | number}>}) {
     return (
-      <div className="cext-result">
-        <div className="cext-result__section">
-          <div className="cext-result__section-title">Error</div>
-          <pre style={{ color: 'var(--brand-status-error)', fontSize: 12, whiteSpace: 'pre-wrap', margin: 0 }}>
-            {error}
-          </pre>
+        <div className='deploy-models__metric-grid'>
+            {items.map(({label, value}) => (
+                <div key={label} className='deploy-models__metric'>
+                    <div className='deploy-models__metric-label'>{label}</div>
+                    <div className='deploy-models__metric-value'>{value}</div>
+                </div>
+            ))}
         </div>
-      </div>
     );
-  }
+}
 
-  if (!result) return null;
+function GitStatus({result}: {result: Record<string, unknown>}) {
+    const committed = result.git_committed;
+    if (committed === null || committed === undefined) {
+        return null;
+    }
 
-  const chosen = result.chosen_exp as string | undefined;
-  const throughputs = result.best_throughputs as Record<string, number> | undefined;
-  const latencies = result.best_latencies as Record<string, Record<string, number>> | undefined;
+    const label =
+        committed === true
+            ? 'Committed to repo'
+            : typeof result.git_commit_error === 'string'
+              ? 'Commit queued for retry'
+              : (result.git_commit_message as string) || 'Nothing committed';
 
-  return (
-    <div className="cext-result">
-      {chosen && (
-        <div className="cext-result__section">
-          <div className="cext-result__section-title">Recommendation</div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span className="cext-badge cext-badge--success">{chosen.toUpperCase()}</span>
-            <span style={{ fontSize: 12, color: 'var(--brand-text-secondary)' }}>
-              selected deployment mode
-            </span>
-          </div>
+    const badgeClass =
+        committed === true
+            ? 'deploy-models__status-pill--success'
+            : typeof result.git_commit_error === 'string'
+              ? 'deploy-models__status-pill--warning'
+              : 'deploy-models__status-pill--muted';
+
+    return (
+        <div className='deploy-models__git-row'>
+            <i className='fa fa-code-fork' />
+            <span className={`deploy-models__status-pill ${badgeClass}`}>{label}</span>
+            {typeof result.git_repo_artifact_name === 'string' && <span className='deploy-models__muted-text'>{result.git_repo_artifact_name}</span>}
         </div>
-      )}
+    );
+}
 
-      {throughputs && Object.keys(throughputs).length > 0 && (
-        <div className="cext-result__section">
-          <div className="cext-result__section-title">Best Throughput (tokens/s)</div>
-          <MetricGrid
-            items={Object.entries(throughputs).map(([mode, val]) => ({
-              label: mode.toUpperCase(),
-              value: typeof val === 'number' ? val.toFixed(1) : '—',
-            }))}
-          />
-        </div>
-      )}
+export function JobResultView({job}: JobResultViewProps) {
+    const {result, error} = job;
 
-      {latencies && Object.keys(latencies).length > 0 && (
-        <div className="cext-result__section">
-          <div className="cext-result__section-title">Best Latency (ms)</div>
-          <MetricGrid
-            items={Object.entries(latencies).flatMap(([mode, lats]) =>
-              Object.entries(lats ?? {}).map(([metric, val]) => ({
-                label: `${mode.toUpperCase()} ${metric.toUpperCase()}`,
-                value: renderValue(val),
-              })),
+    if (error) {
+        return (
+            <div className='deploy-models__result'>
+                <div className='deploy-models__result-section'>
+                    <div className='deploy-models__result-title'>Error</div>
+                    <pre className='deploy-models__result-error'>{error}</pre>
+                </div>
+            </div>
+        );
+    }
+
+    if (!result) {
+        return null;
+    }
+
+    const chosen = result.chosen_exp as string | undefined;
+    const throughputs = result.best_throughputs as Record<string, number> | undefined;
+    const latencies = result.best_latencies as Record<string, Record<string, number>> | undefined;
+
+    return (
+        <div className='deploy-models__result'>
+            {chosen && (
+                <div className='deploy-models__result-section'>
+                    <div className='deploy-models__result-title'>Recommendation</div>
+                    <div className='deploy-models__result-inline'>
+                        <span className='deploy-models__status-pill deploy-models__status-pill--success'>{chosen.toUpperCase()}</span>
+                        <span className='deploy-models__secondary-text'>selected deployment mode</span>
+                    </div>
+                </div>
             )}
-          />
-        </div>
-      )}
 
-      <div className="cext-result__section">
-        <GitStatus result={result} />
-      </div>
-    </div>
-  );
+            {throughputs && Object.keys(throughputs).length > 0 && (
+                <div className='deploy-models__result-section'>
+                    <div className='deploy-models__result-title'>Best Throughput (tokens/s)</div>
+                    <MetricGrid
+                        items={Object.entries(throughputs).map(([mode, value]) => ({
+                            label: mode.toUpperCase(),
+                            value: typeof value === 'number' ? value.toFixed(1) : '—'
+                        }))}
+                    />
+                </div>
+            )}
+
+            {latencies && Object.keys(latencies).length > 0 && (
+                <div className='deploy-models__result-section'>
+                    <div className='deploy-models__result-title'>Best Latency (ms)</div>
+                    <MetricGrid
+                        items={Object.entries(latencies).flatMap(([mode, metrics]) =>
+                            Object.entries(metrics || {}).map(([metric, value]) => ({
+                                label: `${mode.toUpperCase()} ${metric.toUpperCase()}`,
+                                value: renderValue(value)
+                            }))
+                        )}
+                    />
+                </div>
+            )}
+
+            <div className='deploy-models__result-section'>
+                <GitStatus result={result} />
+            </div>
+        </div>
+    );
 }

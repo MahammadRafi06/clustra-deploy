@@ -1,32 +1,40 @@
-import React from "react";
-import { statusTone } from "../../utils/formatters";
+import React from 'react';
+
+import {statusTone, type Tone} from '../../utils/formatters';
 
 interface Props {
-  status: string;
-  size?: "small" | "normal";
+    status?: string;
+    tone?: Tone;
+    size?: 'small' | 'normal';
+    iconClassName?: string;
+    title?: string;
+    onClick?: () => void;
+    children?: React.ReactNode;
 }
 
-export const StatusBadge: React.FC<Props> = ({ status, size = "normal" }) => {
-  const tone = statusTone(status);
-  const label = status.replace(/_/g, " ");
-  const fontSize = size === "small" ? "11px" : "12px";
-  const padding = size === "small" ? "1px 6px" : "2px 8px";
+export const StatusBadge: React.FC<Props> = ({status, tone, size = 'normal', iconClassName, title, onClick, children}) => {
+    const badgeTone = tone || statusTone(status || '');
+    const label = children || (status ? status.replace(/_/g, ' ') : null);
 
-  return (
-    <span
-      style={{
-        display: "inline-block",
-        padding,
-        borderRadius: "4px",
-        backgroundColor: tone.background,
-        color: tone.color,
-        fontSize,
-        fontWeight: 600,
-        textTransform: "capitalize",
-        whiteSpace: "nowrap",
-      }}
-    >
-      {label}
-    </span>
-  );
+    if (!label) {
+        return null;
+    }
+
+    const className = `model-cache__status-badge model-cache__status-badge--${badgeTone} model-cache__status-badge--${size}${onClick ? ' model-cache__status-badge--button' : ''}`;
+
+    if (onClick) {
+        return (
+            <button type='button' className={className} onClick={onClick} title={title}>
+                {iconClassName && <i className={iconClassName} />}
+                <span>{label}</span>
+            </button>
+        );
+    }
+
+    return (
+        <span className={className} title={title}>
+            {iconClassName && <i className={iconClassName} />}
+            <span>{label}</span>
+        </span>
+    );
 };
