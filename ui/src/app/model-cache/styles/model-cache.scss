@@ -3,12 +3,7 @@
 @import '../../shared/brand-tokens';
 
 .model-cache {
-    padding: 1em 0 2em;
-
-    .argo-container {
-        display: grid;
-        gap: 18px;
-    }
+    padding: 1em 1em 2em;
 
     &__page {
         display: grid;
@@ -506,6 +501,8 @@
     }
 
     @media (max-width: 720px) {
+        padding: 0 0 1.5em;
+
         &__panel {
             padding: 16px;
         }

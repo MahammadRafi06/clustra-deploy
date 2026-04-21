@@ -753,29 +753,21 @@ platformExtensions:
   enabled: false
 
   # -- Declarative platform extensions to expose through Argo CD.
+  # -- Built-in Clustra pages (`deploy-models`, `model-cache`) are first-party routes now.
+  # -- Configure their backends with `server.env` and grant access with `configs.rbac.policy.csv`
+  # -- instead of installing them as UI extensions here.
   items: []
-    # - name: clustra-ai-service
+    # - name: extension-metrics
     #   backend:
     #     services:
-    #       - url: http://clustra-ai-service.argocd.svc:80
+    #       - url: http://argocd-extension-metrics.argocd.svc:80
     #   ui:
-    #     extensionUrl: https://artifacts.example.com/clustra-ai-service/extension.tar.gz
-    #     checksumUrl: https://artifacts.example.com/clustra-ai-service/extension_checksums.txt
-    #     env: []
+    #     extensionUrl: https://github.com/argoproj-labs/argocd-extension-metrics/releases/download/v1.0.0/extension.tar.gz
+    #     checksumUrl: https://github.com/argoproj-labs/argocd-extension-metrics/releases/download/v1.0.0/extension_checksums.txt
     #   rbac:
     #     allowRoles:
     #       - role:admin
     #     policy: []
-    # - name: model-cache
-    #   backend:
-    #     services:
-    #       - url: http://model-cache-backend.model-cache.svc:80
-    #   ui:
-    #     extensionUrl: https://artifacts.example.com/model-cache/extension.tar.gz
-    #     checksumUrl: https://artifacts.example.com/model-cache/extension_checksums.txt
-    #   rbac:
-    #     allowRoles:
-    #       - role:admin
 
 controller:
   # -- Application controller name string

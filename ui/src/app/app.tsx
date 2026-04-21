@@ -325,6 +325,15 @@ export class App extends React.Component<{}, {popupProps: PopupProps; showVersio
     private onAddSystemLevelExtension(extension: SystemLevelExtension) {
         const extendedNavItems = [...(this.state.navItems || this.navItems)];
         const extendedRoutes = {...(this.state.routes || this.routes)};
+        if (!extension.path) {
+            return;
+        }
+        const hasExistingRoute = !!extendedRoutes[extension.path];
+        const hasExistingNavItem = extendedNavItems.some(item => item.path === extension.path);
+        if (hasExistingRoute || hasExistingNavItem) {
+            console.warn(`Skipping system-level extension "${extension.title}" because "${extension.path}" is already registered as a first-party route.`);
+            return;
+        }
         extendedNavItems.push({
             title: extension.title,
             path: extension.path,

@@ -52,61 +52,59 @@ export function DeployModelsPage() {
     return (
         <AppContextProvider appName={selectedTarget?.appName} appNamespace={selectedTarget?.appNamespace} projectName={selectedTarget?.projectName}>
             <div className='deploy-models'>
-                <div className='argo-container'>
-                    <section className='white-box deploy-models__panel'>
-                        <div className='deploy-models__panel-header'>
-                            <div>
-                                <div className='deploy-models__panel-title'>Target Context</div>
-                                <div className='deploy-models__panel-description'>Select the Argo CD project and application that should receive generated manifests.</div>
-                            </div>
-                            <AppNameBadge />
+                <section className='white-box deploy-models__panel'>
+                    <div className='deploy-models__panel-header'>
+                        <div>
+                            <div className='deploy-models__panel-title'>Target Context</div>
+                            <div className='deploy-models__panel-description'>Select the Argo CD project and application that should receive generated manifests.</div>
                         </div>
-                        <ContextSelector value={selectedTarget} onChange={setSelectedTarget} />
-                    </section>
+                        <AppNameBadge />
+                    </div>
+                    <ContextSelector value={selectedTarget} onChange={setSelectedTarget} />
+                </section>
 
-                    <section className='white-box deploy-models__panel'>
-                        <div className='deploy-models__panel-header'>
-                            <div>
-                                <div className='deploy-models__panel-title'>Workflow</div>
-                                <div className='deploy-models__panel-description'>Pick the task you want to run against the selected target.</div>
-                            </div>
+                <section className='white-box deploy-models__panel'>
+                    <div className='deploy-models__panel-header'>
+                        <div>
+                            <div className='deploy-models__panel-title'>Workflow</div>
+                            <div className='deploy-models__panel-description'>Pick the task you want to run against the selected target.</div>
                         </div>
-                        <TaskSelector value={task} onChange={setTask} />
-                    </section>
+                    </div>
+                    <TaskSelector value={task} onChange={setTask} />
+                </section>
 
-                    {selectedTarget ? (
-                        <section className='white-box deploy-models__panel'>
-                            <div className='deploy-models__panel-header deploy-models__panel-header--split'>
-                                <div>
-                                    <div className='deploy-models__panel-title'>{activeTask.title}</div>
-                                    <div className='deploy-models__panel-description'>{activeTask.description}</div>
+                {selectedTarget ? (
+                    <section className='white-box deploy-models__panel'>
+                        <div className='deploy-models__panel-header deploy-models__panel-header--split'>
+                            <div>
+                                <div className='deploy-models__panel-title'>{activeTask.title}</div>
+                                <div className='deploy-models__panel-description'>{activeTask.description}</div>
+                            </div>
+                            <div className='deploy-models__summary'>
+                                <div className='deploy-models__summary-item'>
+                                    <span className='deploy-models__summary-label'>Project</span>
+                                    <span>{selectedTarget.projectName}</span>
                                 </div>
-                                <div className='deploy-models__summary'>
-                                    <div className='deploy-models__summary-item'>
-                                        <span className='deploy-models__summary-label'>Project</span>
-                                        <span>{selectedTarget.projectName}</span>
-                                    </div>
-                                    <div className='deploy-models__summary-item'>
-                                        <span className='deploy-models__summary-label'>Application</span>
-                                        <span>{selectedTarget.appName}</span>
-                                    </div>
+                                <div className='deploy-models__summary-item'>
+                                    <span className='deploy-models__summary-label'>Application</span>
+                                    <span>{selectedTarget.appName}</span>
                                 </div>
                             </div>
-                            <TaskPage key={`${selectedTarget.appNamespace}/${selectedTarget.appName}:${task}`} task={task} />
-                        </section>
-                    ) : (
-                        <section className='white-box deploy-models__panel deploy-models__panel--empty'>
-                            <EmptyState icon='fa fa-project-diagram'>
-                                <h4>Choose a target to continue</h4>
-                                <h5>The workflow forms activate after you pick an Argo CD project and application.</h5>
-                            </EmptyState>
-                            <NoticeAlert
-                                variant='info'
-                                message='Start by selecting a project and application. The page will then load the deploy workflows with the correct GitOps context.'
-                            />
-                        </section>
-                    )}
-                </div>
+                        </div>
+                        <TaskPage key={`${selectedTarget.appNamespace}/${selectedTarget.appName}:${task}`} task={task} />
+                    </section>
+                ) : (
+                    <section className='white-box deploy-models__panel deploy-models__panel--empty'>
+                        <EmptyState icon='fa fa-project-diagram'>
+                            <h4>Choose a target to continue</h4>
+                            <h5>The workflow forms activate after you pick an Argo CD project and application.</h5>
+                        </EmptyState>
+                        <NoticeAlert
+                            variant='info'
+                            message='Start by selecting a project and application. The page will then load the deploy workflows with the correct GitOps context.'
+                        />
+                    </section>
+                )}
             </div>
         </AppContextProvider>
     );

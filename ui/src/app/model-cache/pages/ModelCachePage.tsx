@@ -319,8 +319,6 @@ const ModelCacheWorkspace: React.FC = () => {
 
 export const ModelCachePage: React.FC = () => (
     <div className='model-cache'>
-        <div className='argo-container'>
-            <ModelCacheWorkspace />
-        </div>
+        <ModelCacheWorkspace />
     </div>
 );
