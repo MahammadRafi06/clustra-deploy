@@ -1,0 +1,531 @@
+@import 'node_modules/argo-ui/src/styles/config';
+@import 'node_modules/argo-ui/src/styles/theme';
+@import '../../shared/brand-tokens';
+
+.model-cache {
+    padding: 1em 1em 2em;
+
+    &__page {
+        display: grid;
+        gap: 18px;
+    }
+
+    &__panel {
+        padding: 20px;
+    }
+
+    &__toolbar,
+    &__section-header,
+    &__drawer-toolbar,
+    &__job-card-header,
+    &__drawer-title {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        align-items: center;
+    }
+
+    &__drawer-toolbar--stack {
+        padding: 16px;
+        border-bottom: 1px solid $brand-border-subtle;
+        align-items: stretch;
+        flex-wrap: wrap;
+    }
+
+    &__toolbar {
+        margin-bottom: 16px;
+    }
+
+    &__toolbar-meta,
+    &__toolbar-actions,
+    &__section-stats,
+    &__bulk-actions,
+    &__job-actions,
+    &__drawer-actions,
+    &__inline-fields,
+    &__chip-list {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        align-items: center;
+    }
+
+    &__section-title,
+    &__empty-title,
+    &__job-title,
+    &__drawer-title strong {
+        font-weight: 600;
+    }
+
+    &__section-description,
+    &__table-meta,
+    &__job-meta,
+    &__health-meta,
+    &__confirm-copy {
+        color: $brand-text-secondary;
+        font-size: 0.8125em;
+    }
+
+    &__section-stats {
+        color: $brand-text-muted;
+        font-size: 0.8125em;
+    }
+
+    &__health-grid {
+        display: grid;
+        gap: 12px;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    }
+
+    &__health-card,
+    &__bulk-bar,
+    &__job-card,
+    &__inline-form,
+    &__result-card,
+    &__related-item,
+    &__inline-banner,
+    &__toast,
+    &__pressure-banner {
+        border: 1px solid $brand-border-subtle;
+        border-radius: 4px;
+    }
+
+    &__health-card,
+    &__bulk-bar,
+    &__inline-form,
+    &__toast,
+    &__pressure-banner {
+        padding: 14px;
+    }
+
+    &__health-label,
+    &__meta-label {
+        color: $brand-text-muted;
+        font-size: 0.75em;
+        font-weight: 600;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+    }
+
+    &__health-value,
+    &__meta-value {
+        margin-top: 4px;
+        font-weight: 600;
+    }
+
+    &__progress {
+        margin-top: 8px;
+        height: 4px;
+        border-radius: 4px;
+        overflow: hidden;
+    }
+
+    &__progress-fill {
+        height: 100%;
+        border-radius: 4px;
+    }
+
+    &__progress-fill--success {
+        background: $brand-status-success;
+    }
+
+    &__progress-fill--warning {
+        background: $brand-gold-light;
+    }
+
+    &__progress-fill--danger {
+        background: $brand-status-error;
+    }
+
+    &__filters {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        align-items: center;
+        margin-bottom: 12px;
+    }
+
+    &__filters-spacer {
+        flex: 1;
+    }
+
+    &__search {
+        min-width: 220px;
+    }
+
+    &__select {
+        min-width: 150px;
+    }
+
+    &__filter-select {
+        flex: 0 0 auto;
+    }
+
+    &__bulk-bar {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        align-items: center;
+        margin-bottom: 12px;
+    }
+
+    &__bulk-count {
+        font-size: 0.875em;
+    }
+
+    &__catalog {
+        display: grid;
+        gap: 12px;
+    }
+
+    &__table-row {
+        cursor: pointer;
+    }
+
+    &__table-row--selected {
+    }
+
+    &__table-empty {
+        padding: 18px;
+        text-align: center;
+        color: $brand-text-secondary;
+    }
+
+    &__model-main {
+        display: grid;
+        gap: 4px;
+    }
+
+    &__model-name {
+        display: flex;
+        gap: 6px;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+
+    &__model-meta,
+    &__table-code {
+        color: $brand-text-muted;
+        font-size: 0.8125em;
+    }
+
+    &__table-code {
+        font-family: monospace;
+    }
+
+    &__status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 2px 8px;
+        border-radius: 4px;
+        font-size: 0.75em;
+        font-weight: 600;
+        text-transform: uppercase;
+        white-space: nowrap;
+    }
+
+    &__status-badge--small {
+        font-size: 0.6875em;
+    }
+
+    &__status-badge--normal {
+        font-size: 0.75em;
+    }
+
+    &__status-badge--success,
+    &__text--success {
+        color: $brand-status-success;
+    }
+
+    &__status-badge--success {
+        background: rgba($brand-status-success, 0.12);
+    }
+
+    &__status-badge--warning,
+    &__text--warning {
+        color: $brand-gold-light;
+    }
+
+    &__status-badge--warning {
+        background: rgba($brand-gold, 0.12);
+    }
+
+    &__status-badge--danger,
+    &__text--danger {
+        color: $brand-status-error;
+    }
+
+    &__status-badge--danger {
+        background: rgba($brand-status-error, 0.12);
+    }
+
+    &__status-badge--accent {
+        color: $brand-emerald-light;
+        background: rgba($brand-emerald, 0.12);
+    }
+
+    &__status-badge--muted,
+    &__text--muted,
+    &__icon--muted {
+        color: $brand-text-muted;
+    }
+
+    &__status-badge--muted {
+        background: rgba(255, 255, 255, 0.06);
+    }
+
+    &__status-badge--violet {
+        color: $brand-violet;
+        background: rgba($brand-violet, 0.12);
+    }
+
+    &__status-badge--button {
+        appearance: none;
+        border: 0;
+        cursor: pointer;
+    }
+
+    &__button {
+        display: inline-flex;
+        gap: 6px;
+        align-items: center;
+    }
+
+    .argo-button.argo-button--base-o.model-cache__button--warning {
+        color: $brand-gold-light;
+        box-shadow: inset 0 0 0 1px $brand-gold-light;
+    }
+
+    .argo-button.argo-button--base-o.model-cache__button--danger {
+        color: $brand-status-error;
+        box-shadow: inset 0 0 0 1px $brand-status-error;
+    }
+
+    &__pressure-banner,
+    &__error-banner {
+        display: flex;
+        gap: 10px;
+        align-items: flex-start;
+        margin-bottom: 12px;
+    }
+
+    &__pressure-banner--warning {
+        border-color: rgba($brand-gold, 0.25);
+        color: $brand-gold-light;
+        background: rgba($brand-gold, 0.06);
+    }
+
+    &__pressure-banner--danger {
+        border-color: rgba($brand-status-error, 0.25);
+        background: rgba($brand-status-error, 0.06);
+    }
+
+    &__error-banner-copy {
+        flex: 1;
+    }
+
+    &__toast {
+        margin-bottom: 12px;
+        color: $brand-text-secondary;
+    }
+
+    &__drawer-body {
+        display: grid;
+        gap: 16px;
+        padding: 16px;
+    }
+
+    &__form {
+        gap: 14px;
+    }
+
+    &__two-column,
+    &__meta-grid {
+        display: grid;
+        gap: 12px;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    }
+
+    &__drawer-section {
+        display: grid;
+        gap: 12px;
+        padding-bottom: 16px;
+        border-bottom: 1px solid $brand-border-subtle;
+    }
+
+    &__section-title {
+        margin: 0;
+        font-size: 0.875em;
+    }
+
+    &__drawer-subtitle {
+        font-size: 0.875em;
+    }
+
+    &__related-list,
+    &__timeline {
+        display: grid;
+        gap: 10px;
+    }
+
+    &__related-item,
+    &__job-card {
+        padding: 12px;
+    }
+
+    &__drawer-actions {
+        display: flex;
+        justify-content: flex-end;
+    }
+
+    &__drawer-actions--wrap {
+        justify-content: flex-start;
+    }
+
+    &__inline-form {
+        display: grid;
+        gap: 14px;
+    }
+
+    &__inline-banner {
+        color: $brand-text-primary;
+    }
+
+    &__inline-banner--accent {
+        border-color: rgba($brand-emerald, 0.2);
+        background: rgba($brand-emerald, 0.06);
+    }
+
+    &__job-card {
+        display: grid;
+        gap: 10px;
+    }
+
+    &__job-title {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+    }
+
+    &__timeline-entry {
+        display: flex;
+        gap: 10px;
+        align-items: flex-start;
+    }
+
+    &__timeline-bullet {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid currentColor;
+        flex-shrink: 0;
+    }
+
+    &__timeline-bullet--success {
+        color: $brand-status-success;
+    }
+
+    &__timeline-bullet--warning {
+        color: $brand-gold-light;
+    }
+
+    &__timeline-bullet--danger {
+        color: $brand-status-error;
+    }
+
+    &__timeline-bullet--accent {
+        color: $brand-emerald-light;
+    }
+
+    &__timeline-bullet--muted {
+        color: $brand-text-muted;
+    }
+
+    &__timeline-copy {
+        min-width: 0;
+    }
+
+    &__log-viewer {
+        min-height: 320px;
+        max-height: 60vh;
+        overflow: auto;
+        font-family: monospace;
+        font-size: 0.8125em;
+        line-height: 1.5;
+        border: 1px solid $brand-border-subtle;
+        border-radius: 4px;
+        padding: 12px;
+    }
+
+    &__confirm-copy {
+        margin: 0;
+    }
+
+    @include themify($themes) {
+        &__health-card,
+        &__bulk-bar,
+        &__job-card,
+        &__inline-form,
+        &__result-card,
+        &__related-item,
+        &__inline-banner,
+        &__toast,
+        &__pressure-banner,
+        &__log-viewer {
+            background-color: themed('background-1');
+            border-color: themed('border');
+        }
+    }
+
+    @include themify($themes) {
+        &__drawer-toolbar--stack,
+        &__drawer-section {
+            border-color: themed('border');
+        }
+    }
+
+    @include themify($themes) {
+        &__progress {
+            background-color: themed('border');
+        }
+    }
+
+    @include themify($themes) {
+        &__table-row--selected {
+            background-color: themed('light-argo-teal-1');
+        }
+    }
+
+    @media (max-width: 720px) {
+        padding: 0 0 1.5em;
+
+        &__panel {
+            padding: 16px;
+        }
+
+        &__toolbar,
+        &__section-header,
+        &__drawer-toolbar,
+        &__job-card-header {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        &__filters {
+            align-items: stretch;
+        }
+
+        &__filters-spacer {
+            display: none;
+        }
+
+        &__bulk-bar {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+    }
+}

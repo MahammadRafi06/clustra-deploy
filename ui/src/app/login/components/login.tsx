@@ -24,6 +24,18 @@ export function Login(props: RouteComponentProps<{}>) {
     const [loginError, setLoginError] = useState<string | null>(null);
     const [loginInProgress, setLoginInProgress] = useState<boolean>(false);
 
+    const postLoginRedirect = (returnURL: string) => {
+        if (returnURL) {
+            const url = new URL(returnURL, window.location.origin);
+            if (url.origin === window.location.origin) {
+                return `${url.pathname}${url.search}${url.hash}`;
+            }
+        }
+
+        const normalizedBaseHref = appContext.baseHref === '/' ? '' : appContext.baseHref.replace(/\/$/, '');
+        return `${normalizedBaseHref}/applications`;
+    };
+
     useEffect(() => {
         (async () => {
             const authSettings = await services.authService.settings();
@@ -38,17 +50,9 @@ export function Login(props: RouteComponentProps<{}>) {
             appContext.navigation.goto('.', {sso_error: null});
             await services.users.login(username, password);
             setLoginInProgress(false);
-            if (returnURL) {
-                const url = new URL(returnURL);
-                let redirectURL = url.pathname + url.search;
-                // return url already contains baseHref, so we need to remove it
-                if (appContext.baseHref != '/' && redirectURL.startsWith(appContext.baseHref)) {
-                    redirectURL = redirectURL.substring(appContext.baseHref.length);
-                }
-                appContext.navigation.goto(redirectURL);
-            } else {
-                appContext.navigation.goto('/applications');
-            }
+            // Force a full reload after login so API calls start after the
+            // session cookie is available to the browser.
+            window.location.assign(postLoginRedirect(returnURL));
         } catch (e) {
             setLoginError(e.response.body.error);
             setLoginInProgress(false);

@@ -1,0 +1,418 @@
+@import 'node_modules/argo-ui/src/styles/config';
+@import 'node_modules/argo-ui/src/styles/theme';
+@import '../shared/brand-tokens';
+
+.deploy-models {
+    display: grid;
+    gap: 18px;
+    padding: 1em 1em 2em;
+
+    &__panel {
+        padding: 20px;
+    }
+
+    &__panel--empty {
+        display: grid;
+        gap: 16px;
+    }
+
+    &__panel-header {
+        display: flex;
+        justify-content: space-between;
+        gap: 16px;
+        align-items: flex-start;
+        margin-bottom: 16px;
+    }
+
+    &__panel-header--split {
+        flex-wrap: wrap;
+    }
+
+    &__panel-title {
+        font-size: 1.1em;
+        font-weight: 600;
+    }
+
+    &__panel-description,
+    &__secondary-text,
+    &__muted-text {
+        color: $brand-text-secondary;
+        font-size: 0.8125em;
+    }
+
+    &__muted-text {
+        color: $brand-text-muted;
+    }
+
+    &__context-badges {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+
+    &__context-badge,
+    &__context-summary-item,
+    &__summary-item {
+        display: grid;
+        gap: 4px;
+    }
+
+    &__context-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 10px;
+        border: 1px solid rgba($brand-emerald, 0.25);
+        border-radius: 4px;
+        color: $brand-emerald-light;
+        background: rgba($brand-emerald, 0.08);
+    }
+
+    &__context-badge--project {
+        border-color: rgba($brand-gold, 0.25);
+        color: $brand-gold-light;
+        background: rgba($brand-gold, 0.08);
+    }
+
+    &__summary,
+    &__context-summary-grid {
+        display: grid;
+        gap: 12px;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    }
+
+    &__summary-label,
+    &__context-summary-label,
+    &__context-summary-title,
+    &__task-label,
+    &__metric-label,
+    &__support-label {
+        color: $brand-text-muted;
+        font-size: 0.75em;
+        font-weight: 600;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+    }
+
+    &__support-label--muted {
+        color: $brand-text-muted;
+    }
+
+    &__context-grid,
+    &__advanced-body {
+        display: grid;
+        gap: 16px;
+        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    }
+
+    &__form {
+        display: grid;
+        gap: 16px 20px;
+        grid-template-columns: repeat(6, minmax(0, 1fr));
+        align-items: start;
+    }
+
+    &__form > &__field,
+    &__form > &__advanced-toggle {
+        grid-column: span 2;
+    }
+
+    &__form:has(> &__field--key-mode) > &__field--key-mode,
+    &__form:has(> &__field--key-mode) > &__advanced-toggle {
+        grid-column: span 3;
+    }
+
+    &__form > &__field--textarea,
+    &__form > &__field--key-yaml-path,
+    &__form > &__field--key-config,
+    &__form > &__field:has(> &__choice-group),
+    &__form > &__advanced-body,
+    &__form > &__section-divider,
+    &__form > &__notice,
+    &__form > &__error,
+    &__form > &__status-banner,
+    &__form > &__actions,
+    &__form > &__result,
+    &__form > &__result-section,
+    &__form > &__support-result {
+        grid-column: 1 / -1;
+    }
+
+    &__field {
+        margin-bottom: 0;
+        min-width: 0;
+    }
+
+    &__field .argo-field,
+    &__textarea {
+        width: 100%;
+    }
+
+    &__textarea {
+        min-height: 120px;
+        resize: vertical;
+    }
+
+    &__field-hint {
+        margin: 6px 0 0;
+        color: $brand-text-muted;
+        font-size: 0.8125em;
+    }
+
+    &__required {
+        margin-left: 3px;
+        color: $brand-status-error;
+    }
+
+    &__task-grid {
+        display: grid;
+        gap: 12px;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    }
+
+    &__task-button {
+        width: 100%;
+        min-height: 88px;
+        justify-content: flex-start;
+        text-align: left;
+    }
+
+    &__task-content {
+        display: grid;
+        gap: 4px;
+    }
+
+    &__task-title,
+    &__result-title {
+        font-weight: 600;
+    }
+
+    &__task-description {
+        color: $brand-text-secondary;
+        font-size: 0.8125em;
+    }
+
+    &__advanced {
+        display: grid;
+        gap: 12px;
+    }
+
+    &__advanced-toggle {
+        justify-content: flex-start;
+    }
+
+    &__advanced-chevron {
+        display: inline-flex;
+        transition: transform 0.15s ease;
+    }
+
+    &__advanced-chevron.is-open {
+        transform: rotate(90deg);
+    }
+
+    &__section-divider {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        color: $brand-text-muted;
+        font-size: 0.75em;
+        font-weight: 600;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+    }
+
+    &__section-divider::after {
+        content: '';
+        flex: 1;
+        border-top: 1px solid $brand-border-subtle;
+    }
+
+    &__notice,
+    &__status-banner,
+    &__result-section,
+    &__support-result {
+        border: 1px solid $brand-border-subtle;
+        border-radius: 4px;
+    }
+
+    &__notice,
+    &__status-banner {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        padding: 12px 14px;
+    }
+
+    &__notice--info {
+        color: $brand-text-secondary;
+    }
+
+    &__notice--warning {
+        color: $brand-gold-light;
+        border-color: rgba($brand-gold, 0.2);
+        background: rgba($brand-gold, 0.05);
+    }
+
+    &__actions,
+    &__result-inline,
+    &__git-row,
+    &__choice-group {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        align-items: center;
+    }
+
+    &__choice {
+        display: inline-flex;
+        gap: 6px;
+        align-items: center;
+        color: $brand-text-secondary;
+    }
+
+    &__status-banner {
+        justify-content: space-between;
+    }
+
+    &__status-copy {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+    }
+
+    &__status-subtitle {
+        color: $brand-text-muted;
+        font-size: 0.8125em;
+    }
+
+    &__status-pill {
+        display: inline-flex;
+        align-items: center;
+        padding: 3px 8px;
+        border-radius: 4px;
+        font-size: 0.75em;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+
+    &__status-pill--success {
+        color: $brand-status-success;
+        background: rgba($brand-status-success, 0.12);
+    }
+
+    &__status-pill--warning {
+        color: $brand-gold-light;
+        background: rgba($brand-gold, 0.12);
+    }
+
+    &__status-pill--error {
+        color: $brand-status-error;
+        background: rgba($brand-status-error, 0.12);
+    }
+
+    &__status-pill--info {
+        color: $brand-emerald-light;
+        background: rgba($brand-emerald, 0.12);
+    }
+
+    &__status-pill--muted {
+        color: $brand-text-secondary;
+        background: rgba(255, 255, 255, 0.06);
+    }
+
+    .argo-button.argo-button--base-o.deploy-models__danger-button {
+        color: $brand-status-error;
+        box-shadow: inset 0 0 0 1px $brand-status-error;
+    }
+
+    &__result {
+        display: grid;
+        gap: 12px;
+    }
+
+    &__result-section,
+    &__support-result {
+        padding: 14px;
+    }
+
+    &__metric-grid {
+        display: grid;
+        gap: 12px;
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+        margin-top: 10px;
+    }
+
+    &__metric-value {
+        margin-top: 2px;
+        font-weight: 600;
+    }
+
+    &__result-error {
+        margin: 10px 0 0;
+        color: $brand-status-error;
+        white-space: pre-wrap;
+    }
+
+    &__support-result {
+        display: grid;
+        gap: 10px;
+    }
+
+    &__support-row {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+
+    &__button-spinner,
+    &__status-spinner {
+        display: inline-flex;
+    }
+
+    &__button-spinner {
+        margin-right: 6px;
+    }
+
+    @include themify($themes) {
+        &__notice,
+        &__status-banner,
+        &__result-section,
+        &__support-result {
+            background-color: themed('background-1');
+            border-color: themed('border');
+        }
+    }
+
+    @include themify($themes) {
+        &__section-divider::after {
+            border-top-color: themed('border');
+        }
+    }
+
+    @media (max-width: 720px) {
+        padding: 0 0 1.5em;
+
+        &__panel {
+            padding: 16px;
+        }
+
+        &__panel-header,
+        &__status-banner,
+        &__support-row {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        &__form {
+            grid-template-columns: minmax(0, 1fr);
+        }
+
+        &__form > &__field,
+        &__form > &__field--key-mode,
+        &__form > &__advanced-toggle {
+            grid-column: 1 / -1;
+        }
+    }
+}

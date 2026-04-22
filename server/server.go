@@ -1212,6 +1212,7 @@ func (server *ArgoCDServer) newHTTPServer(ctx context.Context, port int, grpcWeb
 		log.WithField(common.SecurityField, common.SecurityHigh).Warnf("Content-Type enforcement is disabled, which may make your API vulnerable to CSRF attacks")
 	}
 	mux.Handle("/api/", handler)
+	server.registerClustraPageProxies(mux)
 
 	terminalOpts := application.TerminalOptions{DisableAuth: server.DisableAuth, Enf: server.enf}
 

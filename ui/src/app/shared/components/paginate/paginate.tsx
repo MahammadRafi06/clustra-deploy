@@ -16,6 +16,8 @@ export interface PaginateProps<T> {
     onPageChange: (page: number) => any;
     children: (data: T[]) => React.ReactNode;
     data: T[];
+    totalItems?: number;
+    serverSide?: boolean;
     emptyState?: () => React.ReactNode;
     preferencesKey?: string;
     header?: React.ReactNode;
@@ -50,7 +52,10 @@ export const PaginateDropdown = (props: {label: string; value: string; items: {t
                         <div
                             key={i}
                             className={`paginate-dropdown__option ${item.title === props.value ? 'paginate-dropdown__option--selected' : ''}`}
-                            onClick={() => { item.action(); setIsOpen(false); }}>
+                            onClick={() => {
+                                item.action();
+                                setIsOpen(false);
+                            }}>
                             <span>{item.title}</span>
                             {item.title === props.value && <i className='fa fa-check paginate-dropdown__option-check' />}
                         </div>
@@ -61,16 +66,17 @@ export const PaginateDropdown = (props: {label: string; value: string; items: {t
     );
 };
 
-export function Paginate<T>({page, onPageChange, children, data, emptyState, preferencesKey, header, showHeader, sortOptions}: PaginateProps<T>) {
+export function Paginate<T>({page, onPageChange, children, data, totalItems, serverSide, emptyState, preferencesKey, header, showHeader, sortOptions}: PaginateProps<T>) {
     return (
         <DataLoader load={() => services.viewPreferences.getPreferences()}>
             {pref => {
                 preferencesKey = preferencesKey || 'default';
                 const pageSize = pref.pageSizes[preferencesKey] || 10;
                 const sortOption = sortOptions ? (pref.sortOptions && pref.sortOptions[preferencesKey]) || sortOptions[0].title : '';
-                const pageCount = pageSize === -1 ? 1 : Math.ceil(data.length / pageSize);
+                const itemCount = totalItems ?? data.length;
+                const pageCount = pageSize === -1 ? 1 : Math.ceil(itemCount / pageSize);
                 if (pageCount <= page) {
-                    page = pageCount - 1;
+                    page = Math.max(pageCount - 1, 0);
                 }
 
                 function paginator() {
@@ -102,7 +108,7 @@ export function Paginate<T>({page, onPageChange, children, data, emptyState, pre
                 return (
                     <React.Fragment>
                         <div className='paginate'>{paginator()}</div>
-                        {data.length === 0 && emptyState ? emptyState() : children(pageSize === -1 ? data : data.slice(pageSize * page, pageSize * (page + 1)))}
+                        {data.length === 0 && emptyState ? emptyState() : children(serverSide || pageSize === -1 ? data : data.slice(pageSize * page, pageSize * (page + 1)))}
                         <div className='paginate'>{pageCount > 1 && paginator()}</div>
                     </React.Fragment>
                 );

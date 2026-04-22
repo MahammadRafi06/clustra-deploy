@@ -69,6 +69,7 @@ const (
 	ResourceLogs              = "logs"
 	ResourceExec              = "exec"
 	ResourceExtensions        = "extensions"
+	ResourceClustraPages      = "clustra-pages"
 
 	// please add new items to Actions
 	ActionGet      = "get"
@@ -96,6 +97,7 @@ var (
 		ResourceLogs,
 		ResourceExec,
 		ResourceExtensions,
+		ResourceClustraPages,
 	}
 	Actions = []string{
 		ActionGet,

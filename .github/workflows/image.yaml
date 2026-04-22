@@ -35,7 +35,10 @@ jobs:
       - name: Resolve Git metadata
         id: git-meta
         run: |
-          echo "git_tag=$(git describe --exact-match --tags HEAD 2>/dev/null || true)" >> "$GITHUB_OUTPUT"
+          # Reuse upstream Argo CD versioning semantics for the binary:
+          # only upstream-style release tags (v*) should become the runtime
+          # version. Custom deploy tags like 1.3.9 are image/chart tags only.
+          echo "git_tag=$(git describe --exact-match --tags --match 'v*' HEAD 2>/dev/null || true)" >> "$GITHUB_OUTPUT"
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
