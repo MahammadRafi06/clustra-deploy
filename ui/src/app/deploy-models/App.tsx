@@ -6,7 +6,6 @@ import {setArgoProxyContext} from './api';
 import {AppContextProvider} from './components/AppContext';
 import {AppNameBadge} from './components/AppNameBadge';
 import {ContextSelector, type SelectedAppTarget} from './components/ContextSelector';
-import {NoticeAlert} from './components/NoticeAlert';
 import {TASK_OPTIONS, TaskSelector} from './components/TaskSelector';
 import type {TaskKey} from './components/TaskSelector';
 import {DefaultPage} from './pages/DefaultPage';
@@ -99,10 +98,6 @@ export function DeployModelsPage() {
                             <h4>Choose a target to continue</h4>
                             <h5>The workflow forms activate after you pick an Argo CD project and application.</h5>
                         </EmptyState>
-                        <NoticeAlert
-                            variant='info'
-                            message='Start by selecting a project and application. The page will then load the deploy workflows with the correct GitOps context.'
-                        />
                     </section>
                 )}
             </div>

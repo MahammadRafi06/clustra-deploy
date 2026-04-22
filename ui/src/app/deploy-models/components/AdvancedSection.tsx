@@ -9,7 +9,7 @@ export function AdvancedSection({children, label = 'Advanced Configuration'}: Ad
     const [open, setOpen] = useState(false);
 
     return (
-        <div className='deploy-models__advanced'>
+        <>
             <button type='button' className='argo-button argo-button--base-o deploy-models__advanced-toggle' aria-expanded={open} onClick={() => setOpen(value => !value)}>
                 <span className={`deploy-models__advanced-chevron${open ? ' is-open' : ''}`}>
                     <i className='fa fa-angle-right' />
@@ -17,6 +17,6 @@ export function AdvancedSection({children, label = 'Advanced Configuration'}: Ad
                 {label}
             </button>
             {open && <div className='deploy-models__advanced-body'>{children}</div>}
-        </div>
+        </>
     );
 }

@@ -1,5 +1,5 @@
 import {Select} from 'argo-ui';
-import React, {useEffect, useMemo, useState} from 'react';
+import React, {useEffect, useMemo, useRef, useState} from 'react';
 
 import {listArgoApplications, listArgoProjects} from '../api';
 import type {Application, ApplicationSource, Project} from '../types';
@@ -43,6 +43,11 @@ export function ContextSelector({value, onChange}: ContextSelectorProps) {
     const [applicationsLoading, setApplicationsLoading] = useState(false);
     const [projectsError, setProjectsError] = useState<string | null>(null);
     const [applicationsError, setApplicationsError] = useState<string | null>(null);
+
+    const valueRef = useRef(value);
+    useEffect(() => {
+        valueRef.current = value;
+    });
 
     useEffect(() => {
         if (value?.projectName && value.projectName !== projectName) {
@@ -104,24 +109,27 @@ export function ContextSelector({value, onChange}: ContextSelectorProps) {
                 const filtered = items.filter(item => (item.spec.project || '') === projectName);
                 setApplications(filtered);
 
-                const currentSelection = value ? filtered.find(item => applicationKey(item) === `${value.appNamespace}:${value.appName}`) : null;
-                if (currentSelection) {
-                    onChange(toTarget(currentSelection, projectName));
-                    return;
-                }
+                const current = valueRef.current;
+                const rehydrate =
+                    current && current.projectName === projectName
+                        ? filtered.find(item => applicationKey(item) === `${current.appNamespace}:${current.appName}`)
+                        : undefined;
 
-                if (filtered.length === 1) {
+                if (rehydrate) {
+                    onChange(toTarget(rehydrate, projectName));
+                } else if (filtered.length === 1) {
                     onChange(toTarget(filtered[0], projectName));
-                    return;
+                } else if (current) {
+                    onChange(null);
                 }
-
-                onChange(null);
             })
             .catch(err => {
                 if (!cancelled) {
                     setApplicationsError(err instanceof Error ? err.message : String(err));
                     setApplications([]);
-                    onChange(null);
+                    if (valueRef.current) {
+                        onChange(null);
+                    }
                 }
             })
             .finally(() => {
@@ -133,7 +141,7 @@ export function ContextSelector({value, onChange}: ContextSelectorProps) {
         return () => {
             cancelled = true;
         };
-    }, [onChange, projectName, value]);
+    }, [onChange, projectName]);
 
     const applicationValue = value ? `${value.appNamespace}:${value.appName}` : '';
     const selectedSource = useMemo(() => (value ? primarySource(value.application) : undefined), [value]);
@@ -171,7 +179,6 @@ export function ContextSelector({value, onChange}: ContextSelectorProps) {
                             onChange={option => handleProjectChange(option.value)}
                         />
                     </div>
-                    {!projectsError && <p className='deploy-models__field-hint'>Existing Argo CD projects visible to the current user.</p>}
                 </div>
 
                 <div className='argo-form-row deploy-models__field'>
@@ -194,7 +201,6 @@ export function ContextSelector({value, onChange}: ContextSelectorProps) {
                             onChange={option => handleApplicationChange(option.value)}
                         />
                     </div>
-                    {!applicationsError && <p className='deploy-models__field-hint'>Existing Argo CD applications inside the selected project.</p>}
                 </div>
             </div>
 
@@ -205,10 +211,6 @@ export function ContextSelector({value, onChange}: ContextSelectorProps) {
 
             {!applicationsLoading && projectName && applications.length === 0 && !applicationsError && (
                 <NoticeAlert variant='warning' message={`No applications are currently available in project "${projectName}".`} />
-            )}
-
-            {!value && projectName && applications.length > 1 && !applicationsLoading && !applicationsError && (
-                <NoticeAlert variant='info' message='Pick an application to load deploy context and Git target details.' />
             )}
 
             {value && (

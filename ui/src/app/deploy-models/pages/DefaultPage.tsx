@@ -137,6 +137,13 @@ export function DefaultPage() {
                 onChange={handleFieldChange}
             />
 
+            <FieldInput
+                def={{key: 'mode', label: 'Deployment Mode', type: 'select', required: true, options: DEPLOY_MODE_OPTIONS, includeEmptyOption: false, hint: DEPLOYMENT_MODE_HINT}}
+                value={values.mode || ''}
+                error={errors.mode}
+                onChange={handleFieldChange}
+            />
+
             <AdvancedSection>
                 <FieldInput
                     def={{key: 'isl', label: 'Input Seq Length', type: 'number', min: 1, placeholder: '4000'}}
@@ -229,16 +236,6 @@ export function DefaultPage() {
                     onChange={handleFieldChange}
                 />
             </AdvancedSection>
-
-            <div className='deploy-models__section-divider'>
-                <span>Deploy</span>
-            </div>
-            <FieldInput
-                def={{key: 'mode', label: 'Deployment Mode', type: 'select', required: true, options: DEPLOY_MODE_OPTIONS, includeEmptyOption: false, hint: DEPLOYMENT_MODE_HINT}}
-                value={values.mode || ''}
-                error={errors.mode}
-                onChange={handleFieldChange}
-            />
 
             <NoticeAlert
                 variant='info'

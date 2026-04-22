@@ -111,6 +111,13 @@ export function GeneratePage() {
                 onChange={setValue}
             />
 
+            <FieldInput
+                def={{key: 'mode', label: 'Deployment Mode', type: 'select', required: true, options: DEPLOY_MODE_OPTIONS, includeEmptyOption: false, hint: DEPLOYMENT_MODE_HINT}}
+                value={values.mode || ''}
+                error={errors.mode}
+                onChange={setValue}
+            />
+
             <AdvancedSection>
                 <FieldInput
                     def={{key: 'backend', label: 'Backend', type: 'select', options: BACKEND_OPTIONS}}
@@ -125,16 +132,6 @@ export function GeneratePage() {
                     onChange={setValue}
                 />
             </AdvancedSection>
-
-            <div className='deploy-models__section-divider'>
-                <span>Deploy</span>
-            </div>
-            <FieldInput
-                def={{key: 'mode', label: 'Deployment Mode', type: 'select', required: true, options: DEPLOY_MODE_OPTIONS, includeEmptyOption: false, hint: DEPLOYMENT_MODE_HINT}}
-                value={values.mode || ''}
-                error={errors.mode}
-                onChange={setValue}
-            />
 
             <NoticeAlert variant='info' message='Compatibility checks are advisory only. A mode marked not confirmed can still be tried.' />
 

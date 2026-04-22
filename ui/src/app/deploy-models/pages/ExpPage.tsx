@@ -126,18 +126,6 @@ export function ExpPage() {
                 />
             )}
 
-            <AdvancedSection>
-                <FieldInput
-                    def={{key: 'top_n', label: 'Top-N Results', type: 'number', min: 1, max: 50, placeholder: '5'}}
-                    value={values.top_n || ''}
-                    error={errors.top_n}
-                    onChange={setValue}
-                />
-            </AdvancedSection>
-
-            <div className='deploy-models__section-divider'>
-                <span>Deploy</span>
-            </div>
             <FieldInput
                 def={{
                     key: 'mode',
@@ -152,6 +140,15 @@ export function ExpPage() {
                 error={errors.mode}
                 onChange={setValue}
             />
+
+            <AdvancedSection>
+                <FieldInput
+                    def={{key: 'top_n', label: 'Top-N Results', type: 'number', min: 1, max: 50, placeholder: '5'}}
+                    value={values.top_n || ''}
+                    error={errors.top_n}
+                    onChange={setValue}
+                />
+            </AdvancedSection>
 
             <div className='deploy-models__actions'>
                 <button type='button' className='argo-button argo-button--base' onClick={handleSubmit} disabled={submitting || (!!job && !isTerminal)}>

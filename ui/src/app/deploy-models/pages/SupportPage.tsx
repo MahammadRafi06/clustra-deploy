@@ -100,11 +100,6 @@ export function SupportPage() {
                 onChange={setValue}
             />
 
-            <NoticeAlert
-                variant='info'
-                message='This page is a compatibility check, not a deploy guarantee. You can still try deployment even when a mode is not confirmed here.'
-            />
-
             <AdvancedSection>
                 <FieldInput
                     def={{key: 'backend', label: 'Backend', type: 'select', options: BACKEND_OPTIONS}}
@@ -119,6 +114,11 @@ export function SupportPage() {
                     onChange={setValue}
                 />
             </AdvancedSection>
+
+            <NoticeAlert
+                variant='info'
+                message='This page is a compatibility check, not a deploy guarantee. You can still try deployment even when a mode is not confirmed here.'
+            />
 
             <div className='deploy-models__actions'>
                 <button type='button' className='argo-button argo-button--base' onClick={handleSubmit} disabled={loading}>

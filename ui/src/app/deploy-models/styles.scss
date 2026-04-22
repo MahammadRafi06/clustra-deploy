@@ -107,11 +107,40 @@
 
     &__form {
         display: grid;
-        gap: 16px;
+        gap: 16px 20px;
+        grid-template-columns: repeat(6, minmax(0, 1fr));
+        align-items: start;
+    }
+
+    &__form > &__field,
+    &__form > &__advanced-toggle {
+        grid-column: span 2;
+    }
+
+    &__form:has(> &__field--key-mode) > &__field--key-mode,
+    &__form:has(> &__field--key-mode) > &__advanced-toggle {
+        grid-column: span 3;
+    }
+
+    &__form > &__field--textarea,
+    &__form > &__field--key-yaml-path,
+    &__form > &__field--key-config,
+    &__form > &__field:has(> &__choice-group),
+    &__form > &__advanced-body,
+    &__form > &__section-divider,
+    &__form > &__notice,
+    &__form > &__error,
+    &__form > &__status-banner,
+    &__form > &__actions,
+    &__form > &__result,
+    &__form > &__result-section,
+    &__form > &__support-result {
+        grid-column: 1 / -1;
     }
 
     &__field {
         margin-bottom: 0;
+        min-width: 0;
     }
 
     &__field .argo-field,
@@ -374,6 +403,16 @@
         &__support-row {
             flex-direction: column;
             align-items: flex-start;
+        }
+
+        &__form {
+            grid-template-columns: minmax(0, 1fr);
+        }
+
+        &__form > &__field,
+        &__form > &__field--key-mode,
+        &__form > &__advanced-toggle {
+            grid-column: 1 / -1;
         }
     }
 }
