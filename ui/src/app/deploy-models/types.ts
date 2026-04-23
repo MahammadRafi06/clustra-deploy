@@ -60,6 +60,7 @@ export interface ProjectListResponse {
 // ---------------------------------------------------------------------------
 
 export type JobStatus = 'pending' | 'running' | 'success' | 'failed' | 'cancelled';
+export type GitOpsStatus = 'queued' | 'retrying' | 'committed' | 'noop' | 'failed' | 'cancelled';
 
 export interface JobSummary {
     job_id: string;
@@ -67,6 +68,9 @@ export interface JobSummary {
     created_at: string;
     completed_at: string | null;
     triggered_by: string | null;
+    app_name: string | null;
+    gitops_status: GitOpsStatus | null;
+    can_cancel: boolean | null;
 }
 
 export interface JobResult {
@@ -77,6 +81,9 @@ export interface JobResult {
     result: Record<string, unknown> | null;
     error: string | null;
     triggered_by: string | null;
+    app_name: string | null;
+    gitops_status: GitOpsStatus | null;
+    can_cancel: boolean | null;
 }
 
 export interface JobAccepted {
@@ -88,6 +95,21 @@ export interface JobAccepted {
 export interface JobListResponse {
     jobs: JobSummary[];
     total: number;
+}
+
+export interface AuditEvent {
+    request_id: string;
+    job_id: string | null;
+    endpoint: string;
+    event_type: string;
+    triggered_by: string | null;
+    created_at: string;
+    payload: Record<string, unknown>;
+}
+
+export interface AuditTrailResponse {
+    job_id: string;
+    events: AuditEvent[];
 }
 
 // ---------------------------------------------------------------------------

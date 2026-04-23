@@ -6,8 +6,7 @@ import {submitDefault, submitDefaultPreflight} from '../api';
 import {AdvancedSection} from '../components/AdvancedSection';
 import {ErrorAlert} from '../components/ErrorAlert';
 import {FieldInput} from '../components/FieldInput';
-import {JobResultView} from '../components/JobResultView';
-import {JobStatusBanner} from '../components/JobStatusBanner';
+import {JobRunConsole} from '../components/JobRunConsole';
 import {NoticeAlert} from '../components/NoticeAlert';
 import {useFormState} from '../hooks/useFormState';
 import {useJobPoller} from '../hooks/useJobPoller';
@@ -35,8 +34,6 @@ export function DefaultPage() {
     const [submitError, setSubmitError] = useState<string | null>(null);
     const [preflight, setPreflight] = useState<DefaultPreflightResponse | null>(null);
     const {job, cancelling, cancel, reset: resetPoller} = useJobPoller(jobId);
-
-    const isTerminal = !!job && (job.status === 'success' || job.status === 'failed' || job.status === 'cancelled');
 
     function handleFieldChange(key: string, value: string) {
         setValue(key, value);
@@ -67,6 +64,13 @@ export function DefaultPage() {
             ...(values.free_gpu_memory_fraction && {free_gpu_memory_fraction: Number(values.free_gpu_memory_fraction)}),
             ...(values.max_seq_len && {max_seq_len: Number(values.max_seq_len)}),
             top_n: values.top_n ? Number(values.top_n) : undefined,
+            generator_set: values.generator_set
+                ? values.generator_set
+                      .split(/\r?\n|,/)
+                      .map(item => item.trim())
+                      .filter(Boolean)
+                : undefined,
+            ...(values.generator_config && {generator_config: values.generator_config}),
             ...(values.generator_dynamo_version && {generator_dynamo_version: values.generator_dynamo_version}),
             mode
         };
@@ -106,6 +110,13 @@ export function DefaultPage() {
         setJobId(null);
         setSubmitError(null);
         setPreflight(null);
+    }
+
+    function applyRecommendedDatabaseMode() {
+        if (!preflight?.recommended_database_mode) {
+            return;
+        }
+        handleFieldChange('database_mode', preflight.recommended_database_mode);
     }
 
     return (
@@ -230,6 +241,30 @@ export function DefaultPage() {
                     onChange={handleFieldChange}
                 />
                 <FieldInput
+                    def={{
+                        key: 'generator_set',
+                        label: 'Generator Rules',
+                        type: 'text',
+                        placeholder: 'rule=benchmark, ServiceConfig.model_path=meta/llama',
+                        hint: 'Optional comma-separated generator rules and overrides for expert tuning.'
+                    }}
+                    value={values.generator_set || ''}
+                    error={errors.generator_set}
+                    onChange={handleFieldChange}
+                />
+                <FieldInput
+                    def={{
+                        key: 'generator_config',
+                        label: 'Generator Config Path',
+                        type: 'text',
+                        placeholder: '/tmp/generator.yaml',
+                        hint: 'Optional generator config file path for advanced generation behavior.'
+                    }}
+                    value={values.generator_config || ''}
+                    error={errors.generator_config}
+                    onChange={handleFieldChange}
+                />
+                <FieldInput
                     def={{key: 'generator_dynamo_version', label: 'Dynamo Version Override', type: 'text', placeholder: 'e.g. 1.1.0'}}
                     value={values.generator_dynamo_version || ''}
                     error={errors.generator_dynamo_version}
@@ -243,7 +278,7 @@ export function DefaultPage() {
             />
 
             <div className='deploy-models__actions'>
-                <button type='button' className='argo-button argo-button--base' onClick={() => handleSubmit()} disabled={submitting || (!!job && !isTerminal)}>
+                <button type='button' className='argo-button argo-button--base' onClick={() => handleSubmit()} disabled={submitting}>
                     {submitting ? (
                         <>
                             <span className='deploy-models__button-spinner'>
@@ -262,6 +297,11 @@ export function DefaultPage() {
                         Run anyway
                     </button>
                 )}
+                {preflight?.recommended_database_mode && preflight.recommended_database_mode !== (values.database_mode || 'SILICON') && !submitting && (
+                    <button type='button' className='argo-button argo-button--base-o' onClick={applyRecommendedDatabaseMode}>
+                        Use {preflight.recommended_database_mode}
+                    </button>
+                )}
                 {(jobId || submitError || preflight) && (
                     <button type='button' className='argo-button argo-button--base-o' onClick={handleReset}>
                         New run
@@ -274,12 +314,7 @@ export function DefaultPage() {
                 <NoticeAlert key={`${message.code}-${message.severity}`} variant={message.severity === 'info' ? 'info' : 'warning'} message={message.message} />
             ))}
 
-            {job && (
-                <>
-                    <JobStatusBanner jobId={job.job_id} status={job.status} onCancel={cancel} cancelling={cancelling} />
-                    {isTerminal && <JobResultView job={job} />}
-                </>
-            )}
+            <JobRunConsole job={job} selectedJobId={jobId} cancelling={cancelling} onCancel={cancel} onSelectJob={setJobId} />
         </div>
     );
 }

@@ -11,6 +11,7 @@
 import type {
     Application,
     ApplicationListResponse,
+    AuditTrailResponse,
     DefaultRequest,
     DefaultPreflightResponse,
     EstimateRequest,
@@ -180,4 +181,8 @@ export function listJobs(params: {status?: string; limit?: number; offset?: numb
     if (params.offset != null) qs.set('offset', String(params.offset));
     const query = qs.toString();
     return _request('GET', `/jobs${query ? `?${query}` : ''}`);
+}
+
+export function getJobAudit(jobId: string): Promise<AuditTrailResponse> {
+    return _request('GET', `/jobs/${jobId}/audit`);
 }

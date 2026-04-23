@@ -1,80 +1,62 @@
-import React, {useEffect, useRef, useState} from 'react';
+import React, {useEffect, useState} from 'react';
 
 import {Spinner} from '../../shared/components';
 
-import type {JobStatus} from '../types';
+import {getJobStatusCopy, getRunStatusDescriptor, getStatusToneClass, isJobSettled} from '../jobState';
+import type {JobResult} from '../types';
 
 interface JobStatusBannerProps {
-    jobId: string;
-    status: JobStatus;
+    job: JobResult;
     onCancel: () => void;
     cancelling: boolean;
 }
 
-function statusLabel(status: JobStatus): string {
-    switch (status) {
-        case 'pending':
-            return 'Queued';
-        case 'running':
-            return 'Running';
-        case 'success':
-            return 'Completed';
-        case 'failed':
-            return 'Failed';
-        case 'cancelled':
-            return 'Cancelled';
-    }
+function elapsedSeconds(job: JobResult): number {
+    const startedAt = new Date(job.created_at).getTime();
+    const endedAt = job.completed_at ? new Date(job.completed_at).getTime() : Date.now();
+    return Math.max(0, Math.floor((endedAt - startedAt) / 1000));
 }
 
-function statusClass(status: JobStatus): string {
-    switch (status) {
-        case 'success':
-            return 'deploy-models__status-pill--success';
-        case 'failed':
-            return 'deploy-models__status-pill--error';
-        case 'cancelled':
-            return 'deploy-models__status-pill--warning';
-        default:
-            return 'deploy-models__status-pill--info';
-    }
-}
-
-export function JobStatusBanner({jobId, status, onCancel, cancelling}: JobStatusBannerProps) {
-    const startRef = useRef(Date.now());
-    const [elapsed, setElapsed] = useState(0);
-
-    const isTerminal = status === 'success' || status === 'failed' || status === 'cancelled';
+export function JobStatusBanner({job, onCancel, cancelling}: JobStatusBannerProps) {
+    const [elapsed, setElapsed] = useState(() => elapsedSeconds(job));
+    const settled = isJobSettled(job);
+    const status = getRunStatusDescriptor(job);
 
     useEffect(() => {
-        if (isTerminal) {
+        setElapsed(elapsedSeconds(job));
+        if (settled) {
             return;
         }
-        const id = setInterval(() => setElapsed(Math.floor((Date.now() - startRef.current) / 1000)), 1000);
-        return () => clearInterval(id);
-    }, [isTerminal]);
+        const intervalId = window.setInterval(() => {
+            setElapsed(elapsedSeconds(job));
+        }, 1000);
+        return () => window.clearInterval(intervalId);
+    }, [job, settled]);
 
     const mins = Math.floor(elapsed / 60);
     const secs = elapsed % 60;
     const elapsedLabel = mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
+    const canCancel = (job.status === 'pending' || job.status === 'running') && job.can_cancel === true;
 
     return (
         <div className='deploy-models__status-banner'>
             <div className='deploy-models__status-copy'>
-                {!isTerminal && (
+                {!settled && (
                     <span className='deploy-models__status-spinner'>
                         <Spinner show={true} />
                     </span>
                 )}
                 <div className='deploy-models__status-text'>
                     <div className='deploy-models__status-title'>
-                        <span className={`deploy-models__status-pill ${statusClass(status)}`}>{statusLabel(status)}</span>
+                        <span className={`deploy-models__status-pill ${getStatusToneClass(status.tone)}`}>{status.label}</span>
                     </div>
                     <div className='deploy-models__status-subtitle'>
-                        Job {jobId.slice(0, 8)}…{!isTerminal && ` · ${elapsedLabel}`}
+                        Job {job.job_id.slice(0, 8)}… · {getJobStatusCopy(job)}
+                        {!settled && ` · ${elapsedLabel}`}
                     </div>
                 </div>
             </div>
-            {!isTerminal && (
+            {canCancel && (
                 <button type='button' className='argo-button argo-button--base-o deploy-models__danger-button' onClick={onCancel} disabled={cancelling}>
                     {cancelling ? 'Cancelling…' : 'Cancel'}
                 </button>

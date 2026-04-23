@@ -1,9 +1,10 @@
 import {useCallback, useEffect, useRef, useState} from 'react';
+
 import {cancelJob, getJob} from '../api';
-import type {JobResult, JobStatus} from '../types';
+import {isJobSettled} from '../jobState';
+import type {JobResult} from '../types';
 
 const POLL_INTERVAL_MS = 3000;
-const TERMINAL = new Set<JobStatus>(['success', 'failed', 'cancelled']);
 
 interface UseJobPollerReturn {
     job: JobResult | null;
@@ -28,7 +29,7 @@ export function useJobPoller(jobId: string | null): UseJobPollerReturn {
         try {
             const result = await getJob(id);
             setJob(result);
-            if (!TERMINAL.has(result.status)) {
+            if (!isJobSettled(result)) {
                 timerRef.current = setTimeout(() => poll(id), POLL_INTERVAL_MS);
             }
         } catch {

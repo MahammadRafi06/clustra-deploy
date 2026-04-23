@@ -6,8 +6,7 @@ import {submitExp} from '../api';
 import {AdvancedSection} from '../components/AdvancedSection';
 import {ErrorAlert} from '../components/ErrorAlert';
 import {FieldInput} from '../components/FieldInput';
-import {JobResultView} from '../components/JobResultView';
-import {JobStatusBanner} from '../components/JobStatusBanner';
+import {JobRunConsole} from '../components/JobRunConsole';
 import {useFormState} from '../hooks/useFormState';
 import {useJobPoller} from '../hooks/useJobPoller';
 import {DEPLOY_MODE_OPTIONS} from '../options';
@@ -22,8 +21,6 @@ export function ExpPage() {
     const [submitting, setSubmitting] = useState(false);
     const [submitError, setSubmitError] = useState<string | null>(null);
     const {job, cancelling, cancel, reset: resetPoller} = useJobPoller(jobId);
-
-    const isTerminal = !!job && (job.status === 'success' || job.status === 'failed' || job.status === 'cancelled');
 
     async function handleSubmit() {
         setSubmitError(null);
@@ -151,7 +148,7 @@ export function ExpPage() {
             </AdvancedSection>
 
             <div className='deploy-models__actions'>
-                <button type='button' className='argo-button argo-button--base' onClick={handleSubmit} disabled={submitting || (!!job && !isTerminal)}>
+                <button type='button' className='argo-button argo-button--base' onClick={handleSubmit} disabled={submitting}>
                     {submitting ? (
                         <>
                             <span className='deploy-models__button-spinner'>
@@ -174,12 +171,7 @@ export function ExpPage() {
 
             {submitError && <ErrorAlert message={submitError} />}
 
-            {job && (
-                <>
-                    <JobStatusBanner jobId={job.job_id} status={job.status} onCancel={cancel} cancelling={cancelling} />
-                    {isTerminal && <JobResultView job={job} />}
-                </>
-            )}
+            <JobRunConsole job={job} selectedJobId={jobId} cancelling={cancelling} onCancel={cancel} onSelectJob={setJobId} />
         </div>
     );
 }

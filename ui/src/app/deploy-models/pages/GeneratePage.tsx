@@ -6,8 +6,7 @@ import {submitGenerate} from '../api';
 import {AdvancedSection} from '../components/AdvancedSection';
 import {ErrorAlert} from '../components/ErrorAlert';
 import {FieldInput} from '../components/FieldInput';
-import {JobResultView} from '../components/JobResultView';
-import {JobStatusBanner} from '../components/JobStatusBanner';
+import {JobRunConsole} from '../components/JobRunConsole';
 import {NoticeAlert} from '../components/NoticeAlert';
 import {useFormState} from '../hooks/useFormState';
 import {useJobPoller} from '../hooks/useJobPoller';
@@ -28,8 +27,6 @@ export function GeneratePage() {
     const [submitError, setSubmitError] = useState<string | null>(null);
     const [compatibilityWarning, setCompatibilityWarning] = useState<string | null>(null);
     const {job, cancelling, cancel, reset: resetPoller} = useJobPoller(jobId);
-
-    const isTerminal = !!job && (job.status === 'success' || job.status === 'failed' || job.status === 'cancelled');
 
     async function handleSubmit() {
         if (!validateRequired(['model_path', 'total_gpus', 'instance_type', 'mode'])) {
@@ -136,7 +133,7 @@ export function GeneratePage() {
             <NoticeAlert variant='info' message='Compatibility checks are advisory only. A mode marked not confirmed can still be tried.' />
 
             <div className='deploy-models__actions'>
-                <button type='button' className='argo-button argo-button--base' onClick={handleSubmit} disabled={submitting || (!!job && !isTerminal)}>
+                <button type='button' className='argo-button argo-button--base' onClick={handleSubmit} disabled={submitting}>
                     {submitting ? (
                         <>
                             <span className='deploy-models__button-spinner'>
@@ -160,12 +157,7 @@ export function GeneratePage() {
             {submitError && <ErrorAlert message={submitError} />}
             {compatibilityWarning && <NoticeAlert variant='warning' message={compatibilityWarning} />}
 
-            {job && (
-                <>
-                    <JobStatusBanner jobId={job.job_id} status={job.status} onCancel={cancel} cancelling={cancelling} />
-                    {isTerminal && <JobResultView job={job} />}
-                </>
-            )}
+            <JobRunConsole job={job} selectedJobId={jobId} cancelling={cancelling} onCancel={cancel} onSelectJob={setJobId} />
         </div>
     );
 }

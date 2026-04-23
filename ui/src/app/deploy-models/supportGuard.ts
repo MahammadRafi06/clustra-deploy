@@ -21,6 +21,10 @@ function _formatSupportFailureMessage(message: string): string {
     return message;
 }
 
+function _isBlockingCompatibilityFailure(message: string): boolean {
+    return /speech|ASR|text-generation models only/i.test(message);
+}
+
 export async function getDeployCompatibilityAdvisory({modelPath, instanceType, backend, mode}: DeployCompatibilityParams): Promise<DeployCompatibilityResult> {
     if (!modelPath || !instanceType || !mode) {
         return {warning: null, blockingError: null};
@@ -53,9 +57,12 @@ export async function getDeployCompatibilityAdvisory({modelPath, instanceType, b
 
         return {warning: null, blockingError: null};
     } catch (err: unknown) {
+        const message = _formatSupportFailureMessage(err instanceof Error ? err.message : String(err));
         return {
-            warning: null,
-            blockingError: _formatSupportFailureMessage(err instanceof Error ? err.message : String(err))
+            warning: _isBlockingCompatibilityFailure(message)
+                ? null
+                : `Compatibility advice could not be fetched right now. You can still continue with the deployment. Details: ${message}`,
+            blockingError: _isBlockingCompatibilityFailure(message) ? message : null
         };
     }
 }
