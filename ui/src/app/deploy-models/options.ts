@@ -21,3 +21,32 @@ export const DEPLOY_MODE_OPTIONS = [
 export const EC2_INSTANCE_HINT = 'Choose the EC2 instance size you want. The backend maps each instance type to the supported GPU system automatically.';
 
 export const DEPLOYMENT_MODE_HINT = 'Aggregated uses one serving tier. Disaggregated splits prefill and decode into separate tiers.';
+
+export const FIELD_HELP = {
+    modelPath: 'Model identifier or registry path that AIC should size, estimate, or generate manifests for.',
+    totalGpus: 'Total GPU budget across the full deployment. In disaggregated mode, this includes both prefill and decode tiers.',
+    deployMode: 'Aggregated keeps prefill and decode together. Disaggregated splits them into separate serving tiers.',
+    backend: 'Serving runtime used to execute the model. Leave the default unless you need a specific stack.',
+    backendVersion: 'Optional runtime version pin. Leave blank to use the service default for the selected backend.',
+    databaseMode: 'Planner data source strategy. Hybrid mixes cached empirical data with estimator fallbacks.',
+    isl: 'Input sequence length: prompt tokens sent into the model.',
+    osl: 'Output sequence length: tokens expected back from the model.',
+    ttft: 'Time to first token. Lower values improve first-token responsiveness.',
+    tpot: 'Time per output token after generation begins.',
+    requestLatency: 'Full request latency from prompt submission to the last token.',
+    prefixCache: 'Expected reusable prompt prefix length used for prefix-cache sizing.',
+    kvCacheFraction: 'Fraction of remaining GPU memory reserved for KV cache after runtime overhead.',
+    maxSeqLen: 'Hard cap on the total context length the runtime should admit.',
+    topN: 'Number of candidate plans or results to return.',
+    generatorSet: 'Advanced generator rules and overrides applied before manifests are written.',
+    generatorConfig: 'Server-side YAML path for expert generator behavior.',
+    generatorDynamoVersion: 'Optional Dynamo version override for expert tuning.',
+    estimateMode: 'Estimate one shared serving tier or separate prefill/decode tiers.',
+    tpSize: 'Tensor parallel shard count.',
+    ppSize: 'Pipeline parallel stage count.',
+    attentionDpSize: 'Attention data-parallel replica count.',
+    moeTpSize: 'MoE tensor parallel shard count.',
+    moeEpSize: 'MoE expert parallel shard count.',
+    yamlPath: 'Path to a server-side config file that already exists within the service output area.',
+    inlineConfig: 'Paste a JSON config when you want to replay an experiment without referencing a server-side file.'
+} as const;

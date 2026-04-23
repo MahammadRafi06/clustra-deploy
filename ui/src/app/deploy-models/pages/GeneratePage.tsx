@@ -10,7 +10,7 @@ import {JobRunConsole} from '../components/JobRunConsole';
 import {NoticeAlert} from '../components/NoticeAlert';
 import {useFormState} from '../hooks/useFormState';
 import {useJobPoller} from '../hooks/useJobPoller';
-import {DEPLOYMENT_MODE_HINT, DEPLOY_MODE_OPTIONS, EC2_INSTANCE_HINT, EC2_INSTANCE_OPTIONS} from '../options';
+import {DEPLOYMENT_MODE_HINT, DEPLOY_MODE_OPTIONS, EC2_INSTANCE_HINT, EC2_INSTANCE_OPTIONS, FIELD_HELP} from '../options';
 import {getDeployCompatibilityAdvisory} from '../supportGuard';
 import type {DeployMode} from '../types';
 
@@ -24,9 +24,19 @@ export function GeneratePage() {
     const {values, errors, setValue, validateRequired, reset} = useFormState({mode: 'agg'});
     const [jobId, setJobId] = useState<string | null>(null);
     const [submitting, setSubmitting] = useState(false);
-    const [submitError, setSubmitError] = useState<string | null>(null);
+    const [submitError, setSubmitError] = useState<unknown | null>(null);
     const [compatibilityWarning, setCompatibilityWarning] = useState<string | null>(null);
-    const {job, cancelling, cancel, reset: resetPoller} = useJobPoller(jobId);
+    const {job, cancelling, cancelError, pollRecovery, cancel, reset: resetPoller} = useJobPoller(jobId);
+
+    function handleFieldChange(key: string, value: string) {
+        setValue(key, value);
+        if (submitError) {
+            setSubmitError(null);
+        }
+        if (compatibilityWarning) {
+            setCompatibilityWarning(null);
+        }
+    }
 
     async function handleSubmit() {
         if (!validateRequired(['model_path', 'total_gpus', 'instance_type', 'mode'])) {
@@ -65,7 +75,7 @@ export function GeneratePage() {
             });
             setJobId(accepted.job_id);
         } catch (err) {
-            setSubmitError(err instanceof Error ? err.message : String(err));
+            setSubmitError(err);
         } finally {
             setSubmitting(false);
         }
@@ -82,10 +92,10 @@ export function GeneratePage() {
     return (
         <div className='deploy-models__form'>
             <FieldInput
-                def={{key: 'model_path', label: 'Model Path', type: 'text', required: true, placeholder: 'Qwen/Qwen3-32B-FP8'}}
+                def={{key: 'model_path', label: 'Model Path', type: 'text', required: true, placeholder: 'Qwen/Qwen3-32B-FP8', help: FIELD_HELP.modelPath}}
                 value={values.model_path || ''}
                 error={errors.model_path}
-                onChange={setValue}
+                onChange={handleFieldChange}
             />
             <FieldInput
                 def={{
@@ -95,42 +105,55 @@ export function GeneratePage() {
                     required: true,
                     min: 1,
                     placeholder: '8',
+                    help: FIELD_HELP.totalGpus,
                     hint: 'Total GPU count across the deployment you want AIC to size.'
                 }}
                 value={values.total_gpus || ''}
                 error={errors.total_gpus}
-                onChange={setValue}
+                onChange={handleFieldChange}
             />
             <FieldInput
                 def={{key: 'instance_type', label: 'EC2 Instance', type: 'select', required: true, options: EC2_INSTANCE_OPTIONS, hint: EC2_INSTANCE_HINT}}
                 value={values.instance_type || ''}
                 error={errors.instance_type}
-                onChange={setValue}
+                onChange={handleFieldChange}
             />
 
             <FieldInput
-                def={{key: 'mode', label: 'Deployment Mode', type: 'select', required: true, options: DEPLOY_MODE_OPTIONS, includeEmptyOption: false, hint: DEPLOYMENT_MODE_HINT}}
+                def={{
+                    key: 'mode',
+                    label: 'Deployment Mode',
+                    type: 'select',
+                    required: true,
+                    options: DEPLOY_MODE_OPTIONS,
+                    includeEmptyOption: false,
+                    help: FIELD_HELP.deployMode,
+                    hint: DEPLOYMENT_MODE_HINT
+                }}
                 value={values.mode || ''}
                 error={errors.mode}
-                onChange={setValue}
+                onChange={handleFieldChange}
             />
 
             <AdvancedSection>
                 <FieldInput
-                    def={{key: 'backend', label: 'Backend', type: 'select', options: BACKEND_OPTIONS}}
+                    def={{key: 'backend', label: 'Backend', type: 'select', options: BACKEND_OPTIONS, help: FIELD_HELP.backend}}
                     value={values.backend || ''}
                     error={errors.backend}
-                    onChange={setValue}
+                    onChange={handleFieldChange}
                 />
                 <FieldInput
-                    def={{key: 'backend_version', label: 'Backend Version', type: 'text', placeholder: 'e.g. 0.17.0'}}
+                    def={{key: 'backend_version', label: 'Backend Version', type: 'text', placeholder: 'e.g. 0.17.0', help: FIELD_HELP.backendVersion}}
                     value={values.backend_version || ''}
                     error={errors.backend_version}
-                    onChange={setValue}
+                    onChange={handleFieldChange}
                 />
             </AdvancedSection>
 
-            <NoticeAlert variant='info' message='Compatibility checks are advisory only. A mode marked not confirmed can still be tried.' />
+            <NoticeAlert
+                variant='info'
+                message='This workflow runs a quick compatibility advisory first. We still attempt generation unless the selected model and backend are clearly unsupported.'
+            />
 
             <div className='deploy-models__actions'>
                 <button type='button' className='argo-button argo-button--base' onClick={handleSubmit} disabled={submitting}>
@@ -143,7 +166,7 @@ export function GeneratePage() {
                         </>
                     ) : (
                         <>
-                            <i className='fa fa-rocket' /> Deploy
+                            <i className='fa fa-rocket' /> Generate manifests
                         </>
                     )}
                 </button>
@@ -154,10 +177,10 @@ export function GeneratePage() {
                 )}
             </div>
 
-            {submitError && <ErrorAlert message={submitError} />}
+            {submitError && <ErrorAlert error={submitError} />}
             {compatibilityWarning && <NoticeAlert variant='warning' message={compatibilityWarning} />}
 
-            <JobRunConsole job={job} selectedJobId={jobId} cancelling={cancelling} onCancel={cancel} onSelectJob={setJobId} />
+            <JobRunConsole job={job} selectedJobId={jobId} cancelling={cancelling} cancelError={cancelError} pollRecovery={pollRecovery} onCancel={cancel} onSelectJob={setJobId} />
         </div>
     );
 }

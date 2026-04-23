@@ -148,9 +148,72 @@
         min-width: 0;
     }
 
+    &__field-label-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-bottom: 6px;
+    }
+
+    &__field-label-row label {
+        margin-bottom: 0;
+    }
+
     &__field .argo-field,
     &__textarea {
         width: 100%;
+    }
+
+    &__field-help {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 18px;
+        height: 18px;
+        border: 1px solid $brand-border-subtle;
+        border-radius: 999px;
+        color: $brand-text-muted;
+        cursor: help;
+    }
+
+    &__field-help:focus,
+    &__field-help:focus-visible {
+        outline: none;
+        box-shadow: 0 0 0 2px rgba($brand-emerald, 0.2);
+    }
+
+    &__field-help-text {
+        position: absolute;
+        top: calc(100% + 8px);
+        right: 0;
+        z-index: 2;
+        width: min(300px, calc(100vw - 48px));
+        padding: 8px 10px;
+        border: 1px solid $brand-border-subtle;
+        border-radius: 4px;
+        background: rgba(17, 20, 24, 0.96);
+        color: $brand-text-secondary;
+        font-size: 0.8125em;
+        line-height: 1.4;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+        opacity: 0;
+        visibility: hidden;
+        transform: translateY(-4px);
+        transition:
+            opacity 0.15s ease,
+            transform 0.15s ease,
+            visibility 0.15s ease;
+        pointer-events: none;
+    }
+
+    &__field-help:hover &__field-help-text,
+    &__field-help:focus &__field-help-text,
+    &__field-help:focus-visible &__field-help-text {
+        opacity: 1;
+        visibility: visible;
+        transform: translateY(0);
     }
 
     &__textarea {
@@ -195,6 +258,23 @@
     &__task-description {
         color: $brand-text-secondary;
         font-size: 0.8125em;
+    }
+
+    &__task-meta {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+        margin-top: 4px;
+    }
+
+    &__task-badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 2px 8px;
+        border: 1px solid $brand-border-subtle;
+        border-radius: 999px;
+        color: $brand-text-muted;
+        font-size: 0.75em;
     }
 
     &__advanced {
@@ -269,6 +349,16 @@
         padding: 12px 14px;
     }
 
+    &__error {
+        display: grid;
+        gap: 6px;
+    }
+
+    &__error-reference {
+        color: $brand-text-muted;
+        font-size: 0.8125em;
+    }
+
     &__notice--info {
         color: $brand-text-secondary;
     }
@@ -277,6 +367,37 @@
         color: $brand-gold-light;
         border-color: rgba($brand-gold, 0.2);
         background: rgba($brand-gold, 0.05);
+    }
+
+    &__notice--error {
+        color: $brand-status-error;
+        border-color: rgba($brand-status-error, 0.2);
+        background: rgba($brand-status-error, 0.06);
+    }
+
+    &__target-notice {
+        display: grid;
+        gap: 12px;
+        margin-bottom: 16px;
+        padding: 14px;
+        border: 1px solid rgba($brand-emerald, 0.2);
+        border-radius: 4px;
+        background: rgba($brand-emerald, 0.06);
+    }
+
+    &__target-notice.is-read-only {
+        border-color: rgba($brand-gold, 0.2);
+        background: rgba($brand-gold, 0.05);
+    }
+
+    &__target-copy,
+    &__target-grid {
+        display: grid;
+        gap: 8px 12px;
+    }
+
+    &__target-grid {
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
     }
 
     &__actions,
@@ -502,6 +623,7 @@
         &__status-banner,
         &__result-section,
         &__support-result,
+        &__field-help-text,
         &__run-card {
             background-color: themed('background-1');
             border-color: themed('border');

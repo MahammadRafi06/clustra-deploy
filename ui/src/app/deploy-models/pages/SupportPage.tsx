@@ -8,7 +8,7 @@ import {ErrorAlert} from '../components/ErrorAlert';
 import {FieldInput} from '../components/FieldInput';
 import {NoticeAlert} from '../components/NoticeAlert';
 import {useFormState} from '../hooks/useFormState';
-import {EC2_INSTANCE_HINT, EC2_INSTANCE_OPTIONS} from '../options';
+import {EC2_INSTANCE_HINT, EC2_INSTANCE_OPTIONS, FIELD_HELP} from '../options';
 import type {SupportResponse} from '../types';
 
 const BACKEND_OPTIONS = [
@@ -53,7 +53,7 @@ export function SupportPage() {
     const {values, errors, setValue, validateRequired, reset} = useFormState();
     const [loading, setLoading] = useState(false);
     const [result, setResult] = useState<SupportResponse | null>(null);
-    const [submitError, setSubmitError] = useState<string | null>(null);
+    const [submitError, setSubmitError] = useState<unknown | null>(null);
 
     async function handleSubmit() {
         if (!validateRequired(['model_path', 'instance_type'])) {
@@ -73,7 +73,7 @@ export function SupportPage() {
             });
             setResult(response);
         } catch (err) {
-            setSubmitError(err instanceof Error ? err.message : String(err));
+            setSubmitError(err);
         } finally {
             setLoading(false);
         }
@@ -88,7 +88,7 @@ export function SupportPage() {
     return (
         <div className='deploy-models__form'>
             <FieldInput
-                def={{key: 'model_path', label: 'Model Path', type: 'text', required: true, placeholder: 'Qwen/Qwen3-32B-FP8'}}
+                def={{key: 'model_path', label: 'Model Path', type: 'text', required: true, placeholder: 'Qwen/Qwen3-32B-FP8', help: FIELD_HELP.modelPath}}
                 value={values.model_path || ''}
                 error={errors.model_path}
                 onChange={setValue}
@@ -102,13 +102,13 @@ export function SupportPage() {
 
             <AdvancedSection>
                 <FieldInput
-                    def={{key: 'backend', label: 'Backend', type: 'select', options: BACKEND_OPTIONS}}
+                    def={{key: 'backend', label: 'Backend', type: 'select', options: BACKEND_OPTIONS, help: FIELD_HELP.backend}}
                     value={values.backend || ''}
                     error={errors.backend}
                     onChange={setValue}
                 />
                 <FieldInput
-                    def={{key: 'backend_version', label: 'Backend Version', type: 'text', placeholder: 'e.g. 0.17.0'}}
+                    def={{key: 'backend_version', label: 'Backend Version', type: 'text', placeholder: 'e.g. 0.17.0', help: FIELD_HELP.backendVersion}}
                     value={values.backend_version || ''}
                     error={errors.backend_version}
                     onChange={setValue}
@@ -142,7 +142,7 @@ export function SupportPage() {
                 )}
             </div>
 
-            {submitError && <ErrorAlert message={submitError} />}
+            {submitError && <ErrorAlert error={submitError} />}
             {result && <SupportResult result={result} />}
         </div>
     );

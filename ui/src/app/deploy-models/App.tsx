@@ -6,6 +6,7 @@ import {setArgoProxyContext} from './api';
 import {AppContextProvider} from './components/AppContext';
 import {AppNameBadge} from './components/AppNameBadge';
 import {ContextSelector, type SelectedAppTarget} from './components/ContextSelector';
+import {DeployTargetNotice} from './components/DeployTargetNotice';
 import {TASK_OPTIONS, TaskSelector} from './components/TaskSelector';
 import type {TaskKey} from './components/TaskSelector';
 import {DefaultPage} from './pages/DefaultPage';
@@ -55,7 +56,9 @@ export function DeployModelsPage() {
                     <div className='deploy-models__panel-header'>
                         <div>
                             <div className='deploy-models__panel-title'>Target Context</div>
-                            <div className='deploy-models__panel-description'>Select the Argo CD project and application that should receive generated manifests.</div>
+                            <div className='deploy-models__panel-description'>
+                                Select the Argo CD project and application that provide run context and, for write workflows, receive generated manifests.
+                            </div>
                         </div>
                         <AppNameBadge />
                     </div>
@@ -90,6 +93,7 @@ export function DeployModelsPage() {
                                 </div>
                             </div>
                         </div>
+                        <DeployTargetNotice target={selectedTarget} task={task} />
                         <TaskPage key={`${selectedTarget.appNamespace}/${selectedTarget.appName}:${task}`} task={task} />
                     </section>
                 ) : (

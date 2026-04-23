@@ -1,13 +1,17 @@
 import React from 'react';
 
+import {formatPollRecoveryMessage, type PollRecoveryState} from '../polling';
 import {getRunStatusDescriptor, getStatusToneClass} from '../jobState';
 import type {AuditTrailResponse, JobResult} from '../types';
+import {ErrorAlert} from './ErrorAlert';
+import {NoticeAlert} from './NoticeAlert';
 
 interface JobResultViewProps {
     job: JobResult;
     audit: AuditTrailResponse | null;
-    auditError: string | null;
+    auditError: unknown | null;
     auditLoading: boolean;
+    auditRecovery: PollRecoveryState;
 }
 
 function renderValue(value: unknown): string {
@@ -97,7 +101,7 @@ function DetailGrid({items}: {items: Array<{label: string; value: string}>}) {
     );
 }
 
-export function JobResultView({job, audit, auditError, auditLoading}: JobResultViewProps) {
+export function JobResultView({job, audit, auditError, auditLoading, auditRecovery}: JobResultViewProps) {
     const {result, error} = job;
 
     if (error) {
@@ -213,7 +217,8 @@ export function JobResultView({job, audit, auditError, auditLoading}: JobResultV
             <div className='deploy-models__result-section'>
                 <div className='deploy-models__result-title'>Activity</div>
                 {auditLoading && <div className='deploy-models__muted-text'>Loading audit trail…</div>}
-                {auditError && <div className='deploy-models__muted-text'>{auditError}</div>}
+                {auditRecovery.reconnecting && <NoticeAlert variant='warning' message={formatPollRecoveryMessage('Audit updates are delayed', auditRecovery)} />}
+                {!auditRecovery.reconnecting && auditError && <ErrorAlert error={auditError} prefix='Unable to load audit trail' />}
                 {!auditLoading && !auditError && (!audit || audit.events.length === 0) && <div className='deploy-models__muted-text'>No audit events recorded yet.</div>}
                 {audit && audit.events.length > 0 && (
                     <div className='deploy-models__timeline'>

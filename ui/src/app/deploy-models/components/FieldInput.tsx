@@ -13,6 +13,7 @@ export interface FieldDef {
     label: string;
     type: FieldType;
     required?: boolean;
+    help?: string;
     placeholder?: string;
     hint?: string;
     options?: SelectOption[];
@@ -31,16 +32,26 @@ interface FieldInputProps {
 }
 
 export function FieldInput({def, value, error, onChange}: FieldInputProps) {
-    const {key, label, type, placeholder, hint, options, min, max, step, rows, includeEmptyOption} = def;
+    const {key, label, type, help, placeholder, hint, options, min, max, step, rows, includeEmptyOption} = def;
     const normalizedKey = key.replace(/[^a-zA-Z0-9]+/g, '-').toLowerCase();
     const fieldId = `deploy-models-field-${key}`;
 
     return (
         <div className={`argo-form-row deploy-models__field deploy-models__field--${type} deploy-models__field--key-${normalizedKey}`}>
-            <label htmlFor={fieldId}>
-                {label}
-                {def.required && <span className='deploy-models__required'>*</span>}
-            </label>
+            <div className='deploy-models__field-label-row'>
+                <label htmlFor={fieldId}>
+                    {label}
+                    {def.required && <span className='deploy-models__required'>*</span>}
+                </label>
+                {help && (
+                    <span className='deploy-models__field-help' tabIndex={0} role='note' aria-label={`${label}: ${help}`} title={help}>
+                        <i className='fa fa-question-circle-o' aria-hidden='true' />
+                        <span className='deploy-models__field-help-text' aria-hidden='true'>
+                            {help}
+                        </span>
+                    </span>
+                )}
+            </div>
 
             {type === 'select' ? (
                 <div className='deploy-models__select'>

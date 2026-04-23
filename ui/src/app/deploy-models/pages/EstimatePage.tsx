@@ -8,7 +8,7 @@ import {ErrorAlert} from '../components/ErrorAlert';
 import {FieldInput} from '../components/FieldInput';
 import {NoticeAlert} from '../components/NoticeAlert';
 import {useFormState} from '../hooks/useFormState';
-import {EC2_INSTANCE_HINT, EC2_INSTANCE_OPTIONS} from '../options';
+import {EC2_INSTANCE_HINT, EC2_INSTANCE_OPTIONS, FIELD_HELP} from '../options';
 import type {EstimateMode, EstimateResponse} from '../types';
 
 const BACKEND_OPTIONS = [
@@ -110,7 +110,7 @@ export function EstimatePage() {
     const {values, errors, setValue, validateRequired, reset} = useFormState();
     const [loading, setLoading] = useState(false);
     const [result, setResult] = useState<EstimateResponse | null>(null);
-    const [submitError, setSubmitError] = useState<string | null>(null);
+    const [submitError, setSubmitError] = useState<unknown | null>(null);
 
     const isDisagg = values.estimate_mode === 'disagg';
 
@@ -166,7 +166,7 @@ export function EstimatePage() {
             });
             setResult(response);
         } catch (err) {
-            setSubmitError(err instanceof Error ? err.message : String(err));
+            setSubmitError(err);
         } finally {
             setLoading(false);
         }
@@ -181,7 +181,7 @@ export function EstimatePage() {
     return (
         <div className='deploy-models__form'>
             <FieldInput
-                def={{key: 'model_path', label: 'Model Path', type: 'text', required: true, placeholder: 'Qwen/Qwen3-32B-FP8'}}
+                def={{key: 'model_path', label: 'Model Path', type: 'text', required: true, placeholder: 'Qwen/Qwen3-32B-FP8', help: FIELD_HELP.modelPath}}
                 value={values.model_path || ''}
                 error={errors.model_path}
                 onChange={setValue}
@@ -195,31 +195,41 @@ export function EstimatePage() {
 
             <AdvancedSection>
                 <FieldInput
-                    def={{key: 'estimate_mode', label: 'Estimate Mode', type: 'select', options: ESTIMATE_MODE_OPTIONS}}
+                    def={{key: 'estimate_mode', label: 'Estimate Mode', type: 'select', options: ESTIMATE_MODE_OPTIONS, help: FIELD_HELP.estimateMode}}
                     value={values.estimate_mode || ''}
                     error={errors.estimate_mode}
                     onChange={setValue}
                 />
                 <FieldInput
-                    def={{key: 'backend', label: 'Backend', type: 'select', options: BACKEND_OPTIONS}}
+                    def={{key: 'backend', label: 'Backend', type: 'select', options: BACKEND_OPTIONS, help: FIELD_HELP.backend}}
                     value={values.backend || ''}
                     error={errors.backend}
                     onChange={setValue}
                 />
                 <FieldInput
-                    def={{key: 'backend_version', label: 'Backend Version', type: 'text', placeholder: 'e.g. 0.17.0'}}
+                    def={{key: 'backend_version', label: 'Backend Version', type: 'text', placeholder: 'e.g. 0.17.0', help: FIELD_HELP.backendVersion}}
                     value={values.backend_version || ''}
                     error={errors.backend_version}
                     onChange={setValue}
                 />
                 <FieldInput
-                    def={{key: 'database_mode', label: 'Database Mode', type: 'select', options: DB_MODE_OPTIONS}}
+                    def={{key: 'database_mode', label: 'Database Mode', type: 'select', options: DB_MODE_OPTIONS, help: FIELD_HELP.databaseMode}}
                     value={values.database_mode || ''}
                     error={errors.database_mode}
                     onChange={setValue}
                 />
-                <FieldInput def={{key: 'isl', label: 'ISL', type: 'number', min: 1, placeholder: '1024'}} value={values.isl || ''} error={errors.isl} onChange={setValue} />
-                <FieldInput def={{key: 'osl', label: 'OSL', type: 'number', min: 1, placeholder: '1024'}} value={values.osl || ''} error={errors.osl} onChange={setValue} />
+                <FieldInput
+                    def={{key: 'isl', label: 'ISL', type: 'number', min: 1, placeholder: '1024', help: FIELD_HELP.isl}}
+                    value={values.isl || ''}
+                    error={errors.isl}
+                    onChange={setValue}
+                />
+                <FieldInput
+                    def={{key: 'osl', label: 'OSL', type: 'number', min: 1, placeholder: '1024', help: FIELD_HELP.osl}}
+                    value={values.osl || ''}
+                    error={errors.osl}
+                    onChange={setValue}
+                />
                 <FieldInput
                     def={{key: 'batch_size', label: 'Batch Size', type: 'number', min: 1, placeholder: '128'}}
                     value={values.batch_size || ''}
@@ -227,31 +237,31 @@ export function EstimatePage() {
                     onChange={setValue}
                 />
                 <FieldInput
-                    def={{key: 'tp_size', label: 'TP Size', type: 'number', min: 1, placeholder: '1'}}
+                    def={{key: 'tp_size', label: 'TP Size', type: 'number', min: 1, placeholder: '1', help: FIELD_HELP.tpSize}}
                     value={values.tp_size || ''}
                     error={errors.tp_size}
                     onChange={setValue}
                 />
                 <FieldInput
-                    def={{key: 'pp_size', label: 'PP Size', type: 'number', min: 1, placeholder: '1'}}
+                    def={{key: 'pp_size', label: 'PP Size', type: 'number', min: 1, placeholder: '1', help: FIELD_HELP.ppSize}}
                     value={values.pp_size || ''}
                     error={errors.pp_size}
                     onChange={setValue}
                 />
                 <FieldInput
-                    def={{key: 'attention_dp_size', label: 'Attention DP', type: 'number', min: 1}}
+                    def={{key: 'attention_dp_size', label: 'Attention DP', type: 'number', min: 1, help: FIELD_HELP.attentionDpSize}}
                     value={values.attention_dp_size || ''}
                     error={errors.attention_dp_size}
                     onChange={setValue}
                 />
                 <FieldInput
-                    def={{key: 'moe_tp_size', label: 'MoE TP Size', type: 'number', min: 1}}
+                    def={{key: 'moe_tp_size', label: 'MoE TP Size', type: 'number', min: 1, help: FIELD_HELP.moeTpSize}}
                     value={values.moe_tp_size || ''}
                     error={errors.moe_tp_size}
                     onChange={setValue}
                 />
                 <FieldInput
-                    def={{key: 'moe_ep_size', label: 'MoE EP Size', type: 'number', min: 1}}
+                    def={{key: 'moe_ep_size', label: 'MoE EP Size', type: 'number', min: 1, help: FIELD_HELP.moeEpSize}}
                     value={values.moe_ep_size || ''}
                     error={errors.moe_ep_size}
                     onChange={setValue}
@@ -287,13 +297,21 @@ export function EstimatePage() {
                     onChange={setValue}
                 />
                 <FieldInput
-                    def={{key: 'free_gpu_memory_fraction', label: 'KV Cache Memory Fraction', type: 'number', min: 0.01, max: 1, step: 0.01}}
+                    def={{
+                        key: 'free_gpu_memory_fraction',
+                        label: 'KV Cache Memory Fraction',
+                        type: 'number',
+                        min: 0.01,
+                        max: 1,
+                        step: 0.01,
+                        help: FIELD_HELP.kvCacheFraction
+                    }}
                     value={values.free_gpu_memory_fraction || ''}
                     error={errors.free_gpu_memory_fraction}
                     onChange={setValue}
                 />
                 <FieldInput
-                    def={{key: 'max_seq_len', label: 'Max Seq Length', type: 'number', min: 1}}
+                    def={{key: 'max_seq_len', label: 'Max Seq Length', type: 'number', min: 1, help: FIELD_HELP.maxSeqLen}}
                     value={values.max_seq_len || ''}
                     error={errors.max_seq_len}
                     onChange={setValue}
@@ -369,7 +387,7 @@ export function EstimatePage() {
                         </>
                     ) : (
                         <>
-                            <i className='fa fa-calculator' /> Estimate
+                            <i className='fa fa-calculator' /> Estimate performance
                         </>
                     )}
                 </button>
@@ -380,7 +398,7 @@ export function EstimatePage() {
                 )}
             </div>
 
-            {submitError && <ErrorAlert message={submitError} />}
+            {submitError && <ErrorAlert error={submitError} />}
             {result && <EstimateResult result={result} />}
         </div>
     );

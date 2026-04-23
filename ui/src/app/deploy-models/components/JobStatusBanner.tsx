@@ -38,6 +38,16 @@ export function JobStatusBanner({job, onCancel, cancelling}: JobStatusBannerProp
     const elapsedLabel = mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
     const canCancel = (job.status === 'pending' || job.status === 'running') && job.can_cancel === true;
 
+    function handleCancelClick() {
+        if (cancelling) {
+            return;
+        }
+        const confirmed = window.confirm('Mark this run as cancelled? Running compute may continue briefly, but the result will stop being treated as an active deploy.');
+        if (confirmed) {
+            onCancel();
+        }
+    }
+
     return (
         <div className='deploy-models__status-banner'>
             <div className='deploy-models__status-copy'>
@@ -57,8 +67,8 @@ export function JobStatusBanner({job, onCancel, cancelling}: JobStatusBannerProp
                 </div>
             </div>
             {canCancel && (
-                <button type='button' className='argo-button argo-button--base-o deploy-models__danger-button' onClick={onCancel} disabled={cancelling}>
-                    {cancelling ? 'Cancelling…' : 'Cancel'}
+                <button type='button' className='argo-button argo-button--base-o deploy-models__danger-button' onClick={handleCancelClick} disabled={cancelling}>
+                    {cancelling ? 'Cancelling…' : 'Mark cancelled'}
                 </button>
             )}
         </div>
