@@ -41,8 +41,8 @@ export function ContextSelector({value, onChange}: ContextSelectorProps) {
     const [applications, setApplications] = useState<Application[]>([]);
     const [projectsLoading, setProjectsLoading] = useState(true);
     const [applicationsLoading, setApplicationsLoading] = useState(false);
-    const [projectsError, setProjectsError] = useState<string | null>(null);
-    const [applicationsError, setApplicationsError] = useState<string | null>(null);
+    const [projectsError, setProjectsError] = useState<unknown | null>(null);
+    const [applicationsError, setApplicationsError] = useState<unknown | null>(null);
 
     const valueRef = useRef(value);
     useEffect(() => {
@@ -74,7 +74,7 @@ export function ContextSelector({value, onChange}: ContextSelectorProps) {
             })
             .catch(err => {
                 if (!cancelled) {
-                    setProjectsError(err instanceof Error ? err.message : String(err));
+                    setProjectsError(err);
                 }
             })
             .finally(() => {
@@ -111,9 +111,7 @@ export function ContextSelector({value, onChange}: ContextSelectorProps) {
 
                 const current = valueRef.current;
                 const rehydrate =
-                    current && current.projectName === projectName
-                        ? filtered.find(item => applicationKey(item) === `${current.appNamespace}:${current.appName}`)
-                        : undefined;
+                    current && current.projectName === projectName ? filtered.find(item => applicationKey(item) === `${current.appNamespace}:${current.appName}`) : undefined;
 
                 if (rehydrate) {
                     onChange(toTarget(rehydrate, projectName));
@@ -125,7 +123,7 @@ export function ContextSelector({value, onChange}: ContextSelectorProps) {
             })
             .catch(err => {
                 if (!cancelled) {
-                    setApplicationsError(err instanceof Error ? err.message : String(err));
+                    setApplicationsError(err);
                     setApplications([]);
                     if (valueRef.current) {
                         onChange(null);
@@ -204,8 +202,8 @@ export function ContextSelector({value, onChange}: ContextSelectorProps) {
                 </div>
             </div>
 
-            {projectsError && <ErrorAlert message={`Unable to load Argo CD projects: ${projectsError}`} />}
-            {applicationsError && <ErrorAlert message={`Unable to load Argo CD applications: ${applicationsError}`} />}
+            {projectsError && <ErrorAlert error={projectsError} prefix='Unable to load Argo CD projects' />}
+            {applicationsError && <ErrorAlert error={applicationsError} prefix='Unable to load Argo CD applications' />}
 
             {!projectsLoading && projects.length === 0 && <NoticeAlert variant='warning' message='No projects are visible to this Argo CD user.' />}
 

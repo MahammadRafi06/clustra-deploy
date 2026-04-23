@@ -6,11 +6,10 @@ import {submitExp} from '../api';
 import {AdvancedSection} from '../components/AdvancedSection';
 import {ErrorAlert} from '../components/ErrorAlert';
 import {FieldInput} from '../components/FieldInput';
-import {JobResultView} from '../components/JobResultView';
-import {JobStatusBanner} from '../components/JobStatusBanner';
+import {JobRunConsole} from '../components/JobRunConsole';
 import {useFormState} from '../hooks/useFormState';
 import {useJobPoller} from '../hooks/useJobPoller';
-import {DEPLOY_MODE_OPTIONS} from '../options';
+import {DEPLOY_MODE_OPTIONS, FIELD_HELP} from '../options';
 import type {DeployMode} from '../types';
 
 type InputMode = 'yaml_path' | 'inline';
@@ -20,10 +19,8 @@ export function ExpPage() {
     const [inputMode, setInputMode] = useState<InputMode>('yaml_path');
     const [jobId, setJobId] = useState<string | null>(null);
     const [submitting, setSubmitting] = useState(false);
-    const [submitError, setSubmitError] = useState<string | null>(null);
-    const {job, cancelling, cancel, reset: resetPoller} = useJobPoller(jobId);
-
-    const isTerminal = !!job && (job.status === 'success' || job.status === 'failed' || job.status === 'cancelled');
+    const [submitError, setSubmitError] = useState<unknown | null>(null);
+    const {job, cancelling, cancelError, pollRecovery, cancel, reset: resetPoller} = useJobPoller(jobId);
 
     async function handleSubmit() {
         setSubmitError(null);
@@ -66,7 +63,7 @@ export function ExpPage() {
             });
             setJobId(accepted.job_id);
         } catch (err) {
-            setSubmitError(err instanceof Error ? err.message : String(err));
+            setSubmitError(err);
         } finally {
             setSubmitting(false);
         }
@@ -104,6 +101,7 @@ export function ExpPage() {
                         type: 'text',
                         required: true,
                         placeholder: '/app/output/my-experiment.yaml',
+                        help: FIELD_HELP.yamlPath,
                         hint: 'Must be within AICONF_OUTPUT_BASE_DIR'
                     }}
                     value={values.yaml_path || ''}
@@ -118,6 +116,7 @@ export function ExpPage() {
                         type: 'textarea',
                         required: true,
                         rows: 8,
+                        help: FIELD_HELP.inlineConfig,
                         placeholder: '{\n  "model_path": "...",\n  ...\n}'
                     }}
                     value={values.config || ''}
@@ -134,6 +133,7 @@ export function ExpPage() {
                     required: true,
                     options: DEPLOY_MODE_OPTIONS,
                     includeEmptyOption: false,
+                    help: FIELD_HELP.deployMode,
                     hint: 'Chooses the manifest layout committed to your ArgoCD app repo.'
                 }}
                 value={values.mode || ''}
@@ -143,7 +143,7 @@ export function ExpPage() {
 
             <AdvancedSection>
                 <FieldInput
-                    def={{key: 'top_n', label: 'Top-N Results', type: 'number', min: 1, max: 50, placeholder: '5'}}
+                    def={{key: 'top_n', label: 'Top-N Results', type: 'number', min: 1, max: 50, placeholder: '5', help: FIELD_HELP.topN}}
                     value={values.top_n || ''}
                     error={errors.top_n}
                     onChange={setValue}
@@ -151,7 +151,7 @@ export function ExpPage() {
             </AdvancedSection>
 
             <div className='deploy-models__actions'>
-                <button type='button' className='argo-button argo-button--base' onClick={handleSubmit} disabled={submitting || (!!job && !isTerminal)}>
+                <button type='button' className='argo-button argo-button--base' onClick={handleSubmit} disabled={submitting}>
                     {submitting ? (
                         <>
                             <span className='deploy-models__button-spinner'>
@@ -161,7 +161,7 @@ export function ExpPage() {
                         </>
                     ) : (
                         <>
-                            <i className='fa fa-play' /> Run
+                            <i className='fa fa-play' /> Replay config
                         </>
                     )}
                 </button>
@@ -172,14 +172,9 @@ export function ExpPage() {
                 )}
             </div>
 
-            {submitError && <ErrorAlert message={submitError} />}
+            {submitError && <ErrorAlert error={submitError} />}
 
-            {job && (
-                <>
-                    <JobStatusBanner jobId={job.job_id} status={job.status} onCancel={cancel} cancelling={cancelling} />
-                    {isTerminal && <JobResultView job={job} />}
-                </>
-            )}
+            <JobRunConsole job={job} selectedJobId={jobId} cancelling={cancelling} cancelError={cancelError} pollRecovery={pollRecovery} onCancel={cancel} onSelectJob={setJobId} />
         </div>
     );
 }

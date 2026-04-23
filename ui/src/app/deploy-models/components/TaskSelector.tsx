@@ -7,46 +7,52 @@ export const TASK_OPTIONS: {
     label: string;
     title: string;
     description: string;
+    badges: string[];
     icon: string;
     accent: string;
 }[] = [
     {
         value: 'default',
-        label: 'Default',
-        title: 'Best Deployment Plan',
-        description: 'Find the strongest aggregated or disaggregated setup for the selected model and target.',
+        label: 'Recommended',
+        title: 'Find Best Deployment Plan',
+        description: 'Runs an exact preflight, picks a deployment shape, and writes manifests if the run succeeds.',
+        badges: ['Writes manifests', 'A few minutes'],
         icon: 'fa-compass',
         accent: 'emerald'
     },
     {
         value: 'experiment',
-        label: 'Experiment',
+        label: 'Expert',
         title: 'Replay Existing Config',
-        description: 'Run a saved YAML or inline config when you already know the experiment you want to evaluate.',
+        description: 'Replay a known YAML or JSON config when you already know the layout you want to ship.',
+        badges: ['Writes manifests', 'Expert input'],
         icon: 'fa-flask',
         accent: 'gold'
     },
     {
         value: 'generate',
         label: 'Quick Deploy',
-        title: 'Generate Deployment Files',
-        description: 'Generate deploy artifacts directly for a known model, backend, and instance.',
+        title: 'Generate Known Shape',
+        description: 'Fastest path when you already know the model, backend, and instance you want.',
+        badges: ['Writes manifests', 'Fastest async run'],
         icon: 'fa-rocket',
         accent: 'emerald'
     },
     {
         value: 'support',
         label: 'Compatibility',
-        title: 'Check Compatibility',
-        description: 'Check whether the selected model and platform are known to work before you commit to a run.',
+        title: 'Check Known Support',
+        description: 'Read-only check for whether aggregated or disaggregated serving is known to work.',
+        badges: ['Read only', 'Fast check'],
         icon: 'fa-check-circle',
         accent: 'blue'
     },
     {
         value: 'estimate',
         label: 'Estimate',
-        title: 'Estimate Performance',
-        description: 'Inspect latency, throughput, and GPU utilization for a candidate deployment shape.',
+        title: 'Model Performance Estimate',
+        description: 'Read-only estimate of latency, throughput, and GPU utilization for a candidate shape.',
+        badges: ['Read only', 'Fast estimate'],
         icon: 'fa-chart-line',
         accent: 'gold'
     }
@@ -77,6 +83,13 @@ export function TaskSelector({value, onChange}: TaskSelectorProps) {
                             <span className='deploy-models__task-label'>{option.label}</span>
                             <span className='deploy-models__task-title'>{option.title}</span>
                             <span className='deploy-models__task-description'>{option.description}</span>
+                            <span className='deploy-models__task-meta'>
+                                {option.badges.map(badge => (
+                                    <span key={badge} className='deploy-models__task-badge'>
+                                        {badge}
+                                    </span>
+                                ))}
+                            </span>
                         </span>
                     </button>
                 );

@@ -8,9 +8,11 @@
  * the page to declare the current Application + Project context.
  */
 
+import {ApiError, formatErrorDetail} from './errors';
 import type {
     Application,
     ApplicationListResponse,
+    AuditTrailResponse,
     DefaultRequest,
     DefaultPreflightResponse,
     EstimateRequest,
@@ -35,6 +37,8 @@ interface ProxyContext {
 }
 
 let proxyContext: ProxyContext | null = null;
+const REQUEST_ID_HEADER = 'X-Request-ID';
+const TRACE_ID_HEADER = 'X-Trace-ID';
 
 export function setArgoProxyContext(context: ProxyContext | null): void {
     proxyContext = context;
@@ -43,6 +47,27 @@ export function setArgoProxyContext(context: ProxyContext | null): void {
 // ---------------------------------------------------------------------------
 // Internal helpers
 // ---------------------------------------------------------------------------
+
+async function _buildApiError(resp: Response): Promise<ApiError> {
+    let payload: Record<string, unknown> | null = null;
+    try {
+        payload = (await resp.json()) as Record<string, unknown>;
+    } catch {
+        payload = null;
+    }
+
+    const requestId = (typeof payload?.request_id === 'string' ? payload.request_id : null) || resp.headers.get(REQUEST_ID_HEADER);
+    const traceId = (typeof payload?.trace_id === 'string' ? payload.trace_id : null) || resp.headers.get(TRACE_ID_HEADER);
+    const detail = payload?.detail ?? payload?.message ?? payload?.error;
+    const message = formatErrorDetail(detail, `HTTP ${resp.status}`);
+
+    return new ApiError({
+        message,
+        status: resp.status,
+        requestId,
+        traceId
+    });
+}
 
 async function _request<T>(method: string, path: string, body?: unknown): Promise<T> {
     const headers: Record<string, string> = body !== undefined ? {'Content-Type': 'application/json'} : {};
@@ -61,14 +86,7 @@ async function _request<T>(method: string, path: string, body?: unknown): Promis
     });
 
     if (!resp.ok) {
-        let detail = `HTTP ${resp.status}`;
-        try {
-            const err = await resp.json();
-            detail = err.detail ?? err.message ?? detail;
-        } catch {
-            // ignore parse errors
-        }
-        throw new Error(detail);
+        throw await _buildApiError(resp);
     }
 
     return resp.json() as Promise<T>;
@@ -92,14 +110,7 @@ async function _argoRequest<T>(path: string, params?: Record<string, string | st
     });
 
     if (!resp.ok) {
-        let detail = `HTTP ${resp.status}`;
-        try {
-            const err = await resp.json();
-            detail = err.error ?? err.message ?? err.detail ?? detail;
-        } catch {
-            // ignore parse errors
-        }
-        throw new Error(detail);
+        throw await _buildApiError(resp);
     }
 
     return resp.json() as Promise<T>;
@@ -180,4 +191,8 @@ export function listJobs(params: {status?: string; limit?: number; offset?: numb
     if (params.offset != null) qs.set('offset', String(params.offset));
     const query = qs.toString();
     return _request('GET', `/jobs${query ? `?${query}` : ''}`);
+}
+
+export function getJobAudit(jobId: string): Promise<AuditTrailResponse> {
+    return _request('GET', `/jobs/${jobId}/audit`);
 }
