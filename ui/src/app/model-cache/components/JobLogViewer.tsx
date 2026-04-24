@@ -44,16 +44,16 @@ export const JobLogViewer: React.FC<Props> = ({jobId, onClose}) => {
 
     return (
         <SlidingPanel hasCloseButton={true} header={<strong>Job Logs</strong>} isMiddle={true} isShown={true} onClose={onClose}>
-            <div className='model-cache__drawer-body'>
+            <div className='model-cache__drawer-body' role='dialog' aria-modal='true' aria-label='Job logs'>
                 <div className='model-cache__drawer-toolbar'>
                     <StatusBadge tone={connected ? 'success' : 'muted'} size='small'>
                         {connected ? 'streaming' : 'disconnected'}
                     </StatusBadge>
-                    <button type='button' className='argo-button argo-button--base-o model-cache__button' onClick={copyLogs}>
-                        <i className='fa fa-copy' /> Copy
+                    <button type='button' className='argo-button argo-button--base-o model-cache__button' onClick={copyLogs} aria-label='Copy job logs'>
+                        <i className='fa fa-copy' aria-hidden='true' /> Copy
                     </button>
                 </div>
-                <div ref={containerRef} className='model-cache__log-viewer'>
+                <div ref={containerRef} className='model-cache__log-viewer' role='log' aria-live='polite' aria-busy={connected}>
                     {lines.length === 0 ? <div className='model-cache__table-meta'>Waiting for logs…</div> : lines.map((line, index) => <div key={index}>{line}</div>)}
                 </div>
             </div>

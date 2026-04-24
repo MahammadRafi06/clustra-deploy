@@ -74,7 +74,17 @@ export const ModelCatalogTable: React.FC<Props> = ({models, total, page, selecte
                 <div
                     key={model.id}
                     className={`argo-table-list__row model-cache__table-row${selectedIds.has(model.id) ? ' model-cache__table-row--selected' : ''}`}
-                    onClick={() => onRowClick(model.id)}>
+                    onClick={() => onRowClick(model.id)}
+                    onKeyDown={event => {
+                        if (event.key === 'Enter' || event.key === ' ') {
+                            event.preventDefault();
+                            onRowClick(model.id);
+                        }
+                    }}
+                    role='button'
+                    tabIndex={0}
+                    aria-label={`Open details for ${model.display_name || model.repo_id}`}
+                >
                     <div className='row'>
                         <div className='columns small-1' onClick={event => event.stopPropagation()}>
                             <Checkbox checked={selectedIds.has(model.id)} onChange={() => onSelect(model.id)} />
@@ -162,7 +172,8 @@ export const ModelCatalogTable: React.FC<Props> = ({models, total, page, selecte
                         <h4>No models found</h4>
                         <h5>Download a model to get started, or adjust your filters.</h5>
                     </EmptyState>
-                )}>
+                )}
+            >
                 {pageModels => renderTable(pageModels)}
             </Paginate>
         </div>

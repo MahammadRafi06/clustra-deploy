@@ -28,8 +28,15 @@ export const FilterToolbar: React.FC<Props> = ({filters, onChange, onRefresh, on
     const update = (partial: Partial<Filters>) => onChange({...filters, ...partial});
 
     return (
-        <div className='model-cache__filters'>
-            <input type='text' className='argo-field model-cache__search' placeholder='Search models' value={filters.search} onChange={e => update({search: e.target.value})} />
+        <div className='model-cache__filters' role='search' aria-label='Model catalog filters'>
+            <input
+                type='text'
+                className='argo-field model-cache__search'
+                placeholder='Search models'
+                value={filters.search}
+                onChange={e => update({search: e.target.value})}
+                aria-label='Search models'
+            />
 
             <div className='model-cache__select model-cache__filter-select'>
                 <Select
@@ -62,16 +69,20 @@ export const FilterToolbar: React.FC<Props> = ({filters, onChange, onRefresh, on
                 type='button'
                 className={`argo-button ${filters.sort_order === 'desc' ? 'argo-button--base' : 'argo-button--base-o'} model-cache__button`}
                 onClick={() => update({sort_order: filters.sort_order === 'desc' ? 'asc' : 'desc'})}
-                title={filters.sort_order === 'desc' ? 'Descending' : 'Ascending'}>
-                <i className={`fa fa-sort-amount-${filters.sort_order === 'desc' ? 'desc' : 'asc'}`} />
+                title={filters.sort_order === 'desc' ? 'Descending' : 'Ascending'}
+                aria-label={`Sort ${filters.sort_order === 'desc' ? 'descending' : 'ascending'}`}
+            >
+                <i className={`fa fa-sort-amount-${filters.sort_order === 'desc' ? 'desc' : 'asc'}`} aria-hidden='true' />
             </button>
 
             <button
                 type='button'
                 className={`argo-button ${filters.pinned ? 'argo-button--base' : 'argo-button--base-o'} model-cache__button`}
                 onClick={() => update({pinned: filters.pinned === true ? undefined : true})}
-                title='Show pinned only'>
-                <i className='fa fa-thumb-tack' /> Pinned
+                title='Show pinned only'
+                aria-pressed={filters.pinned === true}
+            >
+                <i className='fa fa-thumb-tack' aria-hidden='true' /> Pinned
             </button>
 
             <div className='model-cache__select model-cache__filter-select'>
@@ -90,17 +101,31 @@ export const FilterToolbar: React.FC<Props> = ({filters, onChange, onRefresh, on
 
             <div className='model-cache__filters-spacer' />
 
-            <button type='button' className='argo-button argo-button--base-o model-cache__button' onClick={onRefresh} disabled={refreshing} title='Refresh data'>
-                <i className={`fa fa-refresh${refreshing ? ' fa-spin' : ''}`} /> Refresh
+            <button
+                type='button'
+                className='argo-button argo-button--base-o model-cache__button'
+                onClick={onRefresh}
+                disabled={refreshing}
+                title='Refresh data'
+                aria-label='Refresh model catalog'
+            >
+                <i className={`fa fa-refresh${refreshing ? ' fa-spin' : ''}`} aria-hidden='true' /> Refresh
             </button>
 
-            <button type='button' className='argo-button argo-button--base-o model-cache__button' onClick={onRescan} disabled={rescanning} title='Force agent rescan of disk'>
-                <i className={`fa fa-hdd-o${rescanning ? ' fa-spin' : ''}`} /> {rescanning ? 'Rescanning…' : 'Rescan'}
+            <button
+                type='button'
+                className='argo-button argo-button--base-o model-cache__button'
+                onClick={onRescan}
+                disabled={rescanning}
+                title='Force agent rescan of disk'
+                aria-label='Force agent rescan of disk'
+            >
+                <i className={`fa fa-hdd-o${rescanning ? ' fa-spin' : ''}`} aria-hidden='true' /> {rescanning ? 'Rescanning…' : 'Rescan'}
             </button>
 
             {!airgapped && (
-                <button type='button' className='argo-button argo-button--base model-cache__button' onClick={onDownload}>
-                    <i className='fa fa-download' /> Download Model
+                <button type='button' className='argo-button argo-button--base model-cache__button' onClick={onDownload} aria-label='Download model'>
+                    <i className='fa fa-download' aria-hidden='true' /> Download Model
                 </button>
             )}
         </div>

@@ -17,6 +17,7 @@ import {ConfirmDialog} from '../components/common/ConfirmDialog';
 import {ErrorBanner} from '../components/common/ErrorBanner';
 import {useHealth} from '../hooks/useHealth';
 import {useBulkAction, useDownloadModel, useHardDelete, useModelDetail, useModels, useRestoreModel, useSoftDelete, useUpdateModel} from '../hooks/useModels';
+import {TOAST_DURATION_MS} from '../utils/constants';
 
 interface Filters {
     search: string;
@@ -49,9 +50,15 @@ const ModelCacheWorkspace: React.FC = () => {
     const [showJobs, setShowJobs] = useState(false);
     const [showPresets, setShowPresets] = useState(false);
     const [hardDeleteTarget, setHardDeleteTarget] = useState<{id: string; name: string} | null>(null);
+    const [bulkSoftDeleteTarget, setBulkSoftDeleteTarget] = useState<{ids: string[]; count: number} | null>(null);
     const [refreshing, setRefreshing] = useState(false);
     const [rescanning, setRescanning] = useState(false);
     const [toast, setToast] = useState<string | null>(null);
+
+    const showToast = useCallback((message: string) => {
+        setToast(message);
+        setTimeout(() => setToast(null), TOAST_DURATION_MS);
+    }, []);
 
     useEffect(() => {
         const subscription = services.viewPreferences.getPreferences().subscribe(pref => {
@@ -75,6 +82,7 @@ const ModelCacheWorkspace: React.FC = () => {
         data: modelsData,
         isLoading,
         error,
+        isPollingPaused,
         refetch
     } = useModels({
         page: page + 1,
@@ -87,8 +95,8 @@ const ModelCacheWorkspace: React.FC = () => {
         pinned: filters.pinned,
         stale_days: filters.stale_days
     });
-    const {data: modelDetail, isLoading: detailLoading} = useModelDetail(detailId);
-    const {data: healthData} = useHealth();
+    const {data: modelDetail, isLoading: detailLoading, error: detailError} = useModelDetail(detailId);
+    const {data: healthData, error: healthError, isPollingPaused: healthPollingPaused, refetch: refetchHealth} = useHealth();
 
     const downloadModel = useDownloadModel();
     const softDelete = useSoftDelete();
@@ -145,14 +153,48 @@ const ModelCacheWorkspace: React.FC = () => {
         if (!hardDeleteTarget) {
             return;
         }
-        hardDelete.mutate(hardDeleteTarget.id, {
-            onSuccess: () => {
-                setHardDeleteTarget(null);
-                setDetailId(null);
-                setShowJobs(true);
+        hardDelete
+            .mutate(hardDeleteTarget.id, {
+                onSuccess: () => {
+                    setHardDeleteTarget(null);
+                    setDetailId(null);
+                    setShowJobs(true);
+                }
+            })
+            .catch(deleteError => showToast(`Hard delete failed: ${deleteError}`));
+    }, [hardDelete, hardDeleteTarget, showToast]);
+
+    const runBulkAction = useCallback(
+        async (action: 'soft_delete' | 'pin' | 'unpin', ids = Array.from(selectedIds)) => {
+            if (ids.length === 0) {
+                return;
             }
-        });
-    }, [hardDelete, hardDeleteTarget]);
+            const actionLabel: Record<typeof action, string> = {
+                soft_delete: 'Soft delete',
+                pin: 'Pin',
+                unpin: 'Unpin'
+            };
+            try {
+                const result = await bulkAction.mutate({model_ids: ids, action});
+                setSelectedIds(new Set());
+                await refetch();
+                const failureCopy = result.failed.length > 0 ? `, ${result.failed.length} failed` : '';
+                showToast(`${actionLabel[action]} complete: ${result.succeeded.length} succeeded${failureCopy}`);
+            } catch (bulkError) {
+                showToast(`${actionLabel[action]} failed: ${bulkError}`);
+            }
+        },
+        [bulkAction, refetch, selectedIds, showToast]
+    );
+
+    const confirmBulkSoftDelete = useCallback(() => {
+        if (!bulkSoftDeleteTarget) {
+            return;
+        }
+        const ids = bulkSoftDeleteTarget.ids;
+        setBulkSoftDeleteTarget(null);
+        runBulkAction('soft_delete', ids);
+    }, [bulkSoftDeleteTarget, runBulkAction]);
 
     return (
         <div className='model-cache__page'>
@@ -168,18 +210,32 @@ const ModelCacheWorkspace: React.FC = () => {
                     </div>
                     <div className='model-cache__toolbar-actions'>
                         {!healthData?.airgapped && (
-                            <button type='button' className='argo-button argo-button--base-o model-cache__button' onClick={() => setShowPresets(true)}>
-                                <i className='fa fa-bookmark' /> Presets
+                            <button
+                                type='button'
+                                className='argo-button argo-button--base-o model-cache__button'
+                                onClick={() => setShowPresets(true)}
+                                aria-label='Open cache warmup presets'
+                            >
+                                <i className='fa fa-bookmark' aria-hidden='true' /> Presets
                             </button>
                         )}
-                        <button type='button' className='argo-button argo-button--base-o model-cache__button' onClick={() => setShowJobs(true)}>
-                            <i className='fa fa-tasks' /> Jobs
+                        <button type='button' className='argo-button argo-button--base-o model-cache__button' onClick={() => setShowJobs(true)} aria-label='Open model cache jobs'>
+                            <i className='fa fa-tasks' aria-hidden='true' /> Jobs
                         </button>
                     </div>
                 </div>
 
-                {toast && <div className='model-cache__toast'>{toast}</div>}
-                {error && <ErrorBanner message={String(error)} onRetry={() => refetch()} />}
+                {toast && (
+                    <div className='model-cache__toast' role='status' aria-live='polite'>
+                        {toast}
+                    </div>
+                )}
+                {error && <ErrorBanner message={`Failed to load model catalog${isPollingPaused ? '; polling paused' : ''}: ${error.message}`} onRetry={() => refetch()} />}
+                {healthError && (
+                    <ErrorBanner message={`Failed to load health status${healthPollingPaused ? '; polling paused' : ''}: ${healthError.message}`} onRetry={() => refetchHealth()} />
+                )}
+                {detailError && <ErrorBanner message={`Failed to load model details: ${detailError.message}`} />}
+                {bulkAction.error && <ErrorBanner message={`Bulk action failed: ${bulkAction.error.message}`} />}
                 {healthData && <StoragePressureBanner health={healthData} />}
                 <HealthSummaryCards health={healthData || null} />
             </section>
@@ -207,22 +263,23 @@ const ModelCacheWorkspace: React.FC = () => {
                         setRefreshing(true);
                         try {
                             await refetch();
-                            setToast('Catalog refreshed');
+                            showToast('Catalog refreshed');
+                        } catch (refreshError) {
+                            showToast(`Refresh failed: ${refreshError}`);
                         } finally {
                             setRefreshing(false);
-                            setTimeout(() => setToast(null), 2000);
                         }
                     }}
                     onRescan={async () => {
                         setRescanning(true);
                         try {
                             const result = await api.rescanAll();
-                            setToast(`Rescan triggered on ${result.triggered.length} agent(s)`);
+                            const failureCopy = result.failed.length > 0 ? `, ${result.failed.length} failed` : '';
+                            showToast(`Rescan triggered on ${result.triggered.length} agent(s)${failureCopy}`);
                         } catch (refreshError) {
-                            setToast(`Rescan failed: ${refreshError}`);
+                            showToast(`Rescan failed: ${refreshError}`);
                         } finally {
                             setRescanning(false);
-                            setTimeout(() => setToast(null), 3000);
                         }
                     }}
                     onDownload={() => setShowDownload(true)}
@@ -233,17 +290,11 @@ const ModelCacheWorkspace: React.FC = () => {
                 <BulkActionBar
                     selectedCount={selectedIds.size}
                     onSoftDelete={() => {
-                        bulkAction.mutate({model_ids: Array.from(selectedIds), action: 'soft_delete'});
-                        setSelectedIds(new Set());
+                        const ids = Array.from(selectedIds);
+                        setBulkSoftDeleteTarget({ids, count: ids.length});
                     }}
-                    onPin={() => {
-                        bulkAction.mutate({model_ids: Array.from(selectedIds), action: 'pin'});
-                        setSelectedIds(new Set());
-                    }}
-                    onUnpin={() => {
-                        bulkAction.mutate({model_ids: Array.from(selectedIds), action: 'unpin'});
-                        setSelectedIds(new Set());
-                    }}
+                    onPin={() => runBulkAction('pin')}
+                    onUnpin={() => runBulkAction('unpin')}
                     onClear={() => setSelectedIds(new Set())}
                 />
 
@@ -268,18 +319,39 @@ const ModelCacheWorkspace: React.FC = () => {
                     onClose={() => setDetailId(null)}
                     onHardDelete={handleHardDelete}
                     onIntegrityCheck={id => {
-                        api.integrityCheck(id);
-                        setShowJobs(true);
+                        api.integrityCheck(id)
+                            .then(() => setShowJobs(true))
+                            .catch(integrityError => showToast(`Integrity check failed: ${integrityError}`));
                     }}
                     onRestore={id => {
-                        restoreModel.mutate(id);
-                        setDetailId(null);
+                        restoreModel
+                            .mutate(id)
+                            .then(() => {
+                                setDetailId(null);
+                                refetch();
+                                showToast('Model restored');
+                            })
+                            .catch(restoreError => showToast(`Restore failed: ${restoreError}`));
                     }}
                     onSoftDelete={id => {
-                        softDelete.mutate(id);
-                        setDetailId(null);
+                        softDelete
+                            .mutate(id)
+                            .then(() => {
+                                setDetailId(null);
+                                refetch();
+                                showToast('Model soft deleted');
+                            })
+                            .catch(deleteError => showToast(`Soft delete failed: ${deleteError}`));
                     }}
-                    onTogglePin={(id, pinned) => updateModel.mutate({id, pinned})}
+                    onTogglePin={(id, pinned) =>
+                        updateModel
+                            .mutate({id, pinned})
+                            .then(() => {
+                                refetch();
+                                showToast(pinned ? 'Model pinned' : 'Model unpinned');
+                            })
+                            .catch(updateError => showToast(`Pin update failed: ${updateError}`))
+                    }
                 />
             )}
 
@@ -289,6 +361,8 @@ const ModelCacheWorkspace: React.FC = () => {
                     isLoading={downloadModel.isPending}
                     onClose={() => setShowDownload(false)}
                     onSubmit={handleDownload}
+                    defaultTargetPvc={healthData?.default_pvc_name}
+                    defaultTargetNamespace={healthData?.default_namespace}
                 />
             )}
 
@@ -303,22 +377,25 @@ const ModelCacheWorkspace: React.FC = () => {
                     title='Hard Delete Model'
                 />
             )}
+            {bulkSoftDeleteTarget && (
+                <ConfirmDialog
+                    confirmText='Soft Delete'
+                    danger={true}
+                    message={`Soft delete ${bulkSoftDeleteTarget.count} selected model${bulkSoftDeleteTarget.count > 1 ? 's' : ''}? This is recoverable, but the selected models will disappear from active cache views.`}
+                    onCancel={() => setBulkSoftDeleteTarget(null)}
+                    onConfirm={confirmBulkSoftDelete}
+                    title='Soft Delete Models'
+                />
+            )}
 
             <JobsPanel onClose={() => setShowJobs(false)} visible={showJobs} />
-            <PresetsPanel
-                onClose={() => setShowPresets(false)}
-                onToast={message => {
-                    setToast(message);
-                    setTimeout(() => setToast(null), 3000);
-                }}
-                visible={showPresets}
-            />
+            <PresetsPanel onClose={() => setShowPresets(false)} onToast={showToast} visible={showPresets} />
         </div>
     );
 };
 
 export const ModelCachePage: React.FC = () => (
-    <div className='model-cache'>
+    <main className='model-cache' role='main' aria-label='Model Cache'>
         <ModelCacheWorkspace />
-    </div>
+    </main>
 );

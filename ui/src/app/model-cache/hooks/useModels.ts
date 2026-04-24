@@ -1,52 +1,97 @@
-import {useState, useEffect, useCallback} from 'react';
+import {useState, useEffect, useCallback, useRef} from 'react';
 import * as api from '../api/client';
 import type {ModelListParams} from '../api/client';
 import type {ModelSummary, ModelDetail, PaginatedResponse, DownloadRequest, BulkActionRequest} from '../api/types';
 import {POLL_INTERVAL_MODELS} from '../utils/constants';
 
+const MAX_POLL_FAILURES = 3;
+
+function toError(error: unknown): Error {
+    return error instanceof Error ? error : new Error(String(error));
+}
+
+function isDocumentVisible(): boolean {
+    return typeof document === 'undefined' || document.visibilityState !== 'hidden';
+}
+
 export function useModels(params: ModelListParams = {}) {
     const [data, setData] = useState<PaginatedResponse<ModelSummary> | undefined>();
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<Error | null>(null);
+    const [isPollingPaused, setIsPollingPaused] = useState(false);
+    const failureCountRef = useRef(0);
+    const pollingPausedRef = useRef(false);
 
-    const fetch = useCallback(async () => {
-        try {
-            const result = await api.listModels(params);
-            setData(result);
-        } catch (e) {
-            setError(e as Error);
-        } finally {
-            setIsLoading(false);
-        }
-    }, [JSON.stringify(params)]);
+    const resetPolling = useCallback(() => {
+        failureCountRef.current = 0;
+        pollingPausedRef.current = false;
+        setIsPollingPaused(false);
+    }, []);
+
+    const fetch = useCallback(
+        async (manual = false) => {
+            if (manual) {
+                resetPolling();
+            }
+            try {
+                const result = await api.listModels(params);
+                setData(result);
+                setError(null);
+                resetPolling();
+            } catch (e) {
+                setError(toError(e));
+                failureCountRef.current += 1;
+                if (failureCountRef.current >= MAX_POLL_FAILURES && !manual) {
+                    pollingPausedRef.current = true;
+                    setIsPollingPaused(true);
+                }
+                if (manual) {
+                    throw e;
+                }
+            } finally {
+                setIsLoading(false);
+            }
+        },
+        [JSON.stringify(params), resetPolling]
+    );
 
     useEffect(() => {
         setIsLoading(true);
+        resetPolling();
         fetch();
-        const id = setInterval(fetch, POLL_INTERVAL_MODELS);
+        const id = setInterval(() => {
+            if (!pollingPausedRef.current && isDocumentVisible()) {
+                fetch();
+            }
+        }, POLL_INTERVAL_MODELS);
         return () => clearInterval(id);
-    }, [fetch]);
+    }, [fetch, resetPolling]);
 
-    return {data, isLoading, error, refetch: fetch};
+    return {data, isLoading, error, isPollingPaused, refetch: () => fetch(true)};
 }
 
 export function useModelDetail(id: string | null) {
     const [data, setData] = useState<ModelDetail | undefined>();
     const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState<Error | null>(null);
 
     useEffect(() => {
         if (!id) {
             setData(undefined);
+            setError(null);
             return;
         }
         setIsLoading(true);
         api.getModel(id)
-            .then(setData)
-            .catch(() => {})
+            .then(result => {
+                setData(result);
+                setError(null);
+            })
+            .catch(error => setError(toError(error)))
             .finally(() => setIsLoading(false));
     }, [id]);
 
-    return {data, isLoading};
+    return {data, isLoading, error};
 }
 
 export function useDownloadModel() {
@@ -54,14 +99,20 @@ export function useDownloadModel() {
     const [error, setError] = useState<Error | null>(null);
 
     const mutate = useCallback(
-        (req: DownloadRequest, opts?: {onSuccess?: () => void}) => {
+        async (req: DownloadRequest, opts?: {onSuccess?: () => void}) => {
             if (isPending) return; // prevent duplicate submissions
             setIsPending(true);
             setError(null);
-            api.downloadModel(req)
-                .then(() => opts?.onSuccess?.())
-                .catch(setError)
-                .finally(() => setIsPending(false));
+            try {
+                const result = await api.downloadModel(req);
+                opts?.onSuccess?.();
+                return result;
+            } catch (error) {
+                setError(toError(error));
+                throw error;
+            } finally {
+                setIsPending(false);
+            }
         },
         [isPending]
     );
@@ -71,45 +122,85 @@ export function useDownloadModel() {
 
 export function useSoftDelete() {
     const [isPending, setIsPending] = useState(false);
-    const mutate = useCallback((id: string) => {
+    const [error, setError] = useState<Error | null>(null);
+    const mutate = useCallback(async (id: string) => {
         setIsPending(true);
-        api.softDeleteModel(id)
-            .catch(() => {})
-            .finally(() => setIsPending(false));
+        setError(null);
+        try {
+            return await api.softDeleteModel(id);
+        } catch (error) {
+            setError(toError(error));
+            throw error;
+        } finally {
+            setIsPending(false);
+        }
     }, []);
-    return {mutate, isPending};
+    return {mutate, isPending, error};
 }
 
 export function useHardDelete() {
     const [isPending, setIsPending] = useState(false);
-    const mutate = useCallback((id: string, opts?: {onSuccess?: () => void}) => {
+    const [error, setError] = useState<Error | null>(null);
+    const mutate = useCallback(async (id: string, opts?: {onSuccess?: () => void}) => {
         setIsPending(true);
-        api.hardDeleteModel(id)
-            .then(() => opts?.onSuccess?.())
-            .catch(() => {})
-            .finally(() => setIsPending(false));
+        setError(null);
+        try {
+            const result = await api.hardDeleteModel(id);
+            opts?.onSuccess?.();
+            return result;
+        } catch (error) {
+            setError(toError(error));
+            throw error;
+        } finally {
+            setIsPending(false);
+        }
     }, []);
-    return {mutate, isPending};
+    return {mutate, isPending, error};
 }
 
 export function useRestoreModel() {
-    const mutate = useCallback((id: string) => {
-        api.restoreModel(id).catch(() => {});
+    const [error, setError] = useState<Error | null>(null);
+    const mutate = useCallback(async (id: string) => {
+        setError(null);
+        try {
+            return await api.restoreModel(id);
+        } catch (error) {
+            setError(toError(error));
+            throw error;
+        }
     }, []);
-    return {mutate};
+    return {mutate, error};
 }
 
 export function useUpdateModel() {
-    const mutate = useCallback((data: {id: string; display_name?: string; labels?: Record<string, string>; pinned?: boolean}) => {
+    const [error, setError] = useState<Error | null>(null);
+    const mutate = useCallback(async (data: {id: string; display_name?: string; labels?: Record<string, string>; pinned?: boolean}) => {
         const {id, ...rest} = data;
-        api.updateModel(id, rest).catch(() => {});
+        setError(null);
+        try {
+            return await api.updateModel(id, rest);
+        } catch (error) {
+            setError(toError(error));
+            throw error;
+        }
     }, []);
-    return {mutate};
+    return {mutate, error};
 }
 
 export function useBulkAction() {
-    const mutate = useCallback((req: BulkActionRequest) => {
-        api.bulkAction(req).catch(() => {});
+    const [isPending, setIsPending] = useState(false);
+    const [error, setError] = useState<Error | null>(null);
+    const mutate = useCallback(async (req: BulkActionRequest) => {
+        setIsPending(true);
+        setError(null);
+        try {
+            return await api.bulkAction(req);
+        } catch (error) {
+            setError(toError(error));
+            throw error;
+        } finally {
+            setIsPending(false);
+        }
     }, []);
-    return {mutate};
+    return {mutate, isPending, error};
 }

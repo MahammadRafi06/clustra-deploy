@@ -159,6 +159,8 @@ export interface SystemHealth {
     storage_free_bytes: number;
     storage_pressure: 'ok' | 'warning' | 'critical' | 'emergency';
     storage_usage_percent: number;
+    default_pvc_name: string;
+    default_namespace: string;
 }
 
 export interface PresetSummary {

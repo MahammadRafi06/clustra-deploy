@@ -17,7 +17,7 @@ export const ConfirmDialog: React.FC<Props> = ({title, message, confirmText = 'C
 
     return (
         <SlidingPanel hasCloseButton={true} header={<strong>{title}</strong>} isMiddle={true} isShown={true} onClose={onCancel}>
-            <div className='model-cache__drawer-body model-cache__form'>
+            <div className='model-cache__drawer-body model-cache__form' role='dialog' aria-modal='true' aria-label={title}>
                 <p className='model-cache__confirm-copy'>{message}</p>
                 {confirmValue && (
                     <div className='argo-form-row'>
@@ -35,7 +35,9 @@ export const ConfirmDialog: React.FC<Props> = ({title, message, confirmText = 'C
                         type='button'
                         className={`argo-button ${danger ? 'argo-button--base-o model-cache__button--danger' : 'argo-button--base'} model-cache__button`}
                         onClick={onConfirm}
-                        disabled={!canConfirm}>
+                        disabled={!canConfirm}
+                        aria-label={confirmText}
+                    >
                         {confirmText}
                     </button>
                 </div>

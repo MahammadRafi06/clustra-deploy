@@ -47,6 +47,15 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
         throw new Error(body.detail || `Request failed: ${resp.status}`);
     }
 
+    if (resp.status === 204) {
+        return undefined as T;
+    }
+
+    const contentType = resp.headers.get('content-type') || '';
+    if (!contentType.includes('application/json')) {
+        return undefined as T;
+    }
+
     return resp.json();
 }
 

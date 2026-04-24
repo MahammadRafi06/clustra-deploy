@@ -22,6 +22,7 @@ interface Props {
 export const ModelDetailDrawer: React.FC<Props> = ({model: initialModel, isLoading, airgapped, onClose, onSoftDelete, onHardDelete, onRestore, onIntegrityCheck, onTogglePin}) => {
     const [model, setModel] = useState(initialModel);
     const [checkingVersion, setCheckingVersion] = useState(false);
+    const [versionError, setVersionError] = useState<string | null>(null);
     const [related, setRelated] = useState<RelatedModel[]>([]);
 
     useEffect(() => {
@@ -41,11 +42,12 @@ export const ModelDetailDrawer: React.FC<Props> = ({model: initialModel, isLoadi
             return;
         }
         setCheckingVersion(true);
+        setVersionError(null);
         try {
             const updated = await api.checkModelVersion(model.id);
             setModel(updated);
         } catch (error) {
-            console.error('Version check failed:', error);
+            setVersionError(error instanceof Error ? error.message : String(error));
         } finally {
             setCheckingVersion(false);
         }
@@ -67,7 +69,7 @@ export const ModelDetailDrawer: React.FC<Props> = ({model: initialModel, isLoadi
             {isLoading || !model ? (
                 <div className='model-cache__drawer-body model-cache__table-meta'>Loading…</div>
             ) : (
-                <div className='model-cache__drawer-body'>
+                <div className='model-cache__drawer-body' role='dialog' aria-modal='true' aria-label='Model details'>
                     <div className='model-cache__drawer-section'>
                         <div className='model-cache__drawer-subtitle'>{model.repo_id}</div>
                     </div>
@@ -140,6 +142,7 @@ export const ModelDetailDrawer: React.FC<Props> = ({model: initialModel, isLoadi
                             {model.update_available && (
                                 <div className='model-cache__inline-banner model-cache__inline-banner--accent'>A newer version is available upstream. Re-download to update.</div>
                             )}
+                            {versionError && <div className='argo-form-row__error-msg'>Version check failed: {versionError}</div>}
                             <div className='model-cache__meta-grid'>
                                 <MetaField label='Local SHA' value={model.sha256 ? model.sha256.substring(0, 12) : '-'} />
                                 <MetaField label='Upstream SHA' value={model.upstream_sha256 ? model.upstream_sha256.substring(0, 12) : '-'} />
@@ -170,14 +173,16 @@ export const ModelDetailDrawer: React.FC<Props> = ({model: initialModel, isLoadi
                                 <button
                                     type='button'
                                     className='argo-button argo-button--base-o model-cache__button model-cache__button--warning'
-                                    onClick={() => onSoftDelete(model.id)}>
+                                    onClick={() => onSoftDelete(model.id)}
+                                >
                                     <i className='fa fa-eye-slash' /> Soft Delete
                                 </button>
                             )}
                             <button
                                 type='button'
                                 className='argo-button argo-button--base-o model-cache__button model-cache__button--danger'
-                                onClick={() => onHardDelete(model.id)}>
+                                onClick={() => onHardDelete(model.id)}
+                            >
                                 <i className='fa fa-trash' /> Hard Delete
                             </button>
                         </div>

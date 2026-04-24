@@ -9,15 +9,17 @@ interface Props {
     onClose: () => void;
     isLoading: boolean;
     error: string | null;
+    defaultTargetPvc?: string;
+    defaultTargetNamespace?: string;
 }
 
-export const DownloadModelModal: React.FC<Props> = ({onSubmit, onClose, isLoading, error}) => {
+export const DownloadModelModal: React.FC<Props> = ({onSubmit, onClose, isLoading, error, defaultTargetPvc = 'model-cache', defaultTargetNamespace = 'model-cache'}) => {
     const [form, setForm] = useState<DownloadRequest>({
         repo_id: '',
         source: 'huggingface',
         revision: 'main',
-        target_pvc: 'model-cache',
-        target_namespace: 'model-cache',
+        target_pvc: defaultTargetPvc,
+        target_namespace: defaultTargetNamespace,
         labels: {},
         display_name: ''
     });
@@ -46,7 +48,7 @@ export const DownloadModelModal: React.FC<Props> = ({onSubmit, onClose, isLoadin
 
     return (
         <SlidingPanel hasCloseButton={true} header={<strong>Download Model</strong>} isMiddle={true} isShown={true} onClose={onClose}>
-            <form className='model-cache__drawer-body model-cache__form' onSubmit={handleSubmit}>
+            <form className='model-cache__drawer-body model-cache__form' onSubmit={handleSubmit} role='dialog' aria-modal='true' aria-label='Download model'>
                 <div className='argo-form-row'>
                     <label>Source</label>
                     <div className='model-cache__select'>
@@ -72,6 +74,7 @@ export const DownloadModelModal: React.FC<Props> = ({onSubmit, onClose, isLoadin
                         placeholder={form.source === 'huggingface' ? 'nvidia/DeepSeek-V3.2-NVFP4' : 'https://github.com/org/model.git'}
                         required
                         autoFocus
+                        aria-label={form.source === 'huggingface' ? 'Model ID' : 'Repository URL'}
                     />
                 </div>
 

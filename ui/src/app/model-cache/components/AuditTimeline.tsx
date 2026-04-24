@@ -1,8 +1,9 @@
-import React, {useEffect, useState} from 'react';
+import React, {useCallback, useEffect, useState} from 'react';
 
 import {modelAuditTrail} from '../api/client';
 import type {AuditLogEntry} from '../api/types';
 import {formatRelativeTime} from '../utils/formatters';
+import {ErrorBanner} from './common/ErrorBanner';
 
 interface Props {
     modelId: string;
@@ -32,9 +33,11 @@ function reasonText(details: Record<string, unknown>): string {
 export const AuditTimeline: React.FC<Props> = ({modelId}) => {
     const [entries, setEntries] = useState<AuditLogEntry[]>([]);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
 
-    useEffect(() => {
+    const loadTimeline = useCallback(() => {
         setLoading(true);
+        setError(null);
         modelAuditTrail(modelId, {page: 1})
             .then(response => {
                 const seen = new Set<string>();
@@ -48,9 +51,20 @@ export const AuditTimeline: React.FC<Props> = ({modelId}) => {
                 });
                 setEntries(deduped);
             })
-            .catch(() => {})
+            .catch(err => {
+                setEntries([]);
+                setError(err instanceof Error ? err.message : 'Unable to load audit trail');
+            })
             .finally(() => setLoading(false));
     }, [modelId]);
+
+    useEffect(() => {
+        loadTimeline();
+    }, [loadTimeline]);
+
+    if (error) {
+        return <ErrorBanner message={`Audit trail failed to load: ${error}`} onRetry={loadTimeline} />;
+    }
 
     if (loading) {
         return <div className='model-cache__table-meta'>Loading timeline…</div>;
@@ -60,7 +74,7 @@ export const AuditTimeline: React.FC<Props> = ({modelId}) => {
     }
 
     return (
-        <div className='model-cache__timeline'>
+        <div className='model-cache__timeline' role='log' aria-live='polite'>
             {entries.map(entry => {
                 const config = ACTION_CONFIG[entry.action] || {icon: 'fa-circle', tone: 'muted', label: entry.action};
                 const reason = reasonText(entry.details);
