@@ -17,6 +17,29 @@ export const DEPLOY_MODE_OPTIONS = [
     {value: 'disagg', label: 'Disaggregated (disagg)'}
 ];
 
+export const DATABASE_MODE_OPTIONS = [
+    {
+        value: 'SILICON',
+        label: 'Silicon',
+        description: 'Uses curated silicon-backed performance data only. Best when the exact model and backend are already covered.'
+    },
+    {
+        value: 'HYBRID',
+        label: 'Hybrid',
+        description: 'Combines measured data with estimator fallbacks. Best default when silicon coverage is incomplete.'
+    },
+    {
+        value: 'EMPIRICAL',
+        label: 'Empirical',
+        description: 'Prefers empirical observations over silicon-derived estimates when that data is available.'
+    },
+    {
+        value: 'SOL',
+        label: 'SOL',
+        description: 'Uses the roofline-style estimator path. Useful for exploratory sizing when database coverage is sparse.'
+    }
+] as const;
+
 // Reviewer - Master: users pick an EC2 size, while the service continues to operate on the smaller backend system catalog.
 export const EC2_INSTANCE_HINT = 'Choose the EC2 instance size you want. The backend maps each instance type to the supported GPU system automatically.';
 
@@ -47,6 +70,20 @@ export const FIELD_HELP = {
     attentionDpSize: 'Attention data-parallel replica count.',
     moeTpSize: 'MoE tensor parallel shard count.',
     moeEpSize: 'MoE expert parallel shard count.',
+    gemmQuantMode: 'Matrix-multiply quantization mode used by the runtime, if supported by the backend.',
+    kvCacheQuantMode: 'KV-cache quantization mode used for cache memory reduction, if supported.',
+    fmhaQuantMode: 'Attention-kernel quantization mode for fused multi-head attention, if supported.',
+    moeQuantMode: 'Mixture-of-experts quantization mode applied to expert weights or activations.',
+    commQuantMode: 'Communication quantization mode for reducing data movement overhead between workers.',
+    decodeInstanceType: 'Optional EC2 instance type for the decode tier when you want a different hardware shape than prefill.',
+    prefillBatchSize: 'Maximum batch size allocated to the prefill tier in disaggregated estimates.',
+    prefillNumWorkers: 'Number of prefill workers to provision in disaggregated estimates.',
+    prefillTpSize: 'Tensor parallel shard count for prefill workers only.',
+    prefillPpSize: 'Pipeline parallel stage count for prefill workers only.',
+    decodeBatchSize: 'Maximum batch size allocated to the decode tier in disaggregated estimates.',
+    decodeNumWorkers: 'Number of decode workers to provision in disaggregated estimates.',
+    decodeTpSize: 'Tensor parallel shard count for decode workers only.',
+    decodePpSize: 'Pipeline parallel stage count for decode workers only.',
     yamlPath: 'Path to a server-side config file that already exists within the service output area.',
     inlineConfig: 'Paste a JSON config when you want to replay an experiment without referencing a server-side file.'
 } as const;

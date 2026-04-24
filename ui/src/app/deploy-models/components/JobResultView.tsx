@@ -1,5 +1,7 @@
 import React from 'react';
 
+import {Spinner} from '../../shared/components';
+
 import {formatPollRecoveryMessage, type PollRecoveryState} from '../polling';
 import {getRunStatusDescriptor, getStatusToneClass} from '../jobState';
 import type {AuditTrailResponse, JobResult} from '../types';
@@ -12,6 +14,7 @@ interface JobResultViewProps {
     auditError: unknown | null;
     auditLoading: boolean;
     auditRecovery: PollRecoveryState;
+    onRetryAudit: () => void;
 }
 
 function renderValue(value: unknown): string {
@@ -101,7 +104,7 @@ function DetailGrid({items}: {items: Array<{label: string; value: string}>}) {
     );
 }
 
-export function JobResultView({job, audit, auditError, auditLoading, auditRecovery}: JobResultViewProps) {
+export function JobResultView({job, audit, auditError, auditLoading, auditRecovery, onRetryAudit}: JobResultViewProps) {
     const {result, error} = job;
 
     if (error) {
@@ -216,12 +219,26 @@ export function JobResultView({job, audit, auditError, auditLoading, auditRecove
 
             <div className='deploy-models__result-section'>
                 <div className='deploy-models__result-title'>Activity</div>
-                {auditLoading && <div className='deploy-models__muted-text'>Loading audit trail…</div>}
-                {auditRecovery.reconnecting && <NoticeAlert variant='warning' message={formatPollRecoveryMessage('Audit updates are delayed', auditRecovery)} />}
-                {!auditRecovery.reconnecting && auditError && <ErrorAlert error={auditError} prefix='Unable to load audit trail' />}
+                {auditLoading && (
+                    <div className='deploy-models__status-copy deploy-models__status-copy--inline'>
+                        <span className='deploy-models__status-spinner'>
+                            <Spinner show={true} />
+                        </span>
+                        <div className='deploy-models__muted-text'>Loading audit trail…</div>
+                    </div>
+                )}
+                {(auditRecovery.reconnecting || auditRecovery.exhausted) && (
+                    <NoticeAlert
+                        variant='warning'
+                        message={formatPollRecoveryMessage('Audit updates are delayed', auditRecovery)}
+                        actionLabel={auditRecovery.exhausted ? 'Retry now' : undefined}
+                        onAction={auditRecovery.exhausted ? onRetryAudit : undefined}
+                    />
+                )}
+                {!auditRecovery.reconnecting && !auditRecovery.exhausted && auditError && <ErrorAlert error={auditError} prefix='Unable to load audit trail' />}
                 {!auditLoading && !auditError && (!audit || audit.events.length === 0) && <div className='deploy-models__muted-text'>No audit events recorded yet.</div>}
                 {audit && audit.events.length > 0 && (
-                    <div className='deploy-models__timeline'>
+                    <div className='deploy-models__timeline' role='log' aria-live='polite' aria-busy={auditLoading}>
                         {audit.events.map(event => (
                             <div key={`${event.created_at}-${event.event_type}`} className='deploy-models__timeline-item'>
                                 <div className='deploy-models__timeline-header'>

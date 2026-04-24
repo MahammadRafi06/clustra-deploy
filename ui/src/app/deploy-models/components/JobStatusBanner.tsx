@@ -42,7 +42,7 @@ export function JobStatusBanner({job, onCancel, cancelling}: JobStatusBannerProp
         if (cancelling) {
             return;
         }
-        const confirmed = window.confirm('Mark this run as cancelled? Running compute may continue briefly, but the result will stop being treated as an active deploy.');
+        const confirmed = window.confirm('Cancel this run now? Active planner compute will be stopped and unfinished results will be discarded.');
         if (confirmed) {
             onCancel();
         }
@@ -68,7 +68,7 @@ export function JobStatusBanner({job, onCancel, cancelling}: JobStatusBannerProp
             </div>
             {canCancel && (
                 <button type='button' className='argo-button argo-button--base-o deploy-models__danger-button' onClick={handleCancelClick} disabled={cancelling}>
-                    {cancelling ? 'Cancelling…' : 'Mark cancelled'}
+                    {cancelling ? 'Cancelling…' : 'Cancel run'}
                 </button>
             )}
         </div>

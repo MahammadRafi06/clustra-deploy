@@ -6,6 +6,7 @@ export type FieldType = 'text' | 'number' | 'select' | 'textarea';
 export interface SelectOption {
     value: string;
     label: string;
+    description?: string;
 }
 
 export interface FieldDef {
@@ -35,6 +36,8 @@ export function FieldInput({def, value, error, onChange}: FieldInputProps) {
     const {key, label, type, help, placeholder, hint, options, min, max, step, rows, includeEmptyOption} = def;
     const normalizedKey = key.replace(/[^a-zA-Z0-9]+/g, '-').toLowerCase();
     const fieldId = `deploy-models-field-${key}`;
+    const selectedOptionDescription = type === 'select' ? options?.find(option => option.value === value)?.description : undefined;
+    const fieldHint = [hint, selectedOptionDescription].filter(Boolean).join(' ');
 
     return (
         <div className={`argo-form-row deploy-models__field deploy-models__field--${type} deploy-models__field--key-${normalizedKey}`}>
@@ -89,7 +92,7 @@ export function FieldInput({def, value, error, onChange}: FieldInputProps) {
                 />
             )}
 
-            {hint && !error && <p className='deploy-models__field-hint'>{hint}</p>}
+            {fieldHint && !error && <p className='deploy-models__field-hint'>{fieldHint}</p>}
             {error && <p className='argo-form-row__error-msg'>{error}</p>}
         </div>
     );

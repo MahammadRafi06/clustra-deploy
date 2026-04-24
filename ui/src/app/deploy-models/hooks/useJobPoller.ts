@@ -2,11 +2,8 @@ import {useCallback, useEffect, useRef, useState} from 'react';
 
 import {cancelJob, getJob} from '../api';
 import {isJobSettled} from '../jobState';
-import {IDLE_POLL_RECOVERY, nextPollDelayMs, type PollRecoveryState} from '../polling';
+import {IDLE_POLL_RECOVERY, POLLING_CONFIG, buildPollRecoveryState, type PollRecoveryState} from '../polling';
 import type {JobResult} from '../types';
-
-const POLL_INTERVAL_MS = 3000;
-const MAX_POLL_INTERVAL_MS = 20000;
 
 interface UseJobPollerReturn {
     job: JobResult | null;
@@ -14,6 +11,7 @@ interface UseJobPollerReturn {
     cancelError: unknown | null;
     pollRecovery: PollRecoveryState;
     cancel: () => void;
+    retry: () => void;
     reset: () => void;
 }
 
@@ -39,18 +37,15 @@ export function useJobPoller(jobId: string | null): UseJobPollerReturn {
             setJob(result);
             setPollRecovery(IDLE_POLL_RECOVERY);
             if (!isJobSettled(result)) {
-                timerRef.current = setTimeout(() => poll(id), POLL_INTERVAL_MS);
+                timerRef.current = setTimeout(() => poll(id), POLLING_CONFIG.job.baseMs);
             }
         } catch (err) {
             failureCountRef.current += 1;
-            const nextDelayMs = nextPollDelayMs(failureCountRef.current, POLL_INTERVAL_MS, MAX_POLL_INTERVAL_MS);
-            setPollRecovery({
-                reconnecting: true,
-                retryCount: failureCountRef.current,
-                nextDelayMs,
-                error: err
-            });
-            timerRef.current = setTimeout(() => poll(id), nextDelayMs);
+            const nextRecovery = buildPollRecoveryState(err, failureCountRef.current, POLLING_CONFIG.job);
+            setPollRecovery(nextRecovery);
+            if (!nextRecovery.exhausted && nextRecovery.nextDelayMs != null) {
+                timerRef.current = setTimeout(() => poll(id), nextRecovery.nextDelayMs);
+            }
         }
     }, []);
 
@@ -89,5 +84,15 @@ export function useJobPoller(jobId: string | null): UseJobPollerReturn {
         setPollRecovery(IDLE_POLL_RECOVERY);
     }, []);
 
-    return {job, cancelling, cancelError, pollRecovery, cancel, reset};
+    const retry = useCallback(() => {
+        if (!jobId) {
+            return;
+        }
+        clearTimer();
+        failureCountRef.current = 0;
+        setPollRecovery(IDLE_POLL_RECOVERY);
+        void poll(jobId);
+    }, [jobId, poll]);
+
+    return {job, cancelling, cancelError, pollRecovery, cancel, retry, reset};
 }

@@ -1,17 +1,15 @@
 import {useCallback, useEffect, useRef, useState} from 'react';
 
 import {getJobAudit} from '../api';
-import {IDLE_POLL_RECOVERY, nextPollDelayMs, type PollRecoveryState} from '../polling';
+import {IDLE_POLL_RECOVERY, POLLING_CONFIG, buildPollRecoveryState, type PollRecoveryState} from '../polling';
 import type {AuditTrailResponse} from '../types';
-
-const POLL_INTERVAL_MS = 4000;
-const MAX_POLL_INTERVAL_MS = 25000;
 
 interface UseJobAuditReturn {
     audit: AuditTrailResponse | null;
     auditError: unknown | null;
     auditLoading: boolean;
     auditRecovery: PollRecoveryState;
+    retryAudit: () => void;
 }
 
 export function useJobAudit(jobId: string | null, active = false): UseJobAuditReturn {
@@ -46,22 +44,19 @@ export function useJobAudit(jobId: string | null, active = false): UseJobAuditRe
                 if (keepPolling) {
                     timerRef.current = setTimeout(() => {
                         void load(true, true);
-                    }, POLL_INTERVAL_MS);
+                    }, POLLING_CONFIG.audit.baseMs);
                 }
             } catch (err) {
                 setAuditError(err);
                 if (keepPolling) {
                     failureCountRef.current += 1;
-                    const nextDelayMs = nextPollDelayMs(failureCountRef.current, POLL_INTERVAL_MS, MAX_POLL_INTERVAL_MS);
-                    setAuditRecovery({
-                        reconnecting: true,
-                        retryCount: failureCountRef.current,
-                        nextDelayMs,
-                        error: err
-                    });
-                    timerRef.current = setTimeout(() => {
-                        void load(true, true);
-                    }, nextDelayMs);
+                    const nextRecovery = buildPollRecoveryState(err, failureCountRef.current, POLLING_CONFIG.audit);
+                    setAuditRecovery(nextRecovery);
+                    if (!nextRecovery.exhausted && nextRecovery.nextDelayMs != null) {
+                        timerRef.current = setTimeout(() => {
+                            void load(true, true);
+                        }, nextRecovery.nextDelayMs);
+                    }
                 }
             } finally {
                 if (!silent) {
@@ -91,5 +86,15 @@ export function useJobAudit(jobId: string | null, active = false): UseJobAuditRe
         return clearTimer;
     }, [jobId, active, load]);
 
-    return {audit, auditError, auditLoading, auditRecovery};
+    const retryAudit = useCallback(() => {
+        if (!jobId) {
+            return;
+        }
+        clearTimer();
+        failureCountRef.current = 0;
+        setAuditRecovery(IDLE_POLL_RECOVERY);
+        void load(false, active);
+    }, [jobId, active, load]);
+
+    return {audit, auditError, auditLoading, auditRecovery, retryAudit};
 }

@@ -8,9 +8,10 @@ import {ErrorAlert} from '../components/ErrorAlert';
 import {FieldInput} from '../components/FieldInput';
 import {JobRunConsole} from '../components/JobRunConsole';
 import {NoticeAlert} from '../components/NoticeAlert';
+import {RecentRunsPanel} from '../components/RecentRunsPanel';
 import {useFormState} from '../hooks/useFormState';
 import {useJobPoller} from '../hooks/useJobPoller';
-import {DEPLOYMENT_MODE_HINT, DEPLOY_MODE_OPTIONS, EC2_INSTANCE_HINT, EC2_INSTANCE_OPTIONS, FIELD_HELP} from '../options';
+import {DATABASE_MODE_OPTIONS, DEPLOYMENT_MODE_HINT, DEPLOY_MODE_OPTIONS, EC2_INSTANCE_HINT, EC2_INSTANCE_OPTIONS, FIELD_HELP} from '../options';
 import type {DefaultPreflightResponse, DeployMode} from '../types';
 
 const BACKEND_OPTIONS = [
@@ -20,20 +21,13 @@ const BACKEND_OPTIONS = [
     {value: 'auto', label: 'Auto'}
 ];
 
-const DB_MODE_OPTIONS = [
-    {value: 'SILICON', label: 'Silicon'},
-    {value: 'HYBRID', label: 'Hybrid'},
-    {value: 'EMPIRICAL', label: 'Empirical'},
-    {value: 'SOL', label: 'SOL'}
-];
-
 export function DefaultPage() {
     const {values, errors, setValue, validateRequired, reset} = useFormState({mode: 'agg'});
     const [jobId, setJobId] = useState<string | null>(null);
     const [submitting, setSubmitting] = useState(false);
     const [submitError, setSubmitError] = useState<unknown | null>(null);
     const [preflight, setPreflight] = useState<DefaultPreflightResponse | null>(null);
-    const {job, cancelling, cancelError, pollRecovery, cancel, reset: resetPoller} = useJobPoller(jobId);
+    const {job, cancelling, cancelError, pollRecovery, cancel, retry, reset: resetPoller} = useJobPoller(jobId);
     const preflightSummary = getPreflightSummary(preflight);
 
     function handleFieldChange(key: string, value: string) {
@@ -145,6 +139,7 @@ export function DefaultPage() {
 
     return (
         <div className='deploy-models__form'>
+            <RecentRunsPanel selectedJobId={jobId} onSelectJob={setJobId} />
             <FieldInput
                 def={{key: 'model_path', label: 'Model Path', type: 'text', required: true, placeholder: 'Qwen/Qwen3-32B-FP8', help: FIELD_HELP.modelPath}}
                 value={values.model_path || ''}
@@ -237,7 +232,7 @@ export function DefaultPage() {
                         key: 'database_mode',
                         label: 'Database Mode',
                         type: 'select',
-                        options: DB_MODE_OPTIONS,
+                        options: DATABASE_MODE_OPTIONS,
                         help: FIELD_HELP.databaseMode,
                         hint: 'Compatibility does not guarantee success for the selected database mode or latency targets. Run performs an exact preflight first.'
                     }}
@@ -371,7 +366,7 @@ export function DefaultPage() {
                 />
             ))}
 
-            <JobRunConsole job={job} selectedJobId={jobId} cancelling={cancelling} cancelError={cancelError} pollRecovery={pollRecovery} onCancel={cancel} onSelectJob={setJobId} />
+            <JobRunConsole job={job} cancelling={cancelling} cancelError={cancelError} pollRecovery={pollRecovery} onRetryPoll={retry} onCancel={cancel} />
         </div>
     );
 }

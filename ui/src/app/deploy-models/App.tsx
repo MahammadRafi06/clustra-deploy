@@ -51,7 +51,7 @@ export function DeployModelsPage() {
 
     return (
         <AppContextProvider appName={selectedTarget?.appName} appNamespace={selectedTarget?.appNamespace} projectName={selectedTarget?.projectName}>
-            <div className='deploy-models'>
+            <main className='deploy-models'>
                 <section className='white-box deploy-models__panel'>
                     <div className='deploy-models__panel-header'>
                         <div>
@@ -104,7 +104,7 @@ export function DeployModelsPage() {
                         </EmptyState>
                     </section>
                 )}
-            </div>
+            </main>
         </AppContextProvider>
     );
 }

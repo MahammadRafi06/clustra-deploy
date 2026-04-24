@@ -1,6 +1,9 @@
 package extension_test
 
 import (
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
@@ -24,6 +27,19 @@ import (
 	dbmocks "github.com/argoproj/argo-cd/v3/util/db/mocks"
 	"github.com/argoproj/argo-cd/v3/util/settings"
 )
+
+func expectedProxySignature(secret string, username string, userID string, groups string, application string, project string, timestamp string) string {
+	mac := hmac.New(sha256.New, []byte(secret))
+	_, _ = mac.Write([]byte(strings.Join([]string{
+		username,
+		userID,
+		groups,
+		application,
+		project,
+		timestamp,
+	}, "\n")))
+	return hex.EncodeToString(mac.Sum(nil))
+}
 
 func TestValidateHeaders(t *testing.T) {
 	t.Run("will build RequestResources successfully", func(t *testing.T) {
@@ -232,8 +248,6 @@ func TestRegisterExtensions(t *testing.T) {
 }
 
 func TestCallExtension(t *testing.T) {
-	t.Parallel()
-
 	type fixture struct {
 		mux                *http.ServeMux
 		appGetterMock      *mocks.ApplicationGetter
@@ -398,7 +412,7 @@ func TestCallExtension(t *testing.T) {
 
 	t.Run("will call extension backend successfully", func(t *testing.T) {
 		// given
-		t.Parallel()
+		t.Setenv(extension.EnvProxySignatureSecret, "shared-secret")
 		f := setup()
 		backendResponse := "some data"
 		backendEndpoint := "some-backend"
@@ -450,6 +464,20 @@ func TestCallExtension(t *testing.T) {
 		assert.Equal(t, "some-user", resp.Header.Get(extension.HeaderArgoCDUsername))
 		assert.Equal(t, "some-user-id", resp.Header.Get(extension.HeaderArgoCDUserId))
 		assert.Equal(t, "group1,group2", resp.Header.Get(extension.HeaderArgoCDGroups))
+		assert.NotEmpty(t, resp.Header.Get(extension.HeaderProxyTimestamp))
+		assert.Equal(
+			t,
+			expectedProxySignature(
+				"shared-secret",
+				"some-user",
+				"some-user-id",
+				"group1,group2",
+				"namespace:app-name",
+				defaultProjectName,
+				resp.Header.Get(extension.HeaderProxyTimestamp),
+			),
+			resp.Header.Get(extension.HeaderProxySignature),
+		)
 
 		// waitgroup is necessary to make sure assertions aren't executed before
 		// the goroutine initiated by extension.CallExtension concludes which would

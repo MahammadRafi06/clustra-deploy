@@ -8,20 +8,13 @@ import {ErrorAlert} from '../components/ErrorAlert';
 import {FieldInput} from '../components/FieldInput';
 import {NoticeAlert} from '../components/NoticeAlert';
 import {useFormState} from '../hooks/useFormState';
-import {EC2_INSTANCE_HINT, EC2_INSTANCE_OPTIONS, FIELD_HELP} from '../options';
+import {DATABASE_MODE_OPTIONS, EC2_INSTANCE_HINT, EC2_INSTANCE_OPTIONS, FIELD_HELP} from '../options';
 import type {EstimateMode, EstimateResponse} from '../types';
 
 const BACKEND_OPTIONS = [
     {value: 'trtllm', label: 'TRT-LLM'},
     {value: 'sglang', label: 'SGLang'},
     {value: 'vllm', label: 'vLLM'}
-];
-
-const DB_MODE_OPTIONS = [
-    {value: 'SILICON', label: 'Silicon'},
-    {value: 'HYBRID', label: 'Hybrid'},
-    {value: 'EMPIRICAL', label: 'Empirical'},
-    {value: 'SOL', label: 'SOL'}
 ];
 
 const ESTIMATE_MODE_OPTIONS = [
@@ -102,6 +95,14 @@ function EstimateResult({result}: {result: EstimateResponse}) {
             </div>
 
             {result.kv_cache_warning && <NoticeAlert variant='warning' message={result.kv_cache_warning} />}
+            {result.raw && Object.keys(result.raw).length > 0 && (
+                <div className='deploy-models__result-section'>
+                    <details className='deploy-models__details'>
+                        <summary className='deploy-models__result-title'>View raw estimator payload</summary>
+                        <pre className='deploy-models__result-error'>{JSON.stringify(result.raw, null, 2)}</pre>
+                    </details>
+                </div>
+            )}
         </div>
     );
 }
@@ -213,7 +214,7 @@ export function EstimatePage() {
                     onChange={setValue}
                 />
                 <FieldInput
-                    def={{key: 'database_mode', label: 'Database Mode', type: 'select', options: DB_MODE_OPTIONS, help: FIELD_HELP.databaseMode}}
+                    def={{key: 'database_mode', label: 'Database Mode', type: 'select', options: DATABASE_MODE_OPTIONS, help: FIELD_HELP.databaseMode}}
                     value={values.database_mode || ''}
                     error={errors.database_mode}
                     onChange={setValue}
@@ -267,31 +268,31 @@ export function EstimatePage() {
                     onChange={setValue}
                 />
                 <FieldInput
-                    def={{key: 'gemm_quant_mode', label: 'GEMM Quant Mode', type: 'text'}}
+                    def={{key: 'gemm_quant_mode', label: 'GEMM Quant Mode', type: 'text', help: FIELD_HELP.gemmQuantMode}}
                     value={values.gemm_quant_mode || ''}
                     error={errors.gemm_quant_mode}
                     onChange={setValue}
                 />
                 <FieldInput
-                    def={{key: 'kvcache_quant_mode', label: 'KV Cache Quant Mode', type: 'text'}}
+                    def={{key: 'kvcache_quant_mode', label: 'KV Cache Quant Mode', type: 'text', help: FIELD_HELP.kvCacheQuantMode}}
                     value={values.kvcache_quant_mode || ''}
                     error={errors.kvcache_quant_mode}
                     onChange={setValue}
                 />
                 <FieldInput
-                    def={{key: 'fmha_quant_mode', label: 'FMHA Quant Mode', type: 'text'}}
+                    def={{key: 'fmha_quant_mode', label: 'FMHA Quant Mode', type: 'text', help: FIELD_HELP.fmhaQuantMode}}
                     value={values.fmha_quant_mode || ''}
                     error={errors.fmha_quant_mode}
                     onChange={setValue}
                 />
                 <FieldInput
-                    def={{key: 'moe_quant_mode', label: 'MoE Quant Mode', type: 'text'}}
+                    def={{key: 'moe_quant_mode', label: 'MoE Quant Mode', type: 'text', help: FIELD_HELP.moeQuantMode}}
                     value={values.moe_quant_mode || ''}
                     error={errors.moe_quant_mode}
                     onChange={setValue}
                 />
                 <FieldInput
-                    def={{key: 'comm_quant_mode', label: 'Comm Quant Mode', type: 'text'}}
+                    def={{key: 'comm_quant_mode', label: 'Comm Quant Mode', type: 'text', help: FIELD_HELP.commQuantMode}}
                     value={values.comm_quant_mode || ''}
                     error={errors.comm_quant_mode}
                     onChange={setValue}
@@ -321,55 +322,62 @@ export function EstimatePage() {
                     <span>Disaggregated Config</span>
                 </div>
                 <FieldInput
-                    def={{key: 'decode_instance_type', label: 'Decode EC2 Instance', type: 'select', options: EC2_INSTANCE_OPTIONS, hint: EC2_INSTANCE_HINT}}
+                    def={{
+                        key: 'decode_instance_type',
+                        label: 'Decode EC2 Instance',
+                        type: 'select',
+                        options: EC2_INSTANCE_OPTIONS,
+                        hint: EC2_INSTANCE_HINT,
+                        help: FIELD_HELP.decodeInstanceType
+                    }}
                     value={values.decode_instance_type || ''}
                     error={errors.decode_instance_type}
                     onChange={setValue}
                 />
                 <FieldInput
-                    def={{key: 'prefill_batch_size', label: 'Prefill Batch Size', type: 'number', min: 1, required: isDisagg}}
+                    def={{key: 'prefill_batch_size', label: 'Prefill Batch Size', type: 'number', min: 1, required: isDisagg, help: FIELD_HELP.prefillBatchSize}}
                     value={values.prefill_batch_size || ''}
                     error={errors.prefill_batch_size}
                     onChange={setValue}
                 />
                 <FieldInput
-                    def={{key: 'prefill_num_workers', label: 'Prefill Workers', type: 'number', min: 1, required: isDisagg}}
+                    def={{key: 'prefill_num_workers', label: 'Prefill Workers', type: 'number', min: 1, required: isDisagg, help: FIELD_HELP.prefillNumWorkers}}
                     value={values.prefill_num_workers || ''}
                     error={errors.prefill_num_workers}
                     onChange={setValue}
                 />
                 <FieldInput
-                    def={{key: 'prefill_tp_size', label: 'Prefill TP Size', type: 'number', min: 1}}
+                    def={{key: 'prefill_tp_size', label: 'Prefill TP Size', type: 'number', min: 1, help: FIELD_HELP.prefillTpSize}}
                     value={values.prefill_tp_size || ''}
                     error={errors.prefill_tp_size}
                     onChange={setValue}
                 />
                 <FieldInput
-                    def={{key: 'prefill_pp_size', label: 'Prefill PP Size', type: 'number', min: 1}}
+                    def={{key: 'prefill_pp_size', label: 'Prefill PP Size', type: 'number', min: 1, help: FIELD_HELP.prefillPpSize}}
                     value={values.prefill_pp_size || ''}
                     error={errors.prefill_pp_size}
                     onChange={setValue}
                 />
                 <FieldInput
-                    def={{key: 'decode_batch_size', label: 'Decode Batch Size', type: 'number', min: 1, required: isDisagg}}
+                    def={{key: 'decode_batch_size', label: 'Decode Batch Size', type: 'number', min: 1, required: isDisagg, help: FIELD_HELP.decodeBatchSize}}
                     value={values.decode_batch_size || ''}
                     error={errors.decode_batch_size}
                     onChange={setValue}
                 />
                 <FieldInput
-                    def={{key: 'decode_num_workers', label: 'Decode Workers', type: 'number', min: 1, required: isDisagg}}
+                    def={{key: 'decode_num_workers', label: 'Decode Workers', type: 'number', min: 1, required: isDisagg, help: FIELD_HELP.decodeNumWorkers}}
                     value={values.decode_num_workers || ''}
                     error={errors.decode_num_workers}
                     onChange={setValue}
                 />
                 <FieldInput
-                    def={{key: 'decode_tp_size', label: 'Decode TP Size', type: 'number', min: 1}}
+                    def={{key: 'decode_tp_size', label: 'Decode TP Size', type: 'number', min: 1, help: FIELD_HELP.decodeTpSize}}
                     value={values.decode_tp_size || ''}
                     error={errors.decode_tp_size}
                     onChange={setValue}
                 />
                 <FieldInput
-                    def={{key: 'decode_pp_size', label: 'Decode PP Size', type: 'number', min: 1}}
+                    def={{key: 'decode_pp_size', label: 'Decode PP Size', type: 'number', min: 1, help: FIELD_HELP.decodePpSize}}
                     value={values.decode_pp_size || ''}
                     error={errors.decode_pp_size}
                     onChange={setValue}

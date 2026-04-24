@@ -2,13 +2,11 @@ import React, {useCallback, useEffect, useRef, useState} from 'react';
 
 import {listJobs} from '../api';
 import {getRunStatusDescriptor, getStatusToneClass} from '../jobState';
+import {useAppContext} from './AppContext';
 import {ErrorAlert} from './ErrorAlert';
 import {NoticeAlert} from './NoticeAlert';
-import {IDLE_POLL_RECOVERY, formatPollRecoveryMessage, nextPollDelayMs, type PollRecoveryState} from '../polling';
+import {IDLE_POLL_RECOVERY, POLLING_CONFIG, buildPollRecoveryState, formatPollRecoveryMessage, type PollRecoveryState} from '../polling';
 import type {JobSummary} from '../types';
-
-const POLL_INTERVAL_MS = 5000;
-const MAX_POLL_INTERVAL_MS = 25000;
 
 interface RecentRunsPanelProps {
     selectedJobId: string | null;
@@ -25,6 +23,7 @@ function formatTimestamp(value: string): string {
 }
 
 export function RecentRunsPanel({selectedJobId, onSelectJob}: RecentRunsPanelProps) {
+    const {appName} = useAppContext();
     const [jobs, setJobs] = useState<JobSummary[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<unknown | null>(null);
@@ -45,7 +44,7 @@ export function RecentRunsPanel({selectedJobId, onSelectJob}: RecentRunsPanelPro
                 setLoading(true);
             }
             try {
-                const response = await listJobs({limit: 8});
+                const response = await listJobs({appName, limit: 8});
                 setJobs(response.jobs);
                 setError(null);
                 failureCountRef.current = 0;
@@ -53,27 +52,24 @@ export function RecentRunsPanel({selectedJobId, onSelectJob}: RecentRunsPanelPro
                 clearTimer();
                 timerRef.current = setTimeout(() => {
                     void load(true);
-                }, POLL_INTERVAL_MS);
+                }, POLLING_CONFIG.recentRuns.baseMs);
             } catch (err) {
-                const nextDelayMs = nextPollDelayMs(++failureCountRef.current, POLL_INTERVAL_MS, MAX_POLL_INTERVAL_MS);
                 setError(err);
-                setPollRecovery({
-                    reconnecting: true,
-                    retryCount: failureCountRef.current,
-                    nextDelayMs,
-                    error: err
-                });
+                const nextRecovery = buildPollRecoveryState(err, ++failureCountRef.current, POLLING_CONFIG.recentRuns);
+                setPollRecovery(nextRecovery);
                 clearTimer();
-                timerRef.current = setTimeout(() => {
-                    void load(true);
-                }, nextDelayMs);
+                if (!nextRecovery.exhausted && nextRecovery.nextDelayMs != null) {
+                    timerRef.current = setTimeout(() => {
+                        void load(true);
+                    }, nextRecovery.nextDelayMs);
+                }
             } finally {
                 if (!silent) {
                     setLoading(false);
                 }
             }
         },
-        [clearTimer]
+        [appName, clearTimer]
     );
 
     useEffect(() => {
@@ -103,8 +99,15 @@ export function RecentRunsPanel({selectedJobId, onSelectJob}: RecentRunsPanelPro
                 </button>
             </div>
 
-            {pollRecovery.reconnecting && <NoticeAlert variant='warning' message={formatPollRecoveryMessage('Recent runs are temporarily unavailable', pollRecovery)} />}
-            {!pollRecovery.reconnecting && error && <ErrorAlert error={error} prefix='Unable to load recent runs' />}
+            {(pollRecovery.reconnecting || pollRecovery.exhausted) && (
+                <NoticeAlert
+                    variant='warning'
+                    message={formatPollRecoveryMessage('Recent runs are temporarily unavailable', pollRecovery)}
+                    actionLabel={pollRecovery.exhausted ? 'Retry now' : undefined}
+                    onAction={pollRecovery.exhausted ? handleRefresh : undefined}
+                />
+            )}
+            {!pollRecovery.reconnecting && !pollRecovery.exhausted && error && <ErrorAlert error={error} prefix='Unable to load recent runs' />}
             {!error && jobs.length === 0 && !loading && <div className='deploy-models__muted-text'>No runs yet for this application.</div>}
 
             {jobs.length > 0 && (

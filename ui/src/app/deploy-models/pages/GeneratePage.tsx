@@ -8,6 +8,7 @@ import {ErrorAlert} from '../components/ErrorAlert';
 import {FieldInput} from '../components/FieldInput';
 import {JobRunConsole} from '../components/JobRunConsole';
 import {NoticeAlert} from '../components/NoticeAlert';
+import {RecentRunsPanel} from '../components/RecentRunsPanel';
 import {useFormState} from '../hooks/useFormState';
 import {useJobPoller} from '../hooks/useJobPoller';
 import {DEPLOYMENT_MODE_HINT, DEPLOY_MODE_OPTIONS, EC2_INSTANCE_HINT, EC2_INSTANCE_OPTIONS, FIELD_HELP} from '../options';
@@ -26,7 +27,7 @@ export function GeneratePage() {
     const [submitting, setSubmitting] = useState(false);
     const [submitError, setSubmitError] = useState<unknown | null>(null);
     const [compatibilityWarning, setCompatibilityWarning] = useState<string | null>(null);
-    const {job, cancelling, cancelError, pollRecovery, cancel, reset: resetPoller} = useJobPoller(jobId);
+    const {job, cancelling, cancelError, pollRecovery, cancel, retry, reset: resetPoller} = useJobPoller(jobId);
 
     function handleFieldChange(key: string, value: string) {
         setValue(key, value);
@@ -91,6 +92,7 @@ export function GeneratePage() {
 
     return (
         <div className='deploy-models__form'>
+            <RecentRunsPanel selectedJobId={jobId} onSelectJob={setJobId} />
             <FieldInput
                 def={{key: 'model_path', label: 'Model Path', type: 'text', required: true, placeholder: 'Qwen/Qwen3-32B-FP8', help: FIELD_HELP.modelPath}}
                 value={values.model_path || ''}
@@ -180,7 +182,7 @@ export function GeneratePage() {
             {submitError && <ErrorAlert error={submitError} />}
             {compatibilityWarning && <NoticeAlert variant='warning' message={compatibilityWarning} />}
 
-            <JobRunConsole job={job} selectedJobId={jobId} cancelling={cancelling} cancelError={cancelError} pollRecovery={pollRecovery} onCancel={cancel} onSelectJob={setJobId} />
+            <JobRunConsole job={job} cancelling={cancelling} cancelError={cancelError} pollRecovery={pollRecovery} onRetryPoll={retry} onCancel={cancel} />
         </div>
     );
 }

@@ -136,6 +136,7 @@
     &__form > &__notice,
     &__form > &__error,
     &__form > &__status-banner,
+    &__form > &__job-console,
     &__form > &__actions,
     &__form > &__result,
     &__form > &__result-section,
@@ -427,6 +428,10 @@
         align-items: center;
     }
 
+    &__status-copy--inline {
+        align-items: center;
+    }
+
     &__status-text {
         display: grid;
         gap: 4px;
@@ -594,6 +599,20 @@
         background: rgba(255, 255, 255, 0.06);
         color: $brand-text-secondary;
         font-size: 0.8125em;
+    }
+
+    &__details {
+        margin-top: 12px;
+    }
+
+    &__job-console {
+        display: grid;
+        gap: 12px;
+        outline: none;
+    }
+
+    &__notice-action {
+        margin-left: auto;
     }
 
     &__support-result {

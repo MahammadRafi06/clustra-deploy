@@ -7,6 +7,7 @@ import {AdvancedSection} from '../components/AdvancedSection';
 import {ErrorAlert} from '../components/ErrorAlert';
 import {FieldInput} from '../components/FieldInput';
 import {JobRunConsole} from '../components/JobRunConsole';
+import {RecentRunsPanel} from '../components/RecentRunsPanel';
 import {useFormState} from '../hooks/useFormState';
 import {useJobPoller} from '../hooks/useJobPoller';
 import {DEPLOY_MODE_OPTIONS, FIELD_HELP} from '../options';
@@ -20,7 +21,7 @@ export function ExpPage() {
     const [jobId, setJobId] = useState<string | null>(null);
     const [submitting, setSubmitting] = useState(false);
     const [submitError, setSubmitError] = useState<unknown | null>(null);
-    const {job, cancelling, cancelError, pollRecovery, cancel, reset: resetPoller} = useJobPoller(jobId);
+    const {job, cancelling, cancelError, pollRecovery, cancel, retry, reset: resetPoller} = useJobPoller(jobId);
 
     async function handleSubmit() {
         setSubmitError(null);
@@ -79,6 +80,7 @@ export function ExpPage() {
 
     return (
         <div className='deploy-models__form'>
+            <RecentRunsPanel selectedJobId={jobId} onSelectJob={setJobId} />
             <div className='argo-form-row deploy-models__field'>
                 <label>Config Source</label>
                 <div className='deploy-models__choice-group'>
@@ -174,7 +176,7 @@ export function ExpPage() {
 
             {submitError && <ErrorAlert error={submitError} />}
 
-            <JobRunConsole job={job} selectedJobId={jobId} cancelling={cancelling} cancelError={cancelError} pollRecovery={pollRecovery} onCancel={cancel} onSelectJob={setJobId} />
+            <JobRunConsole job={job} cancelling={cancelling} cancelError={cancelError} pollRecovery={pollRecovery} onRetryPoll={retry} onCancel={cancel} />
         </div>
     );
 }

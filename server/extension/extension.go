@@ -2,13 +2,18 @@ package extension
 
 import (
 	"context"
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"net"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
+	"os"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -85,6 +90,18 @@ const (
 	// HeaderArgoCDGroups is the header name that provides the 'groups'
 	// claim from the users authenticated in Argo CD.
 	HeaderArgoCDGroups = "Argocd-User-Groups"
+
+	// HeaderProxySignature defines the signed request header added by the
+	// Argo CD extension proxy when a shared secret is configured.
+	HeaderProxySignature = "X-Clustra-Proxy-Signature"
+
+	// HeaderProxyTimestamp defines the unix timestamp paired with
+	// HeaderProxySignature.
+	HeaderProxyTimestamp = "X-Clustra-Proxy-Timestamp"
+
+	// EnvProxySignatureSecret defines the env var read by the Argo CD
+	// API server to sign extension requests for downstream verification.
+	EnvProxySignatureSecret = "AICONF_PROXY_SIGNATURE_SECRET"
 )
 
 // RequestResources defines the authorization scope for
@@ -823,6 +840,20 @@ func registerMetrics(extName string, metrics httpsnoop.Metrics, extensionMetrics
 	}
 }
 
+func buildProxySignature(secret string, username string, userID string, groups string, application string, project string, timestamp string) string {
+	payload := strings.Join([]string{
+		username,
+		userID,
+		groups,
+		application,
+		project,
+		timestamp,
+	}, "\n")
+	mac := hmac.New(sha256.New, []byte(secret))
+	_, _ = mac.Write([]byte(payload))
+	return hex.EncodeToString(mac.Sum(nil))
+}
+
 // prepareRequest is responsible for cleaning the incoming request URL removing
 // the Argo CD extension API section from it. It provides additional information to
 // the backend service appending them in the outgoing request headers. The appended
@@ -848,6 +879,20 @@ func prepareRequest(r *http.Request, namespace string, extName string, app *v1al
 	}
 	if len(groups) > 0 {
 		r.Header.Set(HeaderArgoCDGroups, strings.Join(groups, ","))
+	}
+	if secret := os.Getenv(EnvProxySignatureSecret); secret != "" {
+		timestamp := strconv.FormatInt(time.Now().Unix(), 10)
+		signature := buildProxySignature(
+			secret,
+			username,
+			userId,
+			strings.Join(groups, ","),
+			r.Header.Get(HeaderArgoCDApplicationName),
+			r.Header.Get(HeaderArgoCDProjectName),
+			timestamp,
+		)
+		r.Header.Set(HeaderProxyTimestamp, timestamp)
+		r.Header.Set(HeaderProxySignature, signature)
 	}
 }
 

@@ -184,9 +184,10 @@ export function cancelJob(jobId: string): Promise<JobResult> {
     return _request('DELETE', `/jobs/${jobId}`);
 }
 
-export function listJobs(params: {status?: string; limit?: number; offset?: number}): Promise<JobListResponse> {
+export function listJobs(params: {status?: string; appName?: string; limit?: number; offset?: number}): Promise<JobListResponse> {
     const qs = new URLSearchParams();
     if (params.status) qs.set('status', params.status);
+    if (params.appName) qs.set('app_name', params.appName);
     if (params.limit != null) qs.set('limit', String(params.limit));
     if (params.offset != null) qs.set('offset', String(params.offset));
     const query = qs.toString();
