@@ -10,8 +10,10 @@ Primary repos:
 
 Primary implementation paths:
 - UI: `src/app/deploy-models/`
+- Model Cache UI: `src/app/model-cache/`
 - Proxy signer: `server/extension/extension.go`
 - Service: `clustra_ai_service/`
+- Model Cache service and agent: `/home/mahammad/Desktop/clustra-modal-cache`
 
 ## 1. Purpose
 
@@ -73,12 +75,14 @@ The product goal is to make common model deployment tasks safe, explainable, and
 - `Experiment`: async advanced flow using YAML path or inline config.
 - `Support`: sync compatibility/advisory check.
 - `Estimate`: sync resource and topology estimation.
+- `Model Cache`: first-party catalog, download, lifecycle, audit, job log, and node health surface for cached model artifacts.
 
 ### Service capabilities
 - Async job submission, storage, audit tracking, polling, cancellation, and retention.
 - Sync support and estimate endpoints.
 - GitOps commit/retry lifecycle surfaced back to the UI.
 - Health, readiness, and Prometheus metrics endpoints.
+- Model Cache API, agent reconciliation, download job orchestration, lifecycle actions, audit trail, and operational health endpoints.
 
 ## 5. Functional requirements
 

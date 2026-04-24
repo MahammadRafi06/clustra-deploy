@@ -1,4 +1,4 @@
-import {useState, useEffect, useCallback, useRef} from 'react';
+import {useState, useEffect, useCallback, useMemo, useRef} from 'react';
 import * as api from '../api/client';
 import type {ModelListParams} from '../api/client';
 import type {ModelSummary, ModelDetail, PaginatedResponse, DownloadRequest, BulkActionRequest} from '../api/types';
@@ -15,6 +15,20 @@ function isDocumentVisible(): boolean {
 }
 
 export function useModels(params: ModelListParams = {}) {
+    const stableParams = useMemo(
+        () => ({
+            page: params.page,
+            page_size: params.page_size,
+            search: params.search,
+            status: params.status,
+            source: params.source,
+            sort_by: params.sort_by,
+            sort_order: params.sort_order,
+            pinned: params.pinned,
+            stale_days: params.stale_days
+        }),
+        [params.page, params.page_size, params.search, params.status, params.source, params.sort_by, params.sort_order, params.pinned, params.stale_days]
+    );
     const [data, setData] = useState<PaginatedResponse<ModelSummary> | undefined>();
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<Error | null>(null);
@@ -34,7 +48,7 @@ export function useModels(params: ModelListParams = {}) {
                 resetPolling();
             }
             try {
-                const result = await api.listModels(params);
+                const result = await api.listModels(stableParams);
                 setData(result);
                 setError(null);
                 resetPolling();
@@ -52,7 +66,7 @@ export function useModels(params: ModelListParams = {}) {
                 setIsLoading(false);
             }
         },
-        [JSON.stringify(params), resetPolling]
+        [stableParams, resetPolling]
     );
 
     useEffect(() => {

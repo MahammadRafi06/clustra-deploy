@@ -1,4 +1,4 @@
-import {useState, useEffect, useCallback, useRef} from 'react';
+import {useState, useEffect, useCallback, useMemo, useRef} from 'react';
 import * as api from '../api/client';
 import type {JobSummary, PaginatedResponse} from '../api/types';
 import {POLL_INTERVAL_JOBS} from '../utils/constants';
@@ -14,6 +14,15 @@ function isDocumentVisible(): boolean {
 }
 
 export function useJobs(params: {page?: number; kind?: string; status?: string; model_id?: string} = {}) {
+    const stableParams = useMemo(
+        () => ({
+            page: params.page,
+            kind: params.kind,
+            status: params.status,
+            model_id: params.model_id
+        }),
+        [params.page, params.kind, params.status, params.model_id]
+    );
     const [data, setData] = useState<PaginatedResponse<JobSummary> | undefined>();
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<Error | null>(null);
@@ -33,7 +42,7 @@ export function useJobs(params: {page?: number; kind?: string; status?: string; 
                 resetPolling();
             }
             try {
-                const result = await api.listJobs(params);
+                const result = await api.listJobs(stableParams);
                 setData(result);
                 setError(null);
                 resetPolling();
@@ -51,7 +60,7 @@ export function useJobs(params: {page?: number; kind?: string; status?: string; 
                 setIsLoading(false);
             }
         },
-        [JSON.stringify(params), resetPolling]
+        [stableParams, resetPolling]
     );
 
     useEffect(() => {

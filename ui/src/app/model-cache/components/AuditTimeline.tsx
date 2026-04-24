@@ -40,9 +40,9 @@ export const AuditTimeline: React.FC<Props> = ({modelId}) => {
         setError(null);
         modelAuditTrail(modelId, {page: 1})
             .then(response => {
-                const seen = new Set<string>();
+                const seen = new Set<AuditLogEntry['id']>();
                 const deduped = response.items.filter(entry => {
-                    const key = `${entry.action}-${entry.created_at}`;
+                    const key = entry.id;
                     if (seen.has(key)) {
                         return false;
                     }
