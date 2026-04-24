@@ -1,5 +1,6 @@
 {{- $effectiveExtensions := include "argo-cd.server.extensions.list" . | fromYamlArray | default list -}}
 {{- $hasEffectiveExtensions := gt (len $effectiveExtensions) 0 -}}
+{{- $ssoServerPodLabels := include "argo-cd.sso.serverPodLabels" . | fromYaml | default dict -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -42,7 +43,7 @@ spec:
         {{- end }}
       labels:
         {{- include "argo-cd.labels" (dict "context" . "component" .Values.server.name "name" .Values.server.name) | nindent 8 }}
-        {{- with (mergeOverwrite (deepCopy .Values.global.podLabels) .Values.server.podLabels) }}
+        {{- with (mergeOverwrite (mergeOverwrite (deepCopy .Values.global.podLabels) .Values.server.podLabels) $ssoServerPodLabels) }}
           {{- toYaml . | nindent 8 }}
         {{- end }}
     spec:
@@ -81,7 +82,8 @@ spec:
           {{- toYaml . | nindent 8 }}
         {{- end }}
         env:
-          {{- with (concat .Values.global.env .Values.server.env) }}
+          {{- $clustraPageEnv := include "argo-cd.clustraPages.env" . | fromYamlArray | default list }}
+          {{- with (concat $clustraPageEnv .Values.global.env .Values.server.env) }}
             {{- toYaml . | nindent 10 }}
           {{- end }}
           - name: ARGOCD_SERVER_NAME

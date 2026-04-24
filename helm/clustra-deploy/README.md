@@ -1,13 +1,14 @@
-# Argo CD Chart
+# Clustra Deploy Chart
 
-A Helm chart for Argo CD, a declarative, GitOps continuous delivery tool for Kubernetes.
+A Helm chart for Clustra Deploy, Clustra's branded GitOps control plane built on Argo CD.
 
 Source code can be found here:
 
 * <https://github.com/argoproj/argo-helm/tree/main/charts/argo-cd>
 * <https://github.com/argoproj/argo-cd>
+* <https://github.com/MahammadRafi06/clustra-deploy>
 
-This is a **community maintained** chart. This chart installs [argo-cd](https://argo-cd.readthedocs.io/en/stable/), a declarative, GitOps continuous delivery tool for Kubernetes.
+This chart installs Clustra Deploy using [Argo CD](https://argo-cd.readthedocs.io/en/stable/) as the GitOps engine.
 
 The default installation is intended to be similar to the provided Argo CD [releases](https://github.com/argoproj/argo-cd/releases).
 
@@ -75,7 +76,7 @@ The `tls: true` option will expect that the `argocd-server-tls` secret exists as
 
 ```yaml
 global:
-  domain: argocd.example.com
+  domain: clustra.example.com
 
 certificate:
   enabled: true
@@ -94,7 +95,7 @@ server:
 
 ```yaml
 global:
-  domain: argocd.example.com
+  domain: clustra.example.com
 
 configs:
   params:
@@ -109,7 +110,7 @@ server:
       nginx.ingress.kubernetes.io/backend-protocol: "HTTP"
     extraTls:
       - hosts:
-        - argocd.example.com
+        - clustra.example.com
         # Based on the ingress controller used secret might be optional
         secretName: wildcard-tls
 ```
@@ -123,7 +124,7 @@ Use `ingressGrpc` section if your ingress controller supports only a single prot
 
 ```yaml
 global:
-  domain: argocd.example.com
+  domain: clustra.example.com
 
 configs:
   params:
@@ -135,7 +136,7 @@ server:
     ingressClassName: contour-internal
     extraTls:
       - hosts:
-        - argocd.example.com
+        - clustra.example.com
         secretName: wildcard-tls
 
    ingressGrpc:
@@ -143,7 +144,7 @@ server:
      ingressClassName: contour-internal
      extraTls:
       - hosts:
-        - grpc.argocd.example.com
+        - grpc.clustra.example.com
         secretName: wildcard-tls
 ```
 
@@ -151,7 +152,7 @@ server:
 
 ```yaml
 global:
-  domain: argocd.example.com
+  domain: clustra.example.com
 
 server:
   ingress:
@@ -162,7 +163,7 @@ server:
       nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
     tls: true
     extraHosts:
-      - name: argocd-alias.example.com
+      - name: clustra-alias.example.com
         path: /
 ```
 
@@ -176,7 +177,7 @@ The provided example assumes you are using TLS off-loading via AWS ACM service.
 
 ```yaml
 global:
-  domain: argocd.example.com
+  domain: clustra.example.com
 
 configs:
   params:
@@ -205,7 +206,7 @@ automatically if you provide configuration for GKE resources.
 
 ```yaml
 global:
-  domain: argocd.example.com
+  domain: clustra.example.com
 
 configs:
   params:
@@ -215,7 +216,7 @@ server:
   service:
     annotations:
       cloud.google.com/neg: '{"ingress": true}'
-      cloud.google.com/backend-config: '{"ports": {"http":"argocd-server"}}'
+      cloud.google.com/backend-config: '{"ports": {"http":"clustra-server"}}'
 
   ingress:
     enabled: true
@@ -244,7 +245,7 @@ webapprouting provides a managed ingress controller based on nginx.
 
 ```yaml 
 global: 
-  domain: argocd.example.com 
+  domain: clustra.example.com
  
 configs: 
   params: 
@@ -259,7 +260,7 @@ server:
       # Optional: Add any AKS-specific annotations if needed 
     extraTls: 
       - hosts: 
-          - argocd.example.com 
+          - clustra.example.com
         # Certificate can be managed by Web Application Routing 
         secretName: argocd-tls
 ```
@@ -273,7 +274,7 @@ The Gateway API provides a modern, extensible way to configure ingress traffic r
 
 ```yaml
 global:
-  domain: argocd.example.com
+  domain: clustra.example.com
 
 server:
   httproute:
@@ -326,7 +327,7 @@ server:
 
   backendTLSPolicy:
     enabled: true
-    hostname: argocd-server.argocd.svc.cluster.local
+    hostname: clustra-server.clustra.svc.cluster.local
     wellKnownCACertificates: System
 ```
 
@@ -399,9 +400,9 @@ For full list of changes please check ArtifactHub [changelog].
 Highlighted versions provide information about additional steps that should be performed by user when upgrading to newer version.
 
 ### 9.1.0
-This chart contains a breaking change (if using `redis-ha`), which was introduced by the dependency `redis-ha` (as seen [here](https://github.com/DandyDeveloper/charts/blob/a03b6a6f4d72b6606ce9a218c7d0026350b48ad0/charts/redis-ha/README.md#4341---upgrade-may-complain-about-selector-label-changes-being-immutable)). The upgrade will complain about selector label changes being immutable, which requires a replacement of the `argocd-redis-ha-haproxy` deployment. To overcome this, you will need to delete (orphaning children) this deployment, updated ArgoCD to disable server-side diffing, then allow the new deployment of `argocd-redis-ha-haproxy` to rollout with the updated label selectors.
+This chart contains a breaking change (if using `redis-ha`), which was introduced by the dependency `redis-ha` (as seen [here](https://github.com/DandyDeveloper/charts/blob/a03b6a6f4d72b6606ce9a218c7d0026350b48ad0/charts/redis-ha/README.md#4341---upgrade-may-complain-about-selector-label-changes-being-immutable)). The upgrade will complain about selector label changes being immutable, which requires a replacement of the `clustra-redis-ha-haproxy` deployment. To overcome this, you will need to delete (orphaning children) this deployment, updated ArgoCD to disable server-side diffing, then allow the new deployment of `clustra-redis-ha-haproxy` to rollout with the updated label selectors.
 
-> Note: If server-side diffing is enabled, you will need to revert this to use client-side diffing, otherwise ArgoCD will be in an Unknown status. More information [here](https://github.com/argoproj/argo-cd/issues/25184). If you happened to upgrade this helm chart before configuring client-side diffing, you will need to delete (orphaning children) the `argocd-redis-ha-haproxy` deployment; once the newest deployment has rolled out, its suggested to cleanup the orphaned ReplicaSets
+> Note: If server-side diffing is enabled, you will need to revert this to use client-side diffing, otherwise ArgoCD will be in an Unknown status. More information [here](https://github.com/argoproj/argo-cd/issues/25184). If you happened to upgrade this helm chart before configuring client-side diffing, you will need to delete (orphaning children) the `clustra-redis-ha-haproxy` deployment; once the newest deployment has rolled out, its suggested to cleanup the orphaned ReplicaSets
 
 This issue was reported [here](https://github.com/argoproj/argo-helm/issues/3571)
 
@@ -495,9 +496,9 @@ Upstream steps in the [FAQ] are not enough, since we chose a different approach.
 (We use a Kubernetes Job with [Chart Hooks] to create the auth secret `argocd-redis`.)
 
 Steps to rotate the secret when using the helm chart (bold step is additional to upstream):
-* Delete `argocd-redis` secret in the namespace where Argo CD is installed.
+* Delete `argocd-redis` secret in the namespace where Clustra Deploy is installed.
   ```bash
-  kubectl delete secret argocd-redis -n <argocd namespace>
+  kubectl delete secret argocd-redis -n <clustra namespace>
   ```
 * **Perform a helm upgrade**
   ```bash
@@ -505,17 +506,17 @@ Steps to rotate the secret when using the helm chart (bold step is additional to
   ```
 * If you are running Redis in HA mode, restart Redis in HA.
   ```bash
-  kubectl rollout restart deployment argocd-redis-ha-haproxy
-  kubectl rollout restart statefulset argocd-redis-ha-server
+  kubectl rollout restart deployment clustra-redis-ha-haproxy
+  kubectl rollout restart statefulset clustra-redis-ha-server
   ```
 * If you are running Redis in non-HA mode, restart Redis.
   ```bash
-  kubectl rollout restart deployment argocd-redis
+  kubectl rollout restart deployment clustra-redis
   ```
 * Restart other components.
   ```bash
-  kubectl rollout restart deployment argocd-server argocd-repo-server
-  kubectl rollout restart statefulset argocd-application-controller
+  kubectl rollout restart deployment clustra-server clustra-repo-server
+  kubectl rollout restart statefulset clustra-application-controller
   ```
 
 ### 6.9.0
@@ -669,7 +670,7 @@ e.g:
 server:
   additionalApplications:
     - name: guestbook
-      namespace: argocd
+      namespace: clustra
       additionalLabels: {}
       additionalAnnotations:
         "helm.sh/resource-policy": keep # <-- add this
@@ -856,13 +857,13 @@ NAME: my-release
 | crds.annotations | object | `{"argocd.argoproj.io/sync-options":"ServerSideApply=true"}` | Annotations to be added to all CRDs |
 | crds.install | bool | `true` | Install and upgrade CRDs |
 | crds.keep | bool | `true` | Keep CRDs on chart uninstall |
-| createAggregateRoles | bool | `false` | Create aggregated roles that extend existing cluster roles to interact with argo-cd resources |
+| createAggregateRoles | bool | `false` | Create aggregated roles that extend existing cluster roles to interact with Argo CD resources. |
 | createClusterRoles | bool | `true` | Create cluster roles for cluster-wide installation. |
 | extraObjects | list | `[]` | Array of extra K8s manifests to deploy |
 | fullnameOverride | string | `""` | String to fully override `"argo-cd.fullname"` |
 | kubeVersionOverride | string | `""` | Override the Kubernetes version, which is used to evaluate certain manifests |
-| nameOverride | string | `"argocd"` | Provide a name in place of `argocd` |
-| namespaceOverride | string | `.Release.Namespace` | Override the namespace |
+| nameOverride | string | `"clustra"` | Kubernetes resource name prefix for the Clustra Deploy installation. |
+| namespaceOverride | string | `"clustra"` | Override the namespace |
 | openshift.enabled | bool | `false` | enables using arbitrary uid for argo repo server |
 
 ## Global Configs
@@ -881,7 +882,7 @@ NAME: my-release
 | global.deploymentAnnotations | object | `{}` | Annotations for the all deployed Deployments |
 | global.deploymentLabels | object | `{}` | Labels for the all deployed Deployments |
 | global.deploymentStrategy | object | `{}` | Deployment strategy for the all deployed Deployments |
-| global.domain | string | `"argocd.example.com"` | Default domain used by all components |
+| global.domain | string | `"clustra.example.com"` | Default domain used by all components |
 | global.dualStack.ipFamilies | list | `[]` | IP families that should be supported and the order in which they should be applied to ClusterIP as well. Can be IPv4 and/or IPv6. |
 | global.dualStack.ipFamilyPolicy | string | `""` | IP family policy to configure dual-stack see [Configure dual-stack](https://kubernetes.io/docs/concepts/services-networking/dual-stack/#services) |
 | global.env | list | `[]` | Environment variables to pass to all deployed Deployments |
@@ -907,6 +908,55 @@ NAME: my-release
 | global.statefulsetLabels | object | `{}` | Labels for the all deployed Statefulsets |
 | global.tolerations | list | `[]` | Default tolerations for all components |
 | global.topologySpreadConstraints | list | `[]` | Default [TopologySpreadConstraints] rules for all components |
+
+## Clustra First-Party Pages
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| clustraPages.deployModels.backendUrl | string | `"http://clustra-ai-service.clustra.svc:80"` | Backend service URL for the Deploy Models API exposed at `/api/ai-service`. |
+| clustraPages.deployModels.enabled | bool | `true` | Enable the Deploy Models page proxy and RBAC policy generation. |
+| clustraPages.deployModels.rbacPolicy | list | `["p, role:admin, clustra-pages, *, deploy-models, allow"]` | RBAC policies generated for the Deploy Models first-party page. |
+| clustraPages.enabled | bool | `true` | Enable first-party Clustra pages and their Argo CD proxy/RBAC wiring. |
+| clustraPages.modelCache.backendUrl | string | `"http://model-cache-backend.clustra.svc:80"` | Backend service URL for the Model Cache API exposed at `/api/model-cache`. |
+| clustraPages.modelCache.enabled | bool | `true` | Enable the Model Cache page proxy and RBAC policy generation. |
+| clustraPages.modelCache.rbacPolicy | list | `["p, role:admin, clustra-pages, *, model-cache, allow"]` | RBAC policies generated for the Model Cache first-party page. |
+
+## Clustra SSO and RBAC
+
+Set `sso.enabled=true` to generate Argo CD direct OIDC configuration and group-based RBAC from a simpler Clustra values block. This is mutually exclusive with raw `configs.cm."oidc.config"` and `configs.cm."dex.config"`; keep using those raw Argo CD settings when you need Dex, SAML, LDAP, or fully custom OIDC.
+
+Register this redirect URI with the identity provider: `https://<global.domain>/auth/callback`. For Azure Entra, add a groups claim and map Entra group object IDs in `sso.rbac.*Groups`. For Okta, ensure the OIDC app emits a `groups` claim, then map the emitted group names in `sso.rbac.*Groups`. Leave `sso.rbac.policyDefault` empty to let unmapped authenticated users log in but see no Argo CD resources.
+
+Client secrets are referenced from Argo CD config as `$<key>` by default, where the key defaults to `oidc.<provider>.clientSecret` in `argocd-secret`. Set `sso.clientSecret.value` only for local or test installs; production installs should create the secret key with an external secret manager. For Azure Workload Identity, set `sso.azure.useWorkloadIdentity=true`; the chart will omit `clientSecret`, label the server pod, and annotate the server service account.
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| sso.azure.domainHint | string | `""` | Optional Microsoft domain hint sent during sign-in. |
+| sso.azure.tenantID | string | `""` | Microsoft Entra tenant/directory ID. |
+| sso.azure.useWorkloadIdentity | bool | `false` | Use Azure Workload Identity instead of a client secret. |
+| sso.clientID | string | `""` | OIDC application client ID. |
+| sso.clientSecret.key | string | `""` (defaults to oidc.<provider>.clientSecret) | Secret key containing the OIDC client secret. |
+| sso.clientSecret.ref | string | `""` | Existing Kubernetes Secret name for the OIDC client secret. If empty, Argo CD reads the key from argocd-secret. |
+| sso.clientSecret.value | string | `""` | Optional inline client secret value to render into argocd-secret. Prefer an external secret in production. |
+| sso.cliClientID | string | `""` | Optional CLI client ID when the IdP requires a separate native app. |
+| sso.disableLocalAdmin | bool | `false` | Disable the local Argo CD admin user when SSO is enabled. |
+| sso.enabled | bool | `false` | Enable generated OIDC SSO and group-based RBAC. |
+| sso.enablePKCEAuthentication | bool | `false` | Enable OIDC PKCE authentication flow. |
+| sso.logoutURL | string | `""` | Optional provider logout URL. |
+| sso.name | string | `""` | Display name shown on the login button. Defaults by provider. |
+| sso.oidc.issuer | string | `""` | Generic OIDC issuer URL. |
+| sso.okta.enableUserInfoGroups | bool | `true` | Ask Argo CD to load groups from the userinfo endpoint. |
+| sso.okta.issuer | string | `""` | Okta OIDC issuer URL. |
+| sso.okta.userInfoCacheExpiration | string | `"5m"` | How long Argo CD caches groups read from userinfo. |
+| sso.okta.userInfoPath | string | `"/userinfo"` | Okta userinfo endpoint path. |
+| sso.provider | string | `""` | SSO provider to generate. Supported values: azure, okta, oidc. |
+| sso.rbac.adminGroups | list | `[]` | IdP groups mapped to Argo CD role:admin. |
+| sso.rbac.extraPolicyCsv | string | `""` | Additional Argo CD policy.csv lines appended after generated group bindings. |
+| sso.rbac.policyDefault | string | `""` | Default Argo CD role for authenticated users without explicit group mapping. Empty means no access. |
+| sso.rbac.readonlyGroups | list | `[]` | IdP groups mapped to Argo CD role:readonly. |
+| sso.rbac.scopes | string | `"[groups]"` | OIDC scopes examined during RBAC enforcement. |
+| sso.requestedIDTokenClaims | object | `{"groups":{"essential":true}}` | OIDC claims requested on the ID token. |
+| sso.requestedScopes | list | `["openid","profile","email","groups"]` | OIDC scopes requested during login. |
 
 ## Argo CD Configs
 
@@ -941,7 +991,7 @@ NAME: my-release
 | configs.gpg.keys | object | `{}` (See [values.yaml]) | [GnuPG] public keys to add to the keyring |
 | configs.params.annotations | object | `{}` | Annotations to be added to the argocd-cmd-params-cm ConfigMap |
 | configs.params.create | bool | `true` | Create the argocd-cmd-params-cm configmap If false, it is expected the configmap will be created by something else. |
-| configs.rbac."policy.csv" | string | `''` (See [values.yaml]) | File containing user-defined policies and role definitions. |
+| configs.rbac."policy.csv" | string | `''` (See [values.yaml]) | File containing user-defined policies and role definitions. Built-in Clustra page policies are generated from `clustraPages.*.rbacPolicy` and prepended to this value. |
 | configs.rbac."policy.default" | string | `""` | The name of the default role which Argo CD will falls back to, when authorizing API requests (optional). If omitted or empty, users may be still be able to login, but will see no apps, projects, etc... |
 | configs.rbac."policy.matchMode" | string | `"glob"` | Matcher function for Casbin, `glob` for glob matcher and `regex` for regex matcher. |
 | configs.rbac.annotations | object | `{}` | Annotations to be added to argocd-rbac-cm configmap |
@@ -1050,7 +1100,7 @@ NAME: my-release
 | controller.serviceAccount.automountServiceAccountToken | bool | `true` | Automount API credentials for the Service Account |
 | controller.serviceAccount.create | bool | `true` | Create a service account for the application controller |
 | controller.serviceAccount.labels | object | `{}` | Labels applied to created service account |
-| controller.serviceAccount.name | string | `"argocd-application-controller"` | Service account name |
+| controller.serviceAccount.name | string | `"clustra-application-controller"` | Service account name |
 | controller.statefulsetAnnotations | object | `{}` | Annotations for the application controller StatefulSet |
 | controller.statefulsetLabels | object | `{}` | Labels for the application controller StatefulSet |
 | controller.terminationGracePeriodSeconds | int | `30` | terminationGracePeriodSeconds for container lifecycle hook |
@@ -1079,7 +1129,7 @@ NAME: my-release
 | repoServer.autoscaling.targetMemoryUtilizationPercentage | int | `50` | Average memory utilization percentage for the repo server [HPA] |
 | repoServer.certificateSecret.annotations | object | `{}` | Annotations to be added to argocd-repo-server-tls secret |
 | repoServer.certificateSecret.ca | string | `""` | Certificate authority. Required for self-signed certificates. |
-| repoServer.certificateSecret.crt | string | `""` | Certificate data. Must contain SANs of Repo service (ie: argocd-repo-server, argocd-repo-server.argo-cd.svc) |
+| repoServer.certificateSecret.crt | string | `""` | Certificate data. Must contain SANs of Repo service (ie: clustra-repo-server, clustra-repo-server.clustra.svc) |
 | repoServer.certificateSecret.enabled | bool | `false` | Create argocd-repo-server-tls secret |
 | repoServer.certificateSecret.key | string | `""` | Certificate private key |
 | repoServer.certificateSecret.labels | object | `{}` | Labels to be added to argocd-repo-server-tls secret |
@@ -1219,7 +1269,7 @@ NAME: my-release
 | server.dnsConfig | object | `{}` | [DNS configuration] |
 | server.dnsPolicy | string | `"ClusterFirst"` | Alternative DNS policy for Server pods |
 | server.emptyDir.sizeLimit | string | `""` (defaults not set if not specified i.e. no size limit) | EmptyDir size limit for the Argo CD server |
-| server.env | list | `[]` | Environment variables to pass to Argo CD server |
+| server.env | list | `[]` | Additional environment variables to pass to Argo CD server. Built-in Clustra page proxy env vars are generated from `clustraPages.*.backendUrl`. |
 | server.envFrom | list | `[]` (See [values.yaml]) | envFrom to pass to Argo CD server |
 | server.extensions.containerSecurityContext | object | See [values.yaml] | Server UI extensions container-level security context |
 | server.extensions.enabled | bool | `false` | Enable support for Argo CD extensions |
@@ -1261,7 +1311,7 @@ NAME: my-release
 | server.ingress.gke.frontendConfig | object | `{}` (See [values.yaml]) | Google [FrontendConfig] resource, for use with the GKE Ingress Controller |
 | server.ingress.gke.managedCertificate.create | bool | `true` | Create ManagedCertificate resource and annotations for Google Load balancer |
 | server.ingress.gke.managedCertificate.extraDomains | list | `[]` | Additional domains for ManagedCertificate resource |
-| server.ingress.hostname | string | `""` (defaults to global.domain) | Argo CD server hostname |
+| server.ingress.hostname | string | `""` (defaults to global.domain) | Clustra server hostname |
 | server.ingress.ingressClassName | string | `""` | Defines which ingress controller will implement the resource |
 | server.ingress.labels | object | `{}` | Additional ingress labels |
 | server.ingress.path | string | `"/"` | The path to Argo CD server |
@@ -1273,10 +1323,10 @@ NAME: my-release
 | server.ingressGrpc.extraPaths | list | `[]` (See [values.yaml]) | Additional ingress paths for dedicated [gRPC-ingress] |
 | server.ingressGrpc.extraRules | list | `[]` (See [values.yaml]) | Additional ingress rules |
 | server.ingressGrpc.extraTls | list | `[]` (See [values.yaml]) | Additional TLS configuration for dedicated [gRPC-ingress] |
-| server.ingressGrpc.hostname | string | `""` (defaults to grpc.`server.ingress.hostname`) | Argo CD server hostname for dedicated [gRPC-ingress] |
+| server.ingressGrpc.hostname | string | `""` (defaults to grpc.`server.ingress.hostname`) | Clustra server hostname for dedicated [gRPC-ingress] |
 | server.ingressGrpc.ingressClassName | string | `""` | Defines which ingress controller will implement the resource [gRPC-ingress] |
 | server.ingressGrpc.labels | object | `{}` | Additional ingress labels for dedicated [gRPC-ingress] |
-| server.ingressGrpc.path | string | `"/"` | Argo CD server ingress path for dedicated [gRPC-ingress] |
+| server.ingressGrpc.path | string | `"/"` | Clustra server ingress path for dedicated [gRPC-ingress] |
 | server.ingressGrpc.pathType | string | `"Prefix"` | Ingress path type for dedicated [gRPC-ingress]. One of `Exact`, `Prefix` or `ImplementationSpecific` |
 | server.ingressGrpc.tls | bool | `false` | Enable TLS configuration for the hostname defined at `server.ingressGrpc.hostname` |
 | server.initContainers | list | `[]` | Init containers to add to the server pod |
@@ -1306,8 +1356,8 @@ NAME: my-release
 | server.metrics.serviceMonitor.scrapeTimeout | string | `""` | Prometheus ServiceMonitor scrapeTimeout. If empty, Prometheus uses the global scrape timeout unless it is less than the target's scrape interval value in which the latter is used. |
 | server.metrics.serviceMonitor.selector | object | `{}` | Prometheus ServiceMonitor selector |
 | server.metrics.serviceMonitor.tlsConfig | object | `{}` | Prometheus ServiceMonitor tlsConfig |
-| server.name | string | `"server"` | Argo CD server name |
-| server.networkPolicy.create | bool | `false` (defaults to global.networkPolicy.create) | Default network policy rules used by ArgoCD Server |
+| server.name | string | `"server"` | Clustra server component name |
+| server.networkPolicy.create | bool | `false` (defaults to global.networkPolicy.create) | Default network policy rules used by the Clustra server |
 | server.nodeSelector | object | `{}` (defaults to global.nodeSelector) | [Node selector] |
 | server.pdb.annotations | object | `{}` | Annotations to be added to Argo CD server pdb |
 | server.pdb.enabled | bool | `false` | Deploy a [PodDisruptionBudget] for the Argo CD server |
@@ -1351,7 +1401,7 @@ NAME: my-release
 | server.serviceAccount.automountServiceAccountToken | bool | `true` | Automount API credentials for the Service Account |
 | server.serviceAccount.create | bool | `true` | Create server service account |
 | server.serviceAccount.labels | object | `{}` | Labels applied to created service account |
-| server.serviceAccount.name | string | `"argocd-server"` | Server service account name |
+| server.serviceAccount.name | string | `"clustra-server"` | Server service account name |
 | server.terminationGracePeriodSeconds | int | `30` | terminationGracePeriodSeconds for container lifecycle hook |
 | server.tolerations | list | `[]` (defaults to global.tolerations) | [Tolerations] for use with node taints |
 | server.topologySpreadConstraints | list | `[]` (defaults to global.topologySpreadConstraints) | Assign custom [TopologySpreadConstraints] rules to the Argo CD server |
@@ -1366,7 +1416,7 @@ NAME: my-release
 | dex.automountServiceAccountToken | bool | `true` | Automount API credentials for the Service Account into the pod. |
 | dex.certificateSecret.annotations | object | `{}` | Annotations to be added to argocd-dex-server-tls secret |
 | dex.certificateSecret.ca | string | `""` | Certificate authority. Required for self-signed certificates. |
-| dex.certificateSecret.crt | string | `""` | Certificate data. Must contain SANs of Dex service (ie: argocd-dex-server, argocd-dex-server.argo-cd.svc) |
+| dex.certificateSecret.crt | string | `""` | Certificate data. Must contain SANs of Dex service (ie: clustra-dex-server, clustra-dex-server.clustra.svc) |
 | dex.certificateSecret.enabled | bool | `false` | Create argocd-dex-server-tls secret |
 | dex.certificateSecret.key | string | `""` | Certificate private key |
 | dex.certificateSecret.labels | object | `{}` | Labels to be added to argocd-dex-server-tls secret |
@@ -1443,7 +1493,7 @@ NAME: my-release
 | dex.serviceAccount.annotations | object | `{}` | Annotations applied to created service account |
 | dex.serviceAccount.automountServiceAccountToken | bool | `true` | Automount API credentials for the Service Account |
 | dex.serviceAccount.create | bool | `true` | Create dex service account |
-| dex.serviceAccount.name | string | `"argocd-dex-server"` | Dex service account name |
+| dex.serviceAccount.name | string | `"clustra-dex-server"` | Dex service account name |
 | dex.servicePortGrpc | int | `5557` | Service port for gRPC access |
 | dex.servicePortGrpcName | string | `"grpc"` | Service port name for gRPC access |
 | dex.servicePortHttp | int | `5556` | Service port for HTTP access |
@@ -1579,7 +1629,7 @@ The main options are listed here:
 | redis-ha.haproxy.enabled | bool | `true` | Enabled HAProxy LoadBalancing/Proxy |
 | redis-ha.haproxy.hardAntiAffinity | bool | `true` | Whether the haproxy pods should be forced to run on separate nodes. |
 | redis-ha.haproxy.image.repository | string | `"ecr-public.aws.com/docker/library/haproxy"` | HAProxy Image Repository |
-| redis-ha.haproxy.labels | object | `{"app.kubernetes.io/name":"argocd-redis-ha-haproxy"}` | Custom labels for the haproxy pod. This is relevant for Argo CD CLI. |
+| redis-ha.haproxy.labels | object | `{"app.kubernetes.io/name":"clustra-redis-ha-haproxy"}` | Custom labels for the haproxy pod. This is relevant for Argo CD CLI. |
 | redis-ha.haproxy.metrics.enabled | bool | `true` | HAProxy enable prometheus metric scraping |
 | redis-ha.haproxy.tolerations | list | `[]` | [Tolerations] for use with node taints for haproxy pods. |
 | redis-ha.hardAntiAffinity | bool | `true` | Whether the Redis server pods should be forced to run on separate nodes. |
@@ -1588,7 +1638,7 @@ The main options are listed here:
 | redis-ha.persistentVolume.enabled | bool | `false` | Configures persistence on Redis nodes |
 | redis-ha.redis.config | object | See [values.yaml] | Any valid redis config options in this section will be applied to each server (see `redis-ha` chart) |
 | redis-ha.redis.config.save | string | `'""'` | Will save the DB if both the given number of seconds and the given number of write operations against the DB occurred. `""`  is disabled |
-| redis-ha.redis.masterGroupName | string | `"argocd"` | Redis convention for naming the cluster group: must match `^[\\w-\\.]+$` and can be templated |
+| redis-ha.redis.masterGroupName | string | `"clustra"` | Redis convention for naming the cluster group: must match `^[\\w-\\.]+$` and can be templated |
 | redis-ha.tolerations | list | `[]` | [Tolerations] for use with node taints for Redis pods. |
 | redis-ha.topologySpreadConstraints | object | `{"enabled":false,"maxSkew":"","topologyKey":"","whenUnsatisfiable":""}` | Assign custom [TopologySpreadConstraints] rules to the Redis pods. |
 | redis-ha.topologySpreadConstraints.enabled | bool | `false` | Enable Redis HA topology spread constraints |
@@ -1616,7 +1666,7 @@ If you want to use an existing Redis (eg. a managed service from a cloud provide
 
 ### Redis secret-init
 
-The helm chart deploys a Job to setup a random password which is used to secure the Redis. The Redis password is stored in Kubernetes secret `argocd-redis` with key `auth` in the namespace where Argo CD is installed.
+The helm chart deploys a Job to setup a random password which is used to secure the Redis. The Redis password is stored in Kubernetes secret `argocd-redis` with key `auth` in the namespace where Clustra Deploy is installed.
 If you use an External Redis (See Option 3 above), this Job is not deployed.
 
 | Key | Type | Default | Description |
@@ -1690,7 +1740,7 @@ If you use an External Redis (See Option 3 above), this Job is not deployed.
 | applicationSet.ingress.extraPaths | list | `[]` (See [values.yaml]) | Additional ingress paths |
 | applicationSet.ingress.extraRules | list | `[]` (See [values.yaml]) | Additional ingress rules |
 | applicationSet.ingress.extraTls | list | `[]` (See [values.yaml]) | Additional ingress TLS configuration |
-| applicationSet.ingress.hostname | string | `""` (defaults to global.domain) | Argo CD ApplicationSet hostname |
+| applicationSet.ingress.hostname | string | `""` (defaults to global.domain) | Clustra ApplicationSet hostname |
 | applicationSet.ingress.ingressClassName | string | `""` | Defines which ingress ApplicationSet controller will implement the resource |
 | applicationSet.ingress.labels | object | `{}` | Additional ingress labels |
 | applicationSet.ingress.path | string | `"/api/webhook"` | List of ingress paths |
@@ -1751,7 +1801,7 @@ If you use an External Redis (See Option 3 above), this Job is not deployed.
 | applicationSet.serviceAccount.automountServiceAccountToken | bool | `true` | Automount API credentials for the Service Account |
 | applicationSet.serviceAccount.create | bool | `true` | Create ApplicationSet controller service account |
 | applicationSet.serviceAccount.labels | object | `{}` | Labels applied to created service account |
-| applicationSet.serviceAccount.name | string | `"argocd-applicationset-controller"` | ApplicationSet controller service account name |
+| applicationSet.serviceAccount.name | string | `"clustra-applicationset-controller"` | ApplicationSet controller service account name |
 | applicationSet.terminationGracePeriodSeconds | int | `30` | terminationGracePeriodSeconds for container lifecycle hook |
 | applicationSet.tolerations | list | `[]` (defaults to global.tolerations) | [Tolerations] for use with node taints |
 | applicationSet.topologySpreadConstraints | list | `[]` (defaults to global.topologySpreadConstraints) | Assign custom [TopologySpreadConstraints] rules to the ApplicationSet controller |
@@ -1761,7 +1811,7 @@ If you use an External Redis (See Option 3 above), this Job is not deployed.
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
 | notifications.affinity | object | `{}` (defaults to global.affinity preset) | Assign custom [affinity] rules |
-| notifications.argocdUrl | string | `""` (defaults to https://`global.domain`) | Argo CD dashboard url; used in place of {{.context.argocdUrl}} in templates |
+| notifications.argocdUrl | string | `""` (defaults to https://`global.domain`) | Clustra dashboard url; used in place of {{.context.argocdUrl}} in templates |
 | notifications.automountServiceAccountToken | bool | `true` | Automount API credentials for the Service Account into the pod. |
 | notifications.clusterRoleRules.rules | list | `[]` | List of custom rules for the notifications controller's ClusterRole resource |
 | notifications.cm.create | bool | `true` | Whether helm chart creates notifications controller config map |
@@ -1836,7 +1886,7 @@ If you use an External Redis (See Option 3 above), this Job is not deployed.
 | notifications.serviceAccount.automountServiceAccountToken | bool | `true` | Automount API credentials for the Service Account |
 | notifications.serviceAccount.create | bool | `true` | Create notifications controller service account |
 | notifications.serviceAccount.labels | object | `{}` | Labels applied to created service account |
-| notifications.serviceAccount.name | string | `"argocd-notifications-controller"` | Notification controller service account name |
+| notifications.serviceAccount.name | string | `"clustra-notifications-controller"` | Notification controller service account name |
 | notifications.subscriptions | list | `[]` | Contains centrally managed global application subscriptions |
 | notifications.templates | object | `{}` | The notification template is used to generate the notification content |
 | notifications.terminationGracePeriodSeconds | int | `30` | terminationGracePeriodSeconds for container lifecycle hook |
@@ -1902,7 +1952,7 @@ To read more about this component, please read [Argo CD Manifest Hydrator] and [
 | commitServer.serviceAccount.automountServiceAccountToken | bool | `true` | Automount API credentials for the Service Account |
 | commitServer.serviceAccount.create | bool | `true` | Create commit server service account |
 | commitServer.serviceAccount.labels | object | `{}` | Labels applied to created service account |
-| commitServer.serviceAccount.name | string | `"argocd-commit-server"` | commit server service account name |
+| commitServer.serviceAccount.name | string | `"clustra-commit-server"` | commit server service account name |
 | commitServer.terminationGracePeriodSeconds | int | `30` | terminationGracePeriodSeconds for container lifecycle hook |
 | commitServer.tolerations | list | `[]` (defaults to global.tolerations) | [Tolerations] for use with node taints |
 | commitServer.topologySpreadConstraints | list | `[]` (defaults to global.topologySpreadConstraints) | Assign custom [TopologySpreadConstraints] rules to the commit server |

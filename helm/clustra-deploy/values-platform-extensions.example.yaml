@@ -1,11 +1,13 @@
+# Built-in Clustra pages are first-party routes now and are enabled by default in
+# values.yaml. Use this file only as a reference for overriding backend URLs or
+# keeping legacy extension installation disabled.
+clustraPages:
+  deployModels:
+    backendUrl: http://clustra-ai-service.clustra.svc:80
+  modelCache:
+    backendUrl: http://model-cache-backend.clustra.svc:80
+
 server:
-  # Clustra pages are first-party routes now. Point Argo CD's built-in page
-  # proxies at the backing services instead of installing separate UI bundles.
-  env:
-    - name: ARGOCD_AI_SERVICE_BACKEND_URL
-      value: http://clustra-ai-service.argocd.svc:80
-    - name: ARGOCD_MODEL_CACHE_BACKEND_URL
-      value: http://model-cache-backend.model-cache.svc:80
   extensions:
     enabled: false
 
@@ -14,9 +16,3 @@ platformExtensions:
   # the main UI and do not need system-level extension bundles.
   enabled: false
   items: []
-
-configs:
-  rbac:
-    policy.csv: |
-      p, role:admin, clustra-pages, get, deploy-models, allow
-      p, role:admin, clustra-pages, get, model-cache, allow

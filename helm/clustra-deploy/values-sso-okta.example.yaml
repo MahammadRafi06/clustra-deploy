@@ -1,0 +1,35 @@
+# Example: Okta SSO with direct Argo CD OIDC.
+#
+# Register the redirect URI in Okta:
+#   https://clustra.example.com/auth/callback
+#
+# Okta RBAC groups use the group names emitted in the OIDC groups claim.
+global:
+  domain: clustra.example.com
+
+sso:
+  enabled: true
+  provider: okta
+  name: Okta
+  clientID: 0oaexampleclientid
+
+  # Leave value empty for production and create the key in argocd-secret with
+  # External Secrets, SOPS, SealedSecrets, or another secret manager.
+  clientSecret:
+    key: oidc.okta.clientSecret
+    value: ""
+
+  okta:
+    issuer: https://example.okta.com/oauth2/default
+    enableUserInfoGroups: true
+
+  # Set true once SSO is confirmed working.
+  disableLocalAdmin: false
+
+  rbac:
+    policyDefault: ""
+    adminGroups:
+      - argocd-admins
+    readonlyGroups:
+      - argocd-readonly
+

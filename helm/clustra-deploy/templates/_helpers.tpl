@@ -196,6 +196,204 @@ Create the name of the commit-server service account to use
 {{- end -}}
 
 {{/*
+Resolve the default Secret key used for generated OIDC client secrets.
+*/}}
+{{- define "argo-cd.sso.clientSecretKey" -}}
+{{- $sso := .Values.sso | default dict -}}
+{{- $provider := lower ($sso.provider | default "oidc") -}}
+{{- $clientSecret := $sso.clientSecret | default dict -}}
+{{- default (printf "oidc.%s.clientSecret" $provider) $clientSecret.key -}}
+{{- end -}}
+
+{{/*
+Resolve the Argo CD OIDC clientSecret reference string.
+*/}}
+{{- define "argo-cd.sso.clientSecretRef" -}}
+{{- $sso := .Values.sso | default dict -}}
+{{- $clientSecret := $sso.clientSecret | default dict -}}
+{{- $key := include "argo-cd.sso.clientSecretKey" . -}}
+{{- $ref := $clientSecret.ref | default "" -}}
+{{- if ne $ref "" -}}
+{{- printf "$%s:%s" $ref $key -}}
+{{- else -}}
+{{- printf "$%s" $key -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+Validate high-level Clustra SSO configuration.
+*/}}
+{{- define "argo-cd.sso.validate" -}}
+{{- $sso := .Values.sso | default dict -}}
+{{- if ($sso.enabled | default false) -}}
+{{- if not (.Values.configs.cm.create | default false) -}}
+{{- fail "sso.enabled requires configs.cm.create=true so the generated oidc.config can be rendered" -}}
+{{- end -}}
+{{- if not (.Values.configs.rbac.create | default false) -}}
+{{- fail "sso.enabled requires configs.rbac.create=true so generated group RBAC can be rendered" -}}
+{{- end -}}
+{{- if or (index .Values.configs.cm "oidc.config") (index .Values.configs.cm "dex.config") -}}
+{{- fail "sso.enabled cannot be used together with raw configs.cm.oidc.config or configs.cm.dex.config; disable sso or remove the raw SSO config" -}}
+{{- end -}}
+{{- $provider := lower (required "sso.provider must be one of azure, okta, or oidc when sso.enabled=true" ($sso.provider | default "")) -}}
+{{- if and (ne $provider "azure") (ne $provider "okta") (ne $provider "oidc") -}}
+{{- fail (printf "unsupported sso.provider %q; expected azure, okta, or oidc" $sso.provider) -}}
+{{- end -}}
+{{- $_ := required "sso.clientID is required when sso.enabled=true" ($sso.clientID | default "") -}}
+{{- $clientSecret := $sso.clientSecret | default dict -}}
+{{- $azure := $sso.azure | default dict -}}
+{{- if eq $provider "azure" -}}
+{{- $_ := required "sso.azure.tenantID is required when sso.provider=azure" ($azure.tenantID | default "") -}}
+{{- end -}}
+{{- if eq $provider "okta" -}}
+{{- $okta := $sso.okta | default dict -}}
+{{- $_ := required "sso.okta.issuer is required when sso.provider=okta" ($okta.issuer | default "") -}}
+{{- end -}}
+{{- if eq $provider "oidc" -}}
+{{- $oidc := $sso.oidc | default dict -}}
+{{- $_ := required "sso.oidc.issuer is required when sso.provider=oidc" ($oidc.issuer | default "") -}}
+{{- end -}}
+{{- if and (eq $provider "azure") ($azure.useWorkloadIdentity | default false) -}}
+{{- if or ($clientSecret.value | default "") ($clientSecret.ref | default "") ($clientSecret.key | default "") -}}
+{{- fail "sso.clientSecret.* must be empty when sso.azure.useWorkloadIdentity=true; Argo CD will use Azure Workload Identity instead of a client secret" -}}
+{{- end -}}
+{{- if not (.Values.server.serviceAccount.create | default false) -}}
+{{- fail "sso.azure.useWorkloadIdentity=true requires server.serviceAccount.create=true so the workload identity annotation can be rendered" -}}
+{{- end -}}
+{{- else -}}
+{{- if and ($clientSecret.value | default "") ($clientSecret.ref | default "") -}}
+{{- fail "sso.clientSecret.value and sso.clientSecret.ref are mutually exclusive" -}}
+{{- end -}}
+{{- if and ($clientSecret.value | default "") (not (.Values.configs.secret.createSecret | default false)) -}}
+{{- fail "sso.clientSecret.value requires configs.secret.createSecret=true so the inline value can be rendered into argocd-secret" -}}
+{{- end -}}
+{{- $secretKey := include "argo-cd.sso.clientSecretKey" . -}}
+{{- if and ($clientSecret.value | default "") (hasKey (.Values.configs.secret.extra | default dict) $secretKey) -}}
+{{- fail (printf "sso.clientSecret.value would render duplicate argocd-secret key %q; remove configs.secret.extra for that key or use an external secret reference" $secretKey) -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+Generate direct OIDC configuration from high-level Clustra SSO values.
+*/}}
+{{- define "argo-cd.sso.oidcConfig" -}}
+{{- include "argo-cd.sso.validate" . -}}
+{{- $sso := .Values.sso | default dict -}}
+{{- if ($sso.enabled | default false) -}}
+{{- $provider := lower ($sso.provider | default "") -}}
+{{- $azure := $sso.azure | default dict -}}
+{{- $okta := $sso.okta | default dict -}}
+{{- $oidc := $sso.oidc | default dict -}}
+{{- $config := dict -}}
+{{- $defaultName := "OIDC" -}}
+{{- if eq $provider "azure" -}}
+{{- $defaultName = "Azure" -}}
+{{- else if eq $provider "okta" -}}
+{{- $defaultName = "Okta" -}}
+{{- end -}}
+{{- $_ := set $config "name" (default $defaultName $sso.name) -}}
+{{- if eq $provider "azure" -}}
+{{- $_ := set $config "issuer" (printf "https://login.microsoftonline.com/%s/v2.0" $azure.tenantID) -}}
+{{- else if eq $provider "okta" -}}
+{{- $_ := set $config "issuer" $okta.issuer -}}
+{{- else -}}
+{{- $_ := set $config "issuer" $oidc.issuer -}}
+{{- end -}}
+{{- $_ := set $config "clientID" $sso.clientID -}}
+{{- if and (eq $provider "azure") ($azure.useWorkloadIdentity | default false) -}}
+{{- $_ := set $config "azure" (dict "useWorkloadIdentity" true) -}}
+{{- else -}}
+{{- $_ := set $config "clientSecret" (include "argo-cd.sso.clientSecretRef" .) -}}
+{{- end -}}
+{{- with ($sso.requestedScopes | default list) -}}
+{{- $_ := set $config "requestedScopes" . -}}
+{{- end -}}
+{{- with ($sso.requestedIDTokenClaims | default dict) -}}
+{{- $_ := set $config "requestedIDTokenClaims" . -}}
+{{- end -}}
+{{- with ($sso.cliClientID | default "") -}}
+{{- $_ := set $config "cliClientID" . -}}
+{{- end -}}
+{{- with ($sso.allowedAudiences | default list) -}}
+{{- $_ := set $config "allowedAudiences" . -}}
+{{- end -}}
+{{- if ($sso.enablePKCEAuthentication | default false) -}}
+{{- $_ := set $config "enablePKCEAuthentication" true -}}
+{{- end -}}
+{{- with ($sso.logoutURL | default "") -}}
+{{- $_ := set $config "logoutURL" . -}}
+{{- end -}}
+{{- if eq $provider "azure" -}}
+{{- with ($azure.domainHint | default "") -}}
+{{- $_ := set $config "domainHint" . -}}
+{{- end -}}
+{{- end -}}
+{{- if eq $provider "okta" -}}
+{{- $enableUserInfoGroups := true -}}
+{{- if hasKey $okta "enableUserInfoGroups" -}}
+{{- $enableUserInfoGroups = $okta.enableUserInfoGroups -}}
+{{- end -}}
+{{- if $enableUserInfoGroups -}}
+{{- $_ := set $config "enableUserInfoGroups" true -}}
+{{- $_ := set $config "userInfoPath" (default "/userinfo" $okta.userInfoPath) -}}
+{{- $_ := set $config "userInfoCacheExpiration" (default "5m" $okta.userInfoCacheExpiration) -}}
+{{- end -}}
+{{- end -}}
+{{- toYaml $config | trim -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+Generate Secret data for inline SSO client secrets.
+*/}}
+{{- define "argo-cd.sso.secretData" -}}
+{{- include "argo-cd.sso.validate" . -}}
+{{- $data := dict -}}
+{{- $sso := .Values.sso | default dict -}}
+{{- if ($sso.enabled | default false) -}}
+{{- $provider := lower ($sso.provider | default "") -}}
+{{- $azure := $sso.azure | default dict -}}
+{{- $clientSecret := $sso.clientSecret | default dict -}}
+{{- if not (and (eq $provider "azure") ($azure.useWorkloadIdentity | default false)) -}}
+{{- with ($clientSecret.value | default "") -}}
+{{- $_ := set $data (include "argo-cd.sso.clientSecretKey" $) . -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+{{- toYaml $data -}}
+{{- end -}}
+
+{{/*
+Generate workload identity labels for the Argo CD server pod.
+*/}}
+{{- define "argo-cd.sso.serverPodLabels" -}}
+{{- include "argo-cd.sso.validate" . -}}
+{{- $labels := dict -}}
+{{- $sso := .Values.sso | default dict -}}
+{{- $azure := $sso.azure | default dict -}}
+{{- if and ($sso.enabled | default false) (eq (lower ($sso.provider | default "")) "azure") ($azure.useWorkloadIdentity | default false) -}}
+{{- $_ := set $labels "azure.workload.identity/use" "true" -}}
+{{- end -}}
+{{- toYaml $labels -}}
+{{- end -}}
+
+{{/*
+Generate workload identity annotations for the Argo CD server service account.
+*/}}
+{{- define "argo-cd.sso.serverServiceAccountAnnotations" -}}
+{{- include "argo-cd.sso.validate" . -}}
+{{- $annotations := dict -}}
+{{- $sso := .Values.sso | default dict -}}
+{{- $azure := $sso.azure | default dict -}}
+{{- if and ($sso.enabled | default false) (eq (lower ($sso.provider | default "")) "azure") ($azure.useWorkloadIdentity | default false) -}}
+{{- $_ := set $annotations "azure.workload.identity/client-id" $sso.clientID -}}
+{{- end -}}
+{{- toYaml $annotations -}}
+{{- end -}}
+
+{{/*
 Argo Configuration Preset Values (Influenced by Values configuration)
 */}}
 {{- define "argo-cd.config.cm.presets" -}}
@@ -214,7 +412,15 @@ Argo Configuration Preset Values (Influenced by Values configuration)
 Merge Argo Configuration with Preset Configuration
 */}}
 {{- define "argo-cd.config.cm" -}}
+{{- include "argo-cd.sso.validate" . -}}
 {{- $config := deepCopy (omit .Values.configs.cm "create" "annotations") -}}
+{{- $sso := .Values.sso | default dict -}}
+{{- if ($sso.enabled | default false) -}}
+{{- $_ := set $config "oidc.config" (include "argo-cd.sso.oidcConfig" .) -}}
+{{- if ($sso.disableLocalAdmin | default false) -}}
+{{- $_ := set $config "admin.enabled" false -}}
+{{- end -}}
+{{- end -}}
 {{- $generatedExtensionConfig := include "argo-cd.platformExtensions.proxyConfig" . | fromYaml | default dict -}}
 {{- $manualExtensionConfig := (get $config "extension.config" | default "" | fromYaml) | default dict -}}
 {{- $generatedExtensions := get $generatedExtensionConfig "extensions" | default list -}}
@@ -229,6 +435,32 @@ Merge Argo Configuration with Preset Configuration
 {{ $key }}: {{ $fmted | toYaml }}
 {{- end }}
 {{- end }}
+{{- end -}}
+
+{{/*
+Generate environment variables for built-in Clustra first-party page proxies.
+Explicit env values in global.env/server.env win to avoid duplicate names.
+*/}}
+{{- define "argo-cd.clustraPages.env" -}}
+{{- $env := list -}}
+{{- $envNames := dict -}}
+{{- range (concat (.Values.global.env | default list) (.Values.server.env | default list)) -}}
+  {{- if .name -}}
+    {{- $_ := set $envNames .name true -}}
+  {{- end -}}
+{{- end -}}
+{{- $pages := .Values.clustraPages | default dict -}}
+{{- if ($pages.enabled | default false) -}}
+  {{- $deployModels := $pages.deployModels | default dict -}}
+  {{- if and ($deployModels.enabled | default false) $deployModels.backendUrl (not (hasKey $envNames "ARGOCD_AI_SERVICE_BACKEND_URL")) -}}
+    {{- $env = append $env (dict "name" "ARGOCD_AI_SERVICE_BACKEND_URL" "value" $deployModels.backendUrl) -}}
+  {{- end -}}
+  {{- $modelCache := $pages.modelCache | default dict -}}
+  {{- if and ($modelCache.enabled | default false) $modelCache.backendUrl (not (hasKey $envNames "ARGOCD_MODEL_CACHE_BACKEND_URL")) -}}
+    {{- $env = append $env (dict "name" "ARGOCD_MODEL_CACHE_BACKEND_URL" "value" $modelCache.backendUrl) -}}
+  {{- end -}}
+{{- end -}}
+{{ toYaml $env }}
 {{- end -}}
 
 {{/*
@@ -301,11 +533,76 @@ Generate extension RBAC lines for declarative platform extensions
 {{- end -}}
 
 {{/*
+Generate RBAC lines for high-level Clustra SSO group bindings.
+*/}}
+{{- define "argo-cd.sso.rbacPolicy" -}}
+{{- include "argo-cd.sso.validate" . -}}
+{{- $lines := list -}}
+{{- $sso := .Values.sso | default dict -}}
+{{- if ($sso.enabled | default false) -}}
+{{- $rbac := $sso.rbac | default dict -}}
+{{- range ($rbac.adminGroups | default list) -}}
+{{- $lines = append $lines (printf "g, %s, role:admin" .) -}}
+{{- end -}}
+{{- range ($rbac.readonlyGroups | default list) -}}
+{{- $lines = append $lines (printf "g, %s, role:readonly" .) -}}
+{{- end -}}
+{{- with ($rbac.extraPolicyCsv | default "" | trim) -}}
+{{- $lines = append $lines . -}}
+{{- end -}}
+{{- end -}}
+{{ join "\n" $lines }}
+{{- end -}}
+
+{{/*
+Generate RBAC lines for built-in Clustra first-party pages.
+*/}}
+{{- define "argo-cd.clustraPages.rbacPolicy" -}}
+{{- $lines := list -}}
+{{- $pages := .Values.clustraPages | default dict -}}
+{{- if ($pages.enabled | default false) -}}
+  {{- $deployModels := $pages.deployModels | default dict -}}
+  {{- if ($deployModels.enabled | default false) -}}
+    {{- range ($deployModels.rbacPolicy | default list) -}}
+      {{- $lines = append $lines . -}}
+    {{- end -}}
+  {{- end -}}
+  {{- $modelCache := $pages.modelCache | default dict -}}
+  {{- if ($modelCache.enabled | default false) -}}
+    {{- range ($modelCache.rbacPolicy | default list) -}}
+      {{- $lines = append $lines . -}}
+    {{- end -}}
+  {{- end -}}
+{{- end -}}
+{{ join "\n" $lines }}
+{{- end -}}
+
+{{/*
 Merge RBAC configuration with generated extension policies
 */}}
 {{- define "argo-cd.config.rbac" -}}
+{{- include "argo-cd.sso.validate" . -}}
 {{- $config := deepCopy (omit .Values.configs.rbac "create" "annotations") -}}
-{{- $generatedPolicy := include "argo-cd.platformExtensions.rbacPolicy" . | trim -}}
+{{- $sso := .Values.sso | default dict -}}
+{{- if ($sso.enabled | default false) -}}
+{{- $ssoRbac := $sso.rbac | default dict -}}
+{{- $_ := set $config "policy.default" ($ssoRbac.policyDefault | default "") -}}
+{{- $_ := set $config "scopes" (default "[groups]" $ssoRbac.scopes) -}}
+{{- end -}}
+{{- $generatedPolicies := list -}}
+{{- $clustraPagePolicy := include "argo-cd.clustraPages.rbacPolicy" . | trim -}}
+{{- if ne $clustraPagePolicy "" -}}
+{{- $generatedPolicies = append $generatedPolicies $clustraPagePolicy -}}
+{{- end -}}
+{{- $ssoPolicy := include "argo-cd.sso.rbacPolicy" . | trim -}}
+{{- if ne $ssoPolicy "" -}}
+{{- $generatedPolicies = append $generatedPolicies $ssoPolicy -}}
+{{- end -}}
+{{- $platformExtensionPolicy := include "argo-cd.platformExtensions.rbacPolicy" . | trim -}}
+{{- if ne $platformExtensionPolicy "" -}}
+{{- $generatedPolicies = append $generatedPolicies $platformExtensionPolicy -}}
+{{- end -}}
+{{- $generatedPolicy := join "\n" $generatedPolicies | trim -}}
 {{- if ne $generatedPolicy "" -}}
 {{- $manualPolicy := get $config "policy.csv" | default "" -}}
 {{- $_ := set $config "policy.csv" (trim (printf "%s\n%s" $generatedPolicy $manualPolicy)) -}}

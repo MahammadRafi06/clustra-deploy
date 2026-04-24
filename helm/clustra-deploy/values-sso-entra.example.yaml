@@ -1,0 +1,35 @@
+# Example: Azure Entra ID SSO with direct Argo CD OIDC.
+#
+# Register the redirect URI in Entra:
+#   https://clustra.example.com/auth/callback
+#
+# Entra RBAC groups are emitted as group object IDs, so use those IDs below.
+global:
+  domain: clustra.example.com
+
+sso:
+  enabled: true
+  provider: azure
+  name: Azure
+  clientID: 00000000-0000-0000-0000-000000000000
+
+  # Leave value empty for production and create the key in argocd-secret with
+  # External Secrets, SOPS, SealedSecrets, or another secret manager.
+  clientSecret:
+    key: oidc.azure.clientSecret
+    value: ""
+
+  azure:
+    tenantID: 11111111-1111-1111-1111-111111111111
+    domainHint: contoso.com
+
+  # Set true once SSO is confirmed working.
+  disableLocalAdmin: false
+
+  rbac:
+    policyDefault: ""
+    adminGroups:
+      - 22222222-2222-2222-2222-222222222222
+    readonlyGroups:
+      - 33333333-3333-3333-3333-333333333333
+

@@ -1,13 +1,12 @@
-## Argo CD configuration
+## Clustra Deploy configuration
 ## Ref: https://github.com/argoproj/argo-cd
 ##
 
-# -- Provide a name in place of `argocd`
-nameOverride: argocd
+# -- Kubernetes resource name prefix for the Clustra Deploy installation.
+nameOverride: clustra
 # -- String to fully override `"argo-cd.fullname"`
 fullnameOverride: ""
 # -- Override the namespace
-# @default -- `.Release.Namespace`
 namespaceOverride: "clustra"
 # -- Override the Kubernetes version, which is used to evaluate certain manifests
 kubeVersionOverride: ""
@@ -16,7 +15,7 @@ kubeVersionOverride: ""
 # you can set api versions here
 apiVersionOverrides: {}
 
-# -- Create aggregated roles that extend existing cluster roles to interact with argo-cd resources
+# -- Create aggregated roles that extend existing cluster roles to interact with Argo CD resources.
 ## Ref: https://kubernetes.io/docs/reference/access-authn-authz/rbac/#aggregated-clusterroles
 createAggregateRoles: false
 # -- Create cluster roles for cluster-wide installation.
@@ -43,14 +42,14 @@ crds:
 global:
   # -- Default domain used by all components
   ## Used for ingresses, certificates, SSO, notifications, etc.
-  domain: argocd.example.com
+  domain: clustra.example.com
 
   # -- Runtime class name for all components
   runtimeClassName: ""
 
   # -- Common labels for the all resources
   additionalLabels: {}
-    # app: argo-cd
+    # app: clustra
 
   # -- Number of old deployment ReplicaSets to retain. The rest will be garbage collected.
   revisionHistoryLimit: 3
@@ -281,7 +280,7 @@ configs:
     # PKCE authentication flow processes authorization flow from browser only - default false
     # uses the clientID
     # make sure the Identity Provider (IdP) is public and doesn't need clientSecret
-    # make sure the Identity Provider (IdP) has this redirect URI registered: https://argocd.example.com/pkce/verify
+    # make sure the Identity Provider (IdP) has this redirect URI registered: https://clustra.example.com/pkce/verify
     #   enablePKCEAuthentication: true
 
     # Extension Configuration
@@ -444,6 +443,8 @@ configs:
     policy.default: ''
 
     # -- File containing user-defined policies and role definitions.
+    # Built-in Clustra page policies are generated from `clustraPages.*.rbacPolicy`
+    # and prepended to this value.
     # @default -- `''` (See [values.yaml])
     policy.csv: ''
     # Policy rules are in the form:
@@ -746,6 +747,107 @@ extraObjects: []
   #       labels:
   #         app.kubernetes.io/part-of: argocd
 
+## First-class SSO and RBAC configuration for Clustra Deploy.
+## This generates Argo CD direct OIDC configuration, optional client secret data,
+## and group-to-role RBAC bindings while leaving raw Argo CD config available
+## under `configs.cm` and `configs.rbac` when this block is disabled.
+sso:
+  # -- Enable generated OIDC SSO and group-based RBAC.
+  enabled: false
+  # -- SSO provider to generate. Supported values: azure, okta, oidc.
+  provider: ""
+  # -- Display name shown on the login button. Defaults by provider.
+  name: ""
+  # -- OIDC application client ID.
+  clientID: ""
+
+  clientSecret:
+    # -- Existing Kubernetes Secret name for the OIDC client secret. If empty, Argo CD reads the key from argocd-secret.
+    ref: ""
+    # -- Secret key containing the OIDC client secret. Defaults to oidc.<provider>.clientSecret.
+    key: ""
+    # -- Optional inline client secret value to render into argocd-secret. Prefer an external secret in production.
+    value: ""
+
+  # -- Disable the local Argo CD admin user when SSO is enabled.
+  disableLocalAdmin: false
+  # -- OIDC scopes requested during login.
+  requestedScopes:
+    - openid
+    - profile
+    - email
+    - groups
+  # -- OIDC claims requested on the ID token.
+  requestedIDTokenClaims:
+    groups:
+      essential: true
+
+  azure:
+    # -- Microsoft Entra tenant/directory ID.
+    tenantID: ""
+    # -- Use Azure Workload Identity instead of a client secret.
+    useWorkloadIdentity: false
+    # -- Optional Microsoft domain hint sent during sign-in.
+    domainHint: ""
+
+  okta:
+    # -- Okta OIDC issuer URL.
+    issuer: ""
+    # -- Ask Argo CD to load groups from the userinfo endpoint.
+    enableUserInfoGroups: true
+    # -- Okta userinfo endpoint path.
+    userInfoPath: /userinfo
+    # -- How long Argo CD caches groups read from userinfo.
+    userInfoCacheExpiration: 5m
+
+  oidc:
+    # -- Generic OIDC issuer URL.
+    issuer: ""
+
+  # -- Optional CLI client ID when the IdP requires a separate native app.
+  cliClientID: ""
+  # -- Optional allowed audience values for token validation.
+  allowedAudiences: []
+  # -- Enable OIDC PKCE authentication flow.
+  enablePKCEAuthentication: false
+  # -- Optional provider logout URL.
+  logoutURL: ""
+
+  rbac:
+    # -- Default Argo CD role for authenticated users without explicit group mapping. Empty means no access.
+    policyDefault: ""
+    # -- OIDC scopes examined during RBAC enforcement.
+    scopes: "[groups]"
+    # -- IdP groups mapped to Argo CD role:admin.
+    adminGroups: []
+    # -- IdP groups mapped to Argo CD role:readonly.
+    readonlyGroups: []
+    # -- Additional Argo CD policy.csv lines appended after generated group bindings.
+    extraPolicyCsv: ""
+
+## Built-in Clustra first-party pages
+clustraPages:
+  # -- Enable first-party Clustra pages and their Argo CD proxy/RBAC wiring.
+  enabled: true
+
+  deployModels:
+    # -- Enable the Deploy Models page proxy and RBAC policy generation.
+    enabled: true
+    # -- Backend service URL for the Deploy Models API exposed at `/api/ai-service`.
+    backendUrl: http://clustra-ai-service.clustra.svc:80
+    # -- RBAC policies generated for the Deploy Models first-party page.
+    rbacPolicy:
+      - "p, role:admin, clustra-pages, *, deploy-models, allow"
+
+  modelCache:
+    # -- Enable the Model Cache page proxy and RBAC policy generation.
+    enabled: true
+    # -- Backend service URL for the Model Cache API exposed at `/api/model-cache`.
+    backendUrl: http://model-cache-backend.clustra.svc:80
+    # -- RBAC policies generated for the Model Cache first-party page.
+    rbacPolicy:
+      - "p, role:admin, clustra-pages, *, model-cache, allow"
+
 ## Application controller
 platformExtensions:
   # -- Generate Argo CD proxy config, extension installer init containers, and RBAC entries
@@ -760,7 +862,7 @@ platformExtensions:
     # - name: extension-metrics
     #   backend:
     #     services:
-    #       - url: http://argocd-extension-metrics.argocd.svc:80
+    #       - url: http://clustra-extension-metrics.clustra.svc:80
     #   ui:
     #     extensionUrl: https://github.com/argoproj-labs/argocd-extension-metrics/releases/download/v1.0.0/extension.tar.gz
     #     checksumUrl: https://github.com/argoproj-labs/argocd-extension-metrics/releases/download/v1.0.0/extension_checksums.txt
@@ -1009,7 +1111,7 @@ controller:
     # -- Create a service account for the application controller
     create: true
     # -- Service account name
-    name: argocd-application-controller
+    name: clustra-application-controller
     # -- Annotations applied to created service account
     annotations: {}
     # -- Labels applied to created service account
@@ -1273,7 +1375,7 @@ dex:
     ca: ''
     # -- Certificate private key
     key: ''
-    # -- Certificate data. Must contain SANs of Dex service (ie: argocd-dex-server, argocd-dex-server.argo-cd.svc)
+    # -- Certificate data. Must contain SANs of Dex service (ie: clustra-dex-server, clustra-dex-server.clustra.svc)
     crt: ''
 
   # -- Annotations to be added to the Dex server Deployment
@@ -1377,7 +1479,7 @@ dex:
     # -- Create dex service account
     create: true
     # -- Dex service account name
-    name: argocd-dex-server
+    name: clustra-dex-server
     # -- Annotations applied to created service account
     annotations: {}
     # -- Automount API credentials for the Service Account
@@ -1784,7 +1886,7 @@ redis-ha:
   ## Redis specific configuration options
   redis:
     # -- Redis convention for naming the cluster group: must match `^[\\w-\\.]+$` and can be templated
-    masterGroupName: argocd
+    masterGroupName: clustra
     # -- Any valid redis config options in this section will be applied to each server (see `redis-ha` chart)
     # @default -- See [values.yaml]
     config:
@@ -1797,7 +1899,7 @@ redis-ha:
     enabled: true
     # --  Custom labels for the haproxy pod. This is relevant for Argo CD CLI.
     labels:
-      app.kubernetes.io/name: argocd-redis-ha-haproxy
+      app.kubernetes.io/name: clustra-redis-ha-haproxy
     image:
       # -- HAProxy Image Repository
       repository: ecr-public.aws.com/docker/library/haproxy
@@ -1821,6 +1923,7 @@ redis-ha:
   # -- Configures redis-ha with AUTH
   auth: true
   # -- Existing Secret to use for redis-ha authentication.
+  ## Kept as argocd-redis because the Argo CD binary uses this fixed secret name for initial Redis auth.
   # By default the redis-secret-init Job is generating this Secret.
   existingSecret: argocd-redis
 
@@ -1959,7 +2062,7 @@ redisSecretInit:
 
 ## Server
 server:
-  # -- Argo CD server name
+  # -- Clustra server component name
   name: server
 
   # -- The number of server pods to run
@@ -2034,7 +2137,8 @@ server:
   # -- Additional command line arguments to pass to Argo CD server
   extraArgs: []
 
-  # -- Environment variables to pass to Argo CD server
+  # -- Additional environment variables to pass to Argo CD server.
+  # Built-in Clustra page proxy env vars are generated from `clustraPages.*.backendUrl`.
   env: []
 
   # -- envFrom to pass to Argo CD server
@@ -2422,7 +2526,7 @@ server:
     # -- Create server service account
     create: true
     # -- Server service account name
-    name: argocd-server
+    name: clustra-server
     # -- Annotations applied to created service account
     annotations: {}
     # -- Labels applied to created service account
@@ -2448,7 +2552,7 @@ server:
     # -- Defines which ingress controller will implement the resource
     ingressClassName: ""
 
-    # -- Argo CD server hostname
+    # -- Clustra server hostname
     # @default -- `""` (defaults to global.domain)
     hostname: ""
 
@@ -2466,7 +2570,7 @@ server:
     # -- The list of additional hostnames to be covered by ingress record
     # @default -- `[]` (See [values.yaml])
     extraHosts: []
-      # - name: argocd.example.com
+      # - name: clustra.example.com
       #   path: /
 
     # -- Additional ingress paths
@@ -2499,7 +2603,7 @@ server:
     # @default -- `[]` (See [values.yaml])
     extraTls: []
       # - hosts:
-      #   - argocd.example.com
+      #   - clustra.example.com
       #   secretName: your-certificate-name
 
     # AWS specific options for Application Load Balancer
@@ -2547,7 +2651,7 @@ server:
         create: true
         # -- Additional domains for ManagedCertificate resource
         extraDomains: []
-          # - argocd.example.com
+          # - clustra.example.com
 
   # Dedicated gRPC ingress for ingress controllers that supports only single backend protocol per Ingress resource
   # Ref: https://argo-cd.readthedocs.io/en/stable/operator-manual/ingress/#option-2-multiple-ingress-objects-and-hosts
@@ -2561,11 +2665,11 @@ server:
     # -- Defines which ingress controller will implement the resource [gRPC-ingress]
     ingressClassName: ""
 
-    # -- Argo CD server hostname for dedicated [gRPC-ingress]
+    # -- Clustra server hostname for dedicated [gRPC-ingress]
     # @default -- `""` (defaults to grpc.`server.ingress.hostname`)
     hostname: ""
 
-    # -- Argo CD server ingress path for dedicated [gRPC-ingress]
+    # -- Clustra server ingress path for dedicated [gRPC-ingress]
     path: /
 
     # -- Ingress path type for dedicated [gRPC-ingress]. One of `Exact`, `Prefix` or `ImplementationSpecific`
@@ -2578,7 +2682,7 @@ server:
     # -- The list of additional hostnames to be covered by ingress record
     # @default -- `[]` (See [values.yaml])
     extraHosts: []
-      # - name: grpc.argocd.example.com
+      # - name: grpc.clustra.example.com
       #   path: /
 
     # -- Additional ingress paths for dedicated [gRPC-ingress]
@@ -2612,10 +2716,10 @@ server:
     extraTls: []
       # - secretName: your-certificate-name
       #   hosts:
-      #     - argocd.example.com
+      #     - clustra.example.com
 
   # Create a OpenShift Route with SSL passthrough for UI and CLI
-  # Consider setting 'hostname' e.g. https://argocd.apps-crc.testing/ using your Default Ingress Controller Domain
+  # Consider setting 'hostname' e.g. https://clustra.apps-crc.testing/ using your Default Ingress Controller Domain
   # Find your domain with: kubectl describe --namespace=openshift-ingress-operator ingresscontroller/default | grep Domain:
   # If 'hostname' is an empty string "" OpenShift will create a hostname for you.
   route:
@@ -2652,7 +2756,7 @@ server:
     # -- List of hostnames for the HTTPRoute
     # @default -- `[]` (See [values.yaml])
     hostnames: []
-      # - argocd.example.com
+      # - clustra.example.com
     # -- HTTPRoute rules configuration
     # @default -- `[]` (See [values.yaml])
     rules:
@@ -2691,7 +2795,7 @@ server:
     # -- List of hostnames for the GRPCRoute
     # @default -- `[]` (See [values.yaml])
     hostnames: []
-      # - grpc.argocd.example.com
+      # - grpc.clustra.example.com
     # -- GRPCRoute rules configuration
     # @default -- `[]` (See [values.yaml])
     rules:
@@ -2721,12 +2825,12 @@ server:
     targetRefs: []
       # - group: ""
       #   kind: Service
-      #   name: argocd-server
+      #   name: clustra-server
       #   sectionName: https
     # -- TLS validation configuration
     # @default -- `{}` (See [values.yaml])
     validation: {}
-      # hostname: argocd-server.argocd.svc.cluster.local
+      # hostname: clustra-server.clustra.svc.cluster.local
       # caCertificateRefs:
       #   - name: example-ca-cert
       #     group: ""
@@ -2741,9 +2845,9 @@ server:
     # -- List of custom rules for the server's ClusterRole resource
     rules: []
 
-  # Default ArgoCD Server's network policy
+  # Default Clustra server network policy
   networkPolicy:
-    # -- Default network policy rules used by ArgoCD Server
+    # -- Default network policy rules used by the Clustra server
     # @default -- `false` (defaults to global.networkPolicy.create)
     create: false
 
@@ -2911,19 +3015,19 @@ repoServer:
   existingVolumes: {}
   #  gpgKeyring:
   #    persistentVolumeClaim:
-  #      claimName: pvc-argocd-repo-server-keyring
+  #      claimName: pvc-clustra-repo-server-keyring
   #  helmWorkingDir:
   #    persistentVolumeClaim:
-  #      claimName: pvc-argocd-repo-server-workdir
+  #      claimName: pvc-clustra-repo-server-workdir
   #  tmp:
   #    persistentVolumeClaim:
-  #      claimName: pvc-argocd-repo-server-tmp
+  #      claimName: pvc-clustra-repo-server-tmp
   #  varFiles:
   #    persistentVolumeClaim:
-  #      claimName: pvc-argocd-repo-server-varfiles
+  #      claimName: pvc-clustra-repo-server-varfiles
   #  plugins:
   #    persistentVolumeClaim:
-  #      claimName: pvc-argocd-repo-server-plugins
+  #      claimName: pvc-clustra-repo-server-plugins
 
   ## RepoServer emptyDir volumes
   emptyDir:
@@ -3062,7 +3166,7 @@ repoServer:
     ca: ''
     # -- Certificate private key
     key: ''
-    # -- Certificate data. Must contain SANs of Repo service (ie: argocd-repo-server, argocd-repo-server.argo-cd.svc)
+    # -- Certificate data. Must contain SANs of Repo service (ie: clustra-repo-server, clustra-repo-server.clustra.svc)
     crt: ''
 
   ## Repo server service configuration
@@ -3141,7 +3245,7 @@ repoServer:
     # -- Create repo server service account
     create: true
     # -- Repo server service account name
-    name: "" # "argocd-repo-server"
+    name: "" # "clustra-repo-server"
     # -- Annotations applied to created service account
     annotations: {}
     # -- Labels applied to created service account
@@ -3312,7 +3416,7 @@ applicationSet:
     # -- Create ApplicationSet controller service account
     create: true
     # -- ApplicationSet controller service account name
-    name: argocd-applicationset-controller
+    name: clustra-applicationset-controller
     # -- Annotations applied to created service account
     annotations: {}
     # -- Labels applied to created service account
@@ -3485,7 +3589,7 @@ applicationSet:
     # -- Defines which ingress ApplicationSet controller will implement the resource
     ingressClassName: ""
 
-    # -- Argo CD ApplicationSet hostname
+    # -- Clustra ApplicationSet hostname
     # @default -- `""` (defaults to global.domain)
     hostname: ""
 
@@ -3502,7 +3606,7 @@ applicationSet:
     # -- The list of additional hostnames to be covered by ingress record
     # @default -- `[]` (See [values.yaml])
     extraHosts: []
-      # - name: argocd.example.com
+      # - name: clustra.example.com
       #   path: /
 
     # -- Additional ingress paths
@@ -3553,7 +3657,7 @@ notifications:
   # -- Notifications controller name string
   name: notifications-controller
 
-  # -- Argo CD dashboard url; used in place of {{.context.argocdUrl}} in templates
+  # -- Clustra dashboard url; used in place of {{.context.argocdUrl}} in templates
   # @default -- `""` (defaults to https://`global.domain`)
   argocdUrl: ""
 
@@ -3824,7 +3928,7 @@ notifications:
     # -- Create notifications controller service account
     create: true
     # -- Notification controller service account name
-    name: argocd-notifications-controller
+    name: clustra-notifications-controller
     # -- Annotations applied to created service account
     annotations: {}
     # -- Labels applied to created service account
@@ -4200,7 +4304,7 @@ commitServer:
     # -- Create commit server service account
     create: true
     # -- commit server service account name
-    name: argocd-commit-server
+    name: clustra-commit-server
     # -- Annotations applied to created service account
     annotations: {}
     # -- Labels applied to created service account

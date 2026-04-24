@@ -395,7 +395,7 @@ spec:
           name: argocd-home
         - name: argocd-cmd-params-cm
           mountPath: /home/argocd/params
-        - name: argocd-application-controller-tmp
+        - name: clustra-application-controller-tmp
           mountPath: /tmp
       {{- with .Values.controller.extraContainers }}
         {{- tpl (toYaml .) $ | nindent 6 }}
@@ -438,7 +438,7 @@ spec:
         {{- else }}
         emptyDir: {}
         {{- end }}
-      - name: argocd-application-controller-tmp
+      - name: clustra-application-controller-tmp
         {{- if .Values.controller.emptyDir.sizeLimit }}
         emptyDir:
           sizeLimit: {{ .Values.controller.emptyDir.sizeLimit }}
