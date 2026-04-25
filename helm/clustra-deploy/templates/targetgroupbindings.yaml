@@ -1,0 +1,25 @@
+{{- if .Values.targetGroupBindings.enabled }}
+{{- range $binding := (.Values.targetGroupBindings.items | default list) }}
+---
+apiVersion: elbv2.k8s.aws/v1beta1
+kind: TargetGroupBinding
+metadata:
+  name: {{ required "targetGroupBindings.items[].name is required" $binding.name }}
+  namespace: {{ include "argo-cd.namespace" $ }}
+  labels:
+    {{- include "argo-cd.labels" (dict "context" $ "component" "targetgroupbinding" "name" $binding.name) | nindent 4 }}
+    {{- with $binding.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  {{- with $binding.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  targetGroupARN: {{ required (printf "targetGroupBindings item %s requires targetGroupARN" $binding.name) $binding.targetGroupARN | quote }}
+  targetType: {{ default "ip" $binding.targetType | quote }}
+  serviceRef:
+    name: {{ default (include "argo-cd.server.fullname" $) $binding.serviceName | quote }}
+    port: {{ default $.Values.server.service.servicePortHttp $binding.servicePort }}
+{{- end }}
+{{- end }}

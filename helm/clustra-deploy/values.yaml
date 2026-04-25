@@ -848,6 +848,17 @@ clustraPages:
     rbacPolicy:
       - "p, role:admin, clustra-pages, *, model-cache, allow"
 
+targetGroupBindings:
+  # -- Create AWS Load Balancer Controller TargetGroupBinding resources for
+  # -- target groups provisioned by the infra repository.
+  enabled: false
+  items: []
+    # - name: clustra-deploy-argocd
+    #   targetGroupARN: arn:aws:elasticloadbalancing:us-east-1:123456789012:targetgroup/example/abcdef1234567890
+    #   serviceName: "" # Defaults to the Argo CD server service.
+    #   servicePort: 80
+    #   targetType: ip
+
 ## Application controller
 platformExtensions:
   # -- Generate Argo CD proxy config, extension installer init containers, and RBAC entries
@@ -1986,7 +1997,7 @@ redisSecretInit:
     repository: "703671901662.dkr.ecr.us-east-1.amazonaws.com/clustra-deploy"
     # -- Tag to use for the Redis secret-init Job
     # @default -- `""` (defaults to global.image.tag)
-    tag: "1.3.15"
+    tag: "1.3.16"
     # -- Image pull policy for the Redis secret-init Job
     # @default -- `""` (defaults to global.image.imagePullPolicy)
     imagePullPolicy: "Always"
@@ -2125,7 +2136,7 @@ server:
     repository: "703671901662.dkr.ecr.us-east-1.amazonaws.com/clustra-deploy"
     # -- Tag to use for the Argo CD server
     # @default -- `""` (defaults to global.image.tag)
-    tag: "1.3.15"
+    tag: "1.3.16"
     # -- Image pull policy for the Argo CD server
     # @default -- `""` (defaults to global.image.imagePullPolicy)
     imagePullPolicy: "Always"

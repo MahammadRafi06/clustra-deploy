@@ -1,11 +1,17 @@
 package server
 
 import (
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
+	"os"
+	"strconv"
 	"strings"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
@@ -110,6 +116,7 @@ func (server *ArgoCDServer) newClustraPageProxyHandler(proxyConfig clustraPagePr
 		if selectedApp != nil {
 			applyApplicationHeaders(r, selectedApp)
 		}
+		applyProxySignatureHeaders(r)
 
 		proxy.ServeHTTP(w, r)
 	})
@@ -164,6 +171,8 @@ func clearArgoProxyHeaders(headers http.Header) {
 	headers.Del(extension.HeaderArgoCDUsername)
 	headers.Del(extension.HeaderArgoCDUserId)
 	headers.Del(extension.HeaderArgoCDGroups)
+	headers.Del(extension.HeaderProxySignature)
+	headers.Del(extension.HeaderProxyTimestamp)
 }
 
 func applyUserHeaders(r *http.Request, namespace string, scopes []string) {
@@ -189,6 +198,40 @@ func applyApplicationHeaders(r *http.Request, app *v1alpha1.Application) {
 	if app.Spec.Destination.Server != "" {
 		r.Header.Set(extension.HeaderArgoCDTargetClusterURL, app.Spec.Destination.Server)
 	}
+}
+
+func applyProxySignatureHeaders(r *http.Request) {
+	secret := os.Getenv(extension.EnvProxySignatureSecret)
+	if secret == "" {
+		return
+	}
+
+	timestamp := strconv.FormatInt(time.Now().Unix(), 10)
+	signature := buildClustraProxySignature(
+		secret,
+		r.Header.Get(extension.HeaderArgoCDUsername),
+		r.Header.Get(extension.HeaderArgoCDUserId),
+		r.Header.Get(extension.HeaderArgoCDGroups),
+		r.Header.Get(extension.HeaderArgoCDApplicationName),
+		r.Header.Get(extension.HeaderArgoCDProjectName),
+		timestamp,
+	)
+	r.Header.Set(extension.HeaderProxyTimestamp, timestamp)
+	r.Header.Set(extension.HeaderProxySignature, signature)
+}
+
+func buildClustraProxySignature(secret string, username string, userID string, groups string, application string, project string, timestamp string) string {
+	payload := strings.Join([]string{
+		username,
+		userID,
+		groups,
+		application,
+		project,
+		timestamp,
+	}, "\n")
+	mac := hmac.New(sha256.New, []byte(secret))
+	_, _ = mac.Write([]byte(payload))
+	return hex.EncodeToString(mac.Sum(nil))
 }
 
 func joinProxyPath(basePath, requestPath string) string {
