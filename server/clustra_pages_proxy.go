@@ -94,9 +94,7 @@ func (server *ArgoCDServer) newClustraPageProxyHandler(proxyConfig clustraPagePr
 			return
 		}
 
-		clearArgoProxyHeaders(r.Header)
-		applyUserHeaders(r, server.Namespace, server.policyEnforcer.GetScopes())
-
+		var selectedApp *v1alpha1.Application
 		if proxyConfig.requireAppContext {
 			app, statusCode, err := server.resolveSelectedApplication(r)
 			if err != nil {
@@ -104,7 +102,13 @@ func (server *ArgoCDServer) newClustraPageProxyHandler(proxyConfig clustraPagePr
 				http.Error(w, err.Error(), statusCode)
 				return
 			}
-			applyApplicationHeaders(r, app)
+			selectedApp = app
+		}
+
+		clearArgoProxyHeaders(r.Header)
+		applyUserHeaders(r, server.Namespace, server.policyEnforcer.GetScopes())
+		if selectedApp != nil {
+			applyApplicationHeaders(r, selectedApp)
 		}
 
 		proxy.ServeHTTP(w, r)

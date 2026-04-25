@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, {useLayoutEffect, useState} from 'react';
 
 import {EmptyState} from '../shared/components';
 
@@ -35,7 +35,7 @@ export function DeployModelsPage() {
     const [selectedTarget, setSelectedTarget] = useState<SelectedAppTarget | null>(null);
     const activeTask = TASK_OPTIONS.find(option => option.value === task) || TASK_OPTIONS[0];
 
-    useEffect(() => {
+    useLayoutEffect(() => {
         if (selectedTarget) {
             setArgoProxyContext({
                 applicationName: selectedTarget.appName,

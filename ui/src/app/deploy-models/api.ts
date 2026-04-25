@@ -30,7 +30,7 @@ import type {
 
 const BASE = '/api/ai-service';
 
-interface ProxyContext {
+export interface ProxyContext {
     applicationName: string;
     applicationNamespace: string;
     projectName: string;
@@ -69,14 +69,15 @@ async function _buildApiError(resp: Response): Promise<ApiError> {
     });
 }
 
-async function _request<T>(method: string, path: string, body?: unknown): Promise<T> {
+async function _request<T>(method: string, path: string, body?: unknown, contextOverride?: ProxyContext): Promise<T> {
     const headers: Record<string, string> = body !== undefined ? {'Content-Type': 'application/json'} : {};
-    if (proxyContext?.applicationName && proxyContext?.applicationNamespace && proxyContext?.projectName) {
-        headers['Argocd-Application-Name'] = `${proxyContext.applicationNamespace}:${proxyContext.applicationName}`;
-        headers['Argocd-Project-Name'] = proxyContext.projectName;
-    } else if (typeof window !== 'undefined' && typeof (window as {extensionsAPI?: unknown}).extensionsAPI !== 'undefined') {
+    const context = contextOverride ?? proxyContext;
+    if (!context?.applicationName || !context.applicationNamespace || !context.projectName) {
         throw new Error('Missing Argo CD application context for extension request.');
     }
+
+    headers['Argocd-Application-Name'] = `${context.applicationNamespace}:${context.applicationName}`;
+    headers['Argocd-Project-Name'] = context.projectName;
 
     const resp = await fetch(`${BASE}${path}`, {
         method,
@@ -184,14 +185,14 @@ export function cancelJob(jobId: string): Promise<JobResult> {
     return _request('DELETE', `/jobs/${jobId}`);
 }
 
-export function listJobs(params: {status?: string; appName?: string; limit?: number; offset?: number}): Promise<JobListResponse> {
+export function listJobs(params: {status?: string; appName?: string; limit?: number; offset?: number}, context?: ProxyContext): Promise<JobListResponse> {
     const qs = new URLSearchParams();
     if (params.status) qs.set('status', params.status);
     if (params.appName) qs.set('app_name', params.appName);
     if (params.limit != null) qs.set('limit', String(params.limit));
     if (params.offset != null) qs.set('offset', String(params.offset));
     const query = qs.toString();
-    return _request('GET', `/jobs${query ? `?${query}` : ''}`);
+    return _request('GET', `/jobs${query ? `?${query}` : ''}`, undefined, context);
 }
 
 export function getJobAudit(jobId: string): Promise<AuditTrailResponse> {

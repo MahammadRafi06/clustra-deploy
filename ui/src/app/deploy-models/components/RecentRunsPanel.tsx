@@ -23,7 +23,7 @@ function formatTimestamp(value: string): string {
 }
 
 export function RecentRunsPanel({selectedJobId, onSelectJob}: RecentRunsPanelProps) {
-    const {appName} = useAppContext();
+    const {appName, appNamespace, projectName} = useAppContext();
     const [jobs, setJobs] = useState<JobSummary[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<unknown | null>(null);
@@ -40,11 +40,27 @@ export function RecentRunsPanel({selectedJobId, onSelectJob}: RecentRunsPanelPro
 
     const load = useCallback(
         async (silent = false) => {
+            if (!appName || !appNamespace || !projectName) {
+                clearTimer();
+                setJobs([]);
+                setError(null);
+                setLoading(false);
+                setPollRecovery(IDLE_POLL_RECOVERY);
+                return;
+            }
+
             if (!silent) {
                 setLoading(true);
             }
             try {
-                const response = await listJobs({appName, limit: 8});
+                const response = await listJobs(
+                    {appName, limit: 8},
+                    {
+                        applicationName: appName,
+                        applicationNamespace: appNamespace,
+                        projectName
+                    }
+                );
                 setJobs(response.jobs);
                 setError(null);
                 failureCountRef.current = 0;
@@ -69,7 +85,7 @@ export function RecentRunsPanel({selectedJobId, onSelectJob}: RecentRunsPanelPro
                 }
             }
         },
-        [appName, clearTimer]
+        [appName, appNamespace, clearTimer, projectName]
     );
 
     useEffect(() => {
