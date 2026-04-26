@@ -67,6 +67,7 @@ export function DefaultPage() {
                 : undefined,
             ...(values.generator_config && {generator_config: values.generator_config}),
             ...(values.generator_dynamo_version && {generator_dynamo_version: values.generator_dynamo_version}),
+            ...(values.public_model_name && {public_model_name: values.public_model_name}),
             mode
         };
     }
@@ -144,6 +145,19 @@ export function DefaultPage() {
                 def={{key: 'model_path', label: 'Model Path', type: 'text', required: true, placeholder: 'Qwen/Qwen3-32B-FP8', help: FIELD_HELP.modelPath}}
                 value={values.model_path || ''}
                 error={errors.model_path}
+                onChange={handleFieldChange}
+            />
+            <FieldInput
+                def={{
+                    key: 'public_model_name',
+                    label: 'Public Model Name',
+                    type: 'text',
+                    placeholder: 'Qwen/Qwen3-32B-FP8',
+                    help: FIELD_HELP.publicModelName,
+                    hint: 'Leave blank to use the model id in the generated manifest.'
+                }}
+                value={values.public_model_name || ''}
+                error={errors.public_model_name}
                 onChange={handleFieldChange}
             />
             <FieldInput

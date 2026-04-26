@@ -60,6 +60,7 @@ export function ExpPage() {
             const accepted = await submitExp({
                 ...(inputMode === 'yaml_path' ? {yaml_path: values.yaml_path} : {config}),
                 top_n: values.top_n ? Number(values.top_n) : undefined,
+                ...(values.public_model_name && {public_model_name: values.public_model_name}),
                 mode
             });
             setJobId(accepted.job_id);
@@ -140,6 +141,19 @@ export function ExpPage() {
                 }}
                 value={values.mode || ''}
                 error={errors.mode}
+                onChange={setValue}
+            />
+            <FieldInput
+                def={{
+                    key: 'public_model_name',
+                    label: 'Public Model Name',
+                    type: 'text',
+                    placeholder: 'Qwen/Qwen3-32B-FP8',
+                    help: FIELD_HELP.publicModelName,
+                    hint: 'Leave blank to use the model id in the generated manifest.'
+                }}
+                value={values.public_model_name || ''}
+                error={errors.public_model_name}
                 onChange={setValue}
             />
 

@@ -121,6 +121,7 @@ export type DeployMode = 'agg' | 'disagg';
 export interface DeployFields {
     mode?: DeployMode;
     application_name?: string;
+    public_model_name?: string;
 }
 
 export interface DefaultRequest extends DeployFields {

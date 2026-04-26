@@ -47,6 +47,7 @@ export const DEPLOYMENT_MODE_HINT = 'Aggregated uses one serving tier. Disaggreg
 
 export const FIELD_HELP = {
     modelPath: 'Model identifier or registry path that AIC should size, estimate, or generate manifests for.',
+    publicModelName: 'Optional model name exposed by the public OpenAI-compatible API. Leave blank to use the model id.',
     totalGpus: 'Total GPU budget across the full deployment. In disaggregated mode, this includes both prefill and decode tiers.',
     deployMode: 'Aggregated keeps prefill and decode together. Disaggregated splits them into separate serving tiers.',
     backend: 'Serving runtime used to execute the model. Leave the default unless you need a specific stack.',
