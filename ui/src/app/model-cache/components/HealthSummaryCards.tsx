@@ -53,7 +53,7 @@ export const HealthSummaryCards: React.FC<Props> = ({health}) => {
             </div>
 
             <div className='model-cache__health-card'>
-                <div className='model-cache__health-label'>Model Cache</div>
+                <div className='model-cache__health-label'>Model Inventory</div>
                 <div className='model-cache__health-value'>{formatBytes(health.models_total_size_bytes)}</div>
                 <div className='model-cache__health-meta'>
                     {formatBytes(health.storage_free_bytes)} free of {formatBytes(health.storage_total_bytes)}

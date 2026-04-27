@@ -9,8 +9,8 @@ import {services} from '../../../shared/services';
 const ReplaceWarning = () => (
     <div>
         <p>
-            Clustra Deploy will sync using <strong>kubectl replace/create</strong>. This operation <strong>forces resource deletion and recreation</strong>. Proceed only if you understand
-            the risks.
+            Clustra Deploy will sync using <strong>kubectl replace/create</strong>. This operation <strong>forces resource deletion and recreation</strong>. Proceed only if you
+            understand the risks.
         </p>
     </div>
 );

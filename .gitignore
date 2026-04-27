@@ -23,6 +23,7 @@ node_modules/
 .mirrord/
 .*.swp
 rerunreport.txt
+ui/note/
 
 # ignore built binaries
 cmd/argocd/argocd

@@ -173,16 +173,14 @@ export const ModelDetailDrawer: React.FC<Props> = ({model: initialModel, isLoadi
                                 <button
                                     type='button'
                                     className='argo-button argo-button--base-o model-cache__button model-cache__button--warning'
-                                    onClick={() => onSoftDelete(model.id)}
-                                >
+                                    onClick={() => onSoftDelete(model.id)}>
                                     <i className='fa fa-eye-slash' /> Soft Delete
                                 </button>
                             )}
                             <button
                                 type='button'
                                 className='argo-button argo-button--base-o model-cache__button model-cache__button--danger'
-                                onClick={() => onHardDelete(model.id)}
-                            >
+                                onClick={() => onHardDelete(model.id)}>
                                 <i className='fa fa-trash' /> Hard Delete
                             </button>
                         </div>

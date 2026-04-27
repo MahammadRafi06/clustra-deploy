@@ -117,8 +117,7 @@ export const PresetsPanel: React.FC<Props> = ({visible, onClose, onToast}) => {
                             type='button'
                             className='argo-button argo-button--base model-cache__button'
                             onClick={() => setShowCreate(value => !value)}
-                            aria-expanded={showCreate}
-                        >
+                            aria-expanded={showCreate}>
                             <i className='fa fa-plus' aria-hidden='true' /> {showCreate ? 'Hide Form' : 'New Preset'}
                         </button>
                     </div>
@@ -198,8 +197,7 @@ export const PresetsPanel: React.FC<Props> = ({visible, onClose, onToast}) => {
                                         <button
                                             type='button'
                                             className='argo-button argo-button--base-o model-cache__button model-cache__button--danger'
-                                            onClick={() => setDeleteTarget(preset)}
-                                        >
+                                            onClick={() => setDeleteTarget(preset)}>
                                             <i className='fa fa-trash' aria-hidden='true' /> Delete
                                         </button>
                                     </div>

@@ -140,7 +140,7 @@ $header: 120px;
     }
 
     pre {
-        font-family: monospace;
+        font-family: $brand-font-mono;
         line-height: normal;
         white-space: pre;
     }
@@ -410,6 +410,5 @@ $header: 120px;
         }
     }
 }
-
 
 

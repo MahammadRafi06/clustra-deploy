@@ -12,7 +12,7 @@ $pod-background-dark: $dark-theme-background-2;
 .pod-logs-viewer {
     height: 90%;
     font-size: 14px;
-    font-family: monospace;
+    font-family: $brand-font-mono;
     background-color: white;
     padding: 0;
     color: black;

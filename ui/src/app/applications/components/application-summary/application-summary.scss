@@ -1,5 +1,6 @@
 @import 'node_modules/argo-ui/src/styles/config';
 @import 'node_modules/argo-ui/src/styles/theme';
+@import '../../../shared/brand-tokens';
 
 .application-summary {
     &__labels {
@@ -12,8 +13,8 @@
     }
 
     &__label {
-        background-color: $argo-color-gray-5;
-        color: white;
+        background-color: $brand-bg-muted;
+        color: $brand-text-secondary;
         border-radius: 5px;
         padding: 4px;
         line-height: 14px;

@@ -1,5 +1,6 @@
 @import 'node_modules/argo-ui/src/styles/config';
 @import 'node_modules/argo-ui/src/styles/theme';
+@import '../../../shared/brand-tokens';
 
 .appearance-list {
     &__panel {
@@ -7,12 +8,16 @@
         position: relative;
         padding: 20px;
         font-size: 16px;
-        @include themify($themes) {
-            background-color: themed('background-2'); 
-            color: themed('text-1');                              
+        background: $brand-surface-raised;
+        color: $brand-text-primary;
+        border: 1px solid $brand-border-subtle;
+        border-radius: 8px;
+        box-shadow: $brand-shadow-card;
+
+        p {
+            margin: 0;
         }
-        border-radius: 4px;
-        box-shadow: 1px 2px 3px rgba(#000, 0.1);
+
         & .row {
             justify-content: space-between;
             align-items: center;

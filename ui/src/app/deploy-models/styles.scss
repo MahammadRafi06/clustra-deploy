@@ -6,9 +6,11 @@
     display: grid;
     gap: 18px;
     padding: 1em 1em 2em;
+    color: $brand-text-primary;
 
     &__panel {
         padding: 20px;
+        border-radius: 8px;
     }
 
     &__panel--empty {
@@ -55,6 +57,8 @@
     &__summary-item {
         display: grid;
         gap: 4px;
+        min-width: 0;
+        overflow-wrap: anywhere;
     }
 
     &__context-badge {
@@ -64,13 +68,13 @@
         padding: 4px 10px;
         border: 1px solid rgba($brand-emerald, 0.25);
         border-radius: 4px;
-        color: $brand-emerald-light;
+        color: $brand-blue-dark;
         background: rgba($brand-emerald, 0.08);
     }
 
     &__context-badge--project {
         border-color: rgba($brand-gold, 0.25);
-        color: $brand-gold-light;
+        color: $brand-gold;
         background: rgba($brand-gold, 0.08);
     }
 
@@ -182,7 +186,7 @@
     &__field-help:focus,
     &__field-help:focus-visible {
         outline: none;
-        box-shadow: 0 0 0 2px rgba($brand-emerald, 0.2);
+        box-shadow: 0 0 0 2px rgba($brand-blue, 0.2);
     }
 
     &__field-help-text {
@@ -194,11 +198,11 @@
         padding: 8px 10px;
         border: 1px solid $brand-border-subtle;
         border-radius: 4px;
-        background: rgba(17, 20, 24, 0.96);
+        background: $brand-surface-raised;
         color: $brand-text-secondary;
         font-size: 0.8125em;
         line-height: 1.4;
-        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+        box-shadow: $brand-shadow-card;
         opacity: 0;
         visibility: hidden;
         transform: translateY(-4px);
@@ -241,9 +245,12 @@
 
     &__task-button {
         width: 100%;
-        min-height: 88px;
+        min-height: 112px;
         justify-content: flex-start;
         text-align: left;
+        align-items: flex-start;
+        border-radius: 8px !important;
+        padding: 18px !important;
     }
 
     &__task-content {
@@ -278,6 +285,30 @@
         font-size: 0.75em;
     }
 
+    .argo-button.argo-button--base.deploy-models__task-button {
+        background: $brand-blue !important;
+        border-color: $brand-blue !important;
+        color: #ffffff !important;
+
+        .deploy-models__task-label,
+        .deploy-models__task-title,
+        .deploy-models__task-description {
+            color: #ffffff !important;
+        }
+
+        .deploy-models__task-badge {
+            border-color: rgba(255, 255, 255, 0.34);
+            color: rgba(255, 255, 255, 0.86);
+        }
+    }
+
+    .argo-button.argo-button--base-o.deploy-models__task-button {
+        background: $brand-surface-raised !important;
+        border: 1px solid $brand-border-strong !important;
+        box-shadow: none !important;
+        color: $brand-text-primary !important;
+    }
+
     &__advanced {
         display: grid;
         gap: 12px;
@@ -302,9 +333,9 @@
     .argo-button.argo-button--base-o.deploy-models__advanced-toggle {
         &:focus,
         &:focus-visible {
-            color: $brand-emerald !important;
+            color: $brand-blue !important;
             background-color: transparent !important;
-            box-shadow: inset 0 0 0 1px $brand-emerald !important;
+            box-shadow: inset 0 0 0 1px $brand-blue !important;
         }
     }
 
@@ -365,7 +396,7 @@
     }
 
     &__notice--warning {
-        color: $brand-gold-light;
+        color: $brand-gold;
         border-color: rgba($brand-gold, 0.2);
         background: rgba($brand-gold, 0.05);
     }
@@ -458,7 +489,7 @@
     }
 
     &__status-pill--warning {
-        color: $brand-gold-light;
+        color: $brand-gold;
         background: rgba($brand-gold, 0.12);
     }
 
@@ -468,13 +499,13 @@
     }
 
     &__status-pill--info {
-        color: $brand-emerald-light;
+        color: $brand-blue-dark;
         background: rgba($brand-emerald, 0.12);
     }
 
     &__status-pill--muted {
         color: $brand-text-secondary;
-        background: rgba(255, 255, 255, 0.06);
+        background: $brand-bg-muted;
     }
 
     .argo-button.argo-button--base-o.deploy-models__danger-button {
@@ -551,7 +582,7 @@
     }
 
     &__run-card.is-selected {
-        border-color: rgba($brand-emerald, 0.45);
+        border-color: rgba($brand-blue, 0.45);
         background: rgba($brand-emerald, 0.08);
     }
 
@@ -596,7 +627,7 @@
     &__file-chip {
         padding: 4px 8px;
         border-radius: 999px;
-        background: rgba(255, 255, 255, 0.06);
+        background: $brand-bg-muted;
         color: $brand-text-secondary;
         font-size: 0.8125em;
     }

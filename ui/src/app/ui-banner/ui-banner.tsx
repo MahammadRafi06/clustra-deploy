@@ -83,7 +83,7 @@ export const Banner = (props: React.Props<any>) => {
                 position: string;
             }) => {
                 const heightOfBanner = permanent ? '28px' : '70px';
-                const leftOffset = prefs.hideSidebar ? '60px' : '230px';
+                const leftOffset = prefs.hideSidebar ? 'var(--clustra-sidebar-collapsed-offset)' : 'var(--clustra-sidebar-offset)';
                 let show = false;
                 if (!content || content === '' || content === null) {
                     if (prefs.hideBannerContent) {

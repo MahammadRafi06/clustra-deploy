@@ -10,9 +10,9 @@ import './styles.scss';
 const DeployModelsContainer = () => (
     <>
         <Helmet>
-            <title>Deploy Models - Clustra Deploy</title>
+            <title>Model Deployments - Clustra Deploy</title>
         </Helmet>
-        <Page title='Deploy Models' toolbar={{breadcrumbs: [{title: 'Deploy Models'}]}}>
+        <Page title='Model Deployments' toolbar={{breadcrumbs: [{title: 'Model Deployments'}]}}>
             <DeployModelsPage />
         </Page>
     </>

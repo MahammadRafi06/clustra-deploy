@@ -17,7 +17,7 @@ export interface FieldDef {
     help?: string;
     placeholder?: string;
     hint?: string;
-    options?: SelectOption[];
+    options?: readonly SelectOption[];
     min?: number;
     max?: number;
     step?: number;

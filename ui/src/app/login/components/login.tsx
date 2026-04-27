@@ -63,9 +63,9 @@ export function Login(props: RouteComponentProps<{}>) {
 
     return (
         <div className='login'>
-            <img className='login__hero-logo' src='assets/images/logo-transparent.png' alt='Clustra Deploy' />
-            <img className='login__text-logo' src='assets/images/clustra-text-logo.png' alt='Clustra AI' />
-            <div className='login__text'>Deploy Sovereign AI Models</div>
+            <img className='login__hero-logo' src='assets/images/logo-blue.svg' alt='Clustra Deploy' />
+            <div className='login__brand'>Clustra Deploy</div>
+            <div className='login__text'>Deploy and operate private AI workloads inside your infrastructure.</div>
             <div className='login__box'>
                 {ssoConfigured && (
                     <div className='login__box_saml width-control'>
@@ -114,7 +114,7 @@ export function Login(props: RouteComponentProps<{}>) {
                                     {loginError && <div className='argo-form-row__error-msg'>{loginError}</div>}
                                 </div>
                                 <div className='login__form-row'>
-                                    <button disabled={loginInProgress} className='argo-button argo-button--full-width argo-button--xlg' type='submit'>
+                                    <button disabled={loginInProgress} className='argo-button argo-button--base argo-button--full-width argo-button--xlg' type='submit'>
                                         Sign In
                                     </button>
                                 </div>

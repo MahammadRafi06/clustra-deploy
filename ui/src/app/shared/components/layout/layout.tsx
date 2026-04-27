@@ -12,12 +12,11 @@ export interface LayoutProps {
     pref: ViewPreferences;
 }
 
-// Clustra Deploy is dark-only; body bg is always navy. See ui/BRANDING.md.
-// Value must match $brand-navy in ui/src/app/shared/brand-tokens.scss.
-const CLUSTRA_BODY_BG = '#0a192f';
+// Value matches the website-aligned app background in brand-tokens.scss.
+const CLUSTRA_BODY_BG = '#eef2f7';
 
 export const ThemeWrapper = (props: {children: React.ReactNode; theme: string}) => {
-    // useTheme is a no-op shim that always returns 'dark'; kept so the
+    // useTheme is a no-op shim that always returns 'light'; kept so the
     // existing call-site shape doesn't have to change.
     const [systemTheme] = useTheme({theme: props.theme});
     return <div className={'theme-' + systemTheme}>{props.children}</div>;

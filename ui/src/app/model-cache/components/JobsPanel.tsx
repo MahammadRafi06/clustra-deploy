@@ -89,8 +89,7 @@ export const JobsPanel: React.FC<{visible: boolean; onClose: () => void}> = ({vi
                                                         .mutate(job.id)
                                                         .then(() => refetch())
                                                         .catch(() => undefined)
-                                                }
-                                            >
+                                                }>
                                                 Cancel
                                             </button>
                                         )}
@@ -103,8 +102,7 @@ export const JobsPanel: React.FC<{visible: boolean; onClose: () => void}> = ({vi
                                                         .mutate(job.id)
                                                         .then(() => refetch())
                                                         .catch(() => undefined)
-                                                }
-                                            >
+                                                }>
                                                 Retry
                                             </button>
                                         )}

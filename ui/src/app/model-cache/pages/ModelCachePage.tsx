@@ -214,12 +214,15 @@ const ModelCacheWorkspace: React.FC = () => {
                                 type='button'
                                 className='argo-button argo-button--base-o model-cache__button'
                                 onClick={() => setShowPresets(true)}
-                                aria-label='Open cache warmup presets'
-                            >
+                                aria-label='Open cache warmup presets'>
                                 <i className='fa fa-bookmark' aria-hidden='true' /> Presets
                             </button>
                         )}
-                        <button type='button' className='argo-button argo-button--base-o model-cache__button' onClick={() => setShowJobs(true)} aria-label='Open model cache jobs'>
+                        <button
+                            type='button'
+                            className='argo-button argo-button--base-o model-cache__button'
+                            onClick={() => setShowJobs(true)}
+                            aria-label='Open model inventory jobs'>
                             <i className='fa fa-tasks' aria-hidden='true' /> Jobs
                         </button>
                     </div>
@@ -395,7 +398,7 @@ const ModelCacheWorkspace: React.FC = () => {
 };
 
 export const ModelCachePage: React.FC = () => (
-    <main className='model-cache' role='main' aria-label='Model Cache'>
+    <main className='model-cache' role='main' aria-label='Model Inventory'>
         <ModelCacheWorkspace />
     </main>
 );

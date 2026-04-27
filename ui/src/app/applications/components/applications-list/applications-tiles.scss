@@ -27,29 +27,30 @@ $border: $brand-border-subtle;
         margin-top: auto;
     }
 
-    // Glass card style for each tile
     .argo-table-list__row {
-        background: rgba($navy-light, 0.6) !important;
-        backdrop-filter: blur(8px);
+        background: $brand-surface-raised !important;
         border: 1px solid $border !important;
-        border-radius: 10px !important;
+        border-radius: 8px !important;
         padding: 16px !important;
-        transition: all 0.2s ease;
+        box-shadow: $brand-shadow-card;
+        transition:
+            border-color 0.2s ease,
+            box-shadow 0.2s ease,
+            transform 0.2s ease;
         cursor: pointer;
 
         &:hover {
-            border-color: rgba($emerald, 0.25) !important;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            border-color: $brand-border-strong !important;
+            box-shadow: $brand-shadow-soft;
             transform: translateY(-1px);
         }
     }
 
     &__selected {
-        border-color: $emerald !important;
-        box-shadow: 0 0 0 1px $emerald, 0 4px 20px rgba($emerald, 0.15) !important;
+        border-color: $brand-blue !important;
+        box-shadow: 0 0 0 1px rgba($brand-blue, 0.24), $brand-shadow-card !important;
     }
 
-    // Title styling
     .applications-list__title {
         white-space: normal !important;
         word-break: break-word;
@@ -57,16 +58,15 @@ $border: $brand-border-subtle;
         hyphens: auto;
         line-height: 1.4;
         width: 100%;
-        color: white !important;
+        color: $brand-text-primary !important;
         font-weight: 600;
     }
 
-    // Row labels
     .row {
         margin-bottom: 2px;
 
         .columns.small-3 {
-            color: rgba(255, 255, 255, 0.4);
+            color: $brand-text-muted;
             font-size: 12px;
             font-weight: 500;
             text-transform: uppercase;
@@ -74,7 +74,7 @@ $border: $brand-border-subtle;
         }
 
         .columns.small-9 {
-            color: rgba(255, 255, 255, 0.8);
+            color: $brand-text-secondary;
             font-size: 13px;
             overflow: hidden;
             text-overflow: ellipsis;
@@ -82,19 +82,17 @@ $border: $brand-border-subtle;
         }
     }
 
-    // Source icon
     .icon {
-        color: $emerald;
+        color: $brand-blue;
         margin-right: 6px;
     }
 
-    // Health border colors - use left border accent
     .applications-list__entry {
         border-left: 3px solid transparent !important;
-        border-radius: 10px !important;
+        border-radius: 8px !important;
 
         &--health-Healthy {
-            border-left-color: $emerald !important;
+            border-left-color: $brand-status-success !important;
         }
 
         &--health-Progressing {
@@ -110,7 +108,7 @@ $border: $brand-border-subtle;
         }
 
         &--health-Unknown {
-            border-left-color: rgba(255, 255, 255, 0.2) !important;
+            border-left-color: $brand-border-muted !important;
         }
 
         &--health-Missing {
@@ -118,7 +116,6 @@ $border: $brand-border-subtle;
         }
     }
 
-    // Action buttons
     .applications-list__entry--actions {
         padding-top: 12px !important;
         border-top: 1px solid $border;
@@ -127,18 +124,18 @@ $border: $brand-border-subtle;
         gap: 6px;
 
         .argo-button {
-            background: rgba(255, 255, 255, 0.06) !important;
+            background: $brand-surface-raised !important;
             border: 1px solid $border !important;
             border-radius: 6px !important;
-            color: rgba(255, 255, 255, 0.7) !important;
+            color: $brand-text-secondary !important;
             font-size: 12px !important;
             padding: 5px 12px !important;
             line-height: 1.4 !important;
 
             &:hover {
-                background: rgba($emerald, 0.1) !important;
-                border-color: rgba($emerald, 0.3) !important;
-                color: $emerald-light !important;
+                background: rgba($brand-blue, 0.08) !important;
+                border-color: $brand-border-strong !important;
+                color: $brand-blue-dark !important;
             }
         }
     }
@@ -165,13 +162,13 @@ $border: $brand-border-subtle;
         cursor: pointer;
         padding: 0;
         margin: 0;
-        color: rgba(255, 255, 255, 0.5);
+        color: $brand-text-muted;
         display: flex;
         align-items: center;
         justify-content: center;
 
         &:hover {
-            color: $emerald;
+            color: $brand-blue;
         }
 
         &.managed-by-url-invalid {
@@ -194,5 +191,21 @@ $border: $brand-border-subtle;
 
     &:hover {
         color: $brand-status-warning;
+    }
+}
+
+@media (max-width: 720px) {
+    .applications-tiles {
+        grid-template-columns: minmax(0, 1fr);
+        padding: 0 8px;
+
+        .row .columns.small-9 {
+            overflow-wrap: anywhere;
+            white-space: normal;
+        }
+
+        .applications-list__entry--actions {
+            flex-wrap: wrap;
+        }
     }
 }

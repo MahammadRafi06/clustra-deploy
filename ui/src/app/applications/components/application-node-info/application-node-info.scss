@@ -1,5 +1,6 @@
 @import 'node_modules/argo-ui/src/styles/config';
 @import 'node_modules/argo-ui/src/styles/theme';
+@import '../../../shared/brand-tokens';
 
 .application-node-info {
     &__manifest {
@@ -13,7 +14,7 @@
         }
 
         &--raw {
-            font-family: 'Bitstream Vera Sans Mono', 'DejaVu Sans Mono', Monaco, Courier, monospace;
+            font-family: $brand-font-mono;
             white-space: pre;
             font-size: 12px;
             color: gray;

@@ -57,7 +57,7 @@ export function DeployModelsPage() {
                         <div>
                             <div className='deploy-models__panel-title'>Target Context</div>
                             <div className='deploy-models__panel-description'>
-                                Select the Argo CD project and application that provide run context and, for write workflows, receive generated manifests.
+                                Choose the project and application used for deployment planning. Write workflows commit generated manifests back to the selected source.
                             </div>
                         </div>
                         <AppNameBadge />

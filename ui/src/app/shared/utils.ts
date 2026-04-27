@@ -112,13 +112,12 @@ export const useSystemTheme = (cb: (theme: string) => void) => {
     };
 };
 
-// Clustra Deploy is dark-only. This hook used to branch on user
-// preference / system theme; now it unconditionally returns 'dark'
-// so that any remaining call sites keep working without changes.
-// See ui/BRANDING.md for context on the dark-only decision.
+// Clustra Deploy uses the Clustra light theme. Keep this shim so any
+// remaining call sites retain their existing shape while preferences
+// cannot switch the app back to Argo dark mode.
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export const useTheme = (_props: {theme: string}) => {
-    return ['dark'];
+    return ['light'];
 };
 
 export const formatClusterQueryParam = (cluster: Cluster) => {

@@ -36,8 +36,7 @@ export const ConfirmDialog: React.FC<Props> = ({title, message, confirmText = 'C
                         className={`argo-button ${danger ? 'argo-button--base-o model-cache__button--danger' : 'argo-button--base'} model-cache__button`}
                         onClick={onConfirm}
                         disabled={!canConfirm}
-                        aria-label={confirmText}
-                    >
+                        aria-label={confirmText}>
                         {confirmText}
                     </button>
                 </div>

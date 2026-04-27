@@ -1,23 +1,39 @@
 @import 'node_modules/argo-ui/src/styles/config';
+@import '../shared/config.scss';
+@import '../shared/brand-tokens';
+
+:root {
+    --clustra-sidebar-offset: #{$sidebar-width};
+    --clustra-sidebar-collapsed-offset: #{$collapsed-sidebar-width};
+}
+
+@media (max-width: 720px) {
+    :root {
+        --clustra-sidebar-offset: #{$mobile-sidebar-width};
+        --clustra-sidebar-collapsed-offset: #{$mobile-sidebar-width};
+    }
+}
 
 .ui-banner {
-    background: $argo-color-gray-5;
+    background: $brand-bg-muted;
     position: fixed;
     left: 0;
     right: 0;
     z-index: 10;
     text-align: center;
-    color: $argo-color-teal-8;
+    color: $brand-text-primary;
+    font-family: $brand-font-sans;
     font-weight: 500;
     font-size: 16px;
     display: flex;
     align-items: center;
     justify-content: center;
     padding: 5px 10px 5px 70px;
+    border-bottom: 1px solid $brand-border-subtle;
 
     a {
         text-decoration: underline;
-        color: $argo-color-teal-8;
+        color: $brand-blue;
     }
 }
 

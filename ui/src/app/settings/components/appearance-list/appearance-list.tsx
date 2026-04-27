@@ -3,10 +3,9 @@ import {Page} from '../../../shared/components';
 
 require('./appearance-list.scss');
 
-// Clustra Deploy is dark-only (see ui/BRANDING.md). The theme selector
-// has been removed; this page is kept so /settings/appearance routes
-// still resolve and stays a natural home for any future appearance
-// settings we might add.
+// Clustra Deploy uses the Clustra light theme. The theme selector is
+// intentionally hidden so this page stays a stable route for future
+// appearance settings without exposing unsupported modes.
 export const AppearanceList = () => {
     return (
         <Page
@@ -17,7 +16,7 @@ export const AppearanceList = () => {
             <div className='appearance-list'>
                 <div className='argo-container'>
                     <div className='appearance-list__panel'>
-                        <p>Clustra Deploy uses a dark-mode-only theme.</p>
+                        <p>Clustra Deploy uses the Clustra light theme.</p>
                     </div>
                 </div>
             </div>

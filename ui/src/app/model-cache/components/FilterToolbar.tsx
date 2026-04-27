@@ -70,8 +70,7 @@ export const FilterToolbar: React.FC<Props> = ({filters, onChange, onRefresh, on
                 className={`argo-button ${filters.sort_order === 'desc' ? 'argo-button--base' : 'argo-button--base-o'} model-cache__button`}
                 onClick={() => update({sort_order: filters.sort_order === 'desc' ? 'asc' : 'desc'})}
                 title={filters.sort_order === 'desc' ? 'Descending' : 'Ascending'}
-                aria-label={`Sort ${filters.sort_order === 'desc' ? 'descending' : 'ascending'}`}
-            >
+                aria-label={`Sort ${filters.sort_order === 'desc' ? 'descending' : 'ascending'}`}>
                 <i className={`fa fa-sort-amount-${filters.sort_order === 'desc' ? 'desc' : 'asc'}`} aria-hidden='true' />
             </button>
 
@@ -80,8 +79,7 @@ export const FilterToolbar: React.FC<Props> = ({filters, onChange, onRefresh, on
                 className={`argo-button ${filters.pinned ? 'argo-button--base' : 'argo-button--base-o'} model-cache__button`}
                 onClick={() => update({pinned: filters.pinned === true ? undefined : true})}
                 title='Show pinned only'
-                aria-pressed={filters.pinned === true}
-            >
+                aria-pressed={filters.pinned === true}>
                 <i className='fa fa-thumb-tack' aria-hidden='true' /> Pinned
             </button>
 
@@ -107,8 +105,7 @@ export const FilterToolbar: React.FC<Props> = ({filters, onChange, onRefresh, on
                 onClick={onRefresh}
                 disabled={refreshing}
                 title='Refresh data'
-                aria-label='Refresh model catalog'
-            >
+                aria-label='Refresh model catalog'>
                 <i className={`fa fa-refresh${refreshing ? ' fa-spin' : ''}`} aria-hidden='true' /> Refresh
             </button>
 
@@ -118,8 +115,7 @@ export const FilterToolbar: React.FC<Props> = ({filters, onChange, onRefresh, on
                 onClick={onRescan}
                 disabled={rescanning}
                 title='Force agent rescan of disk'
-                aria-label='Force agent rescan of disk'
-            >
+                aria-label='Force agent rescan of disk'>
                 <i className={`fa fa-hdd-o${rescanning ? ' fa-spin' : ''}`} aria-hidden='true' /> {rescanning ? 'Rescanning…' : 'Rescan'}
             </button>
 

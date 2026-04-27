@@ -518,7 +518,6 @@ export const ApplicationsList = (props: RouteComponentProps<any> & {objectListKi
         return '';
     }
 
-
     return (
         <ClusterCtx.Provider value={clusters}>
             <KeybindingProvider>

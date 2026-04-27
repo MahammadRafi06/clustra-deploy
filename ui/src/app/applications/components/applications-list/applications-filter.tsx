@@ -396,11 +396,9 @@ const TargetRevisionFilter = (props: AppFilterProps) => {
 
 const FavoriteFilter = (props: {value: boolean; onChange: (showFavorites: boolean) => void}) => {
     return (
-        <div
-            className={`filter-dropdown__trigger ${props.value ? 'filter-dropdown__trigger--active' : ''}`}
-            onClick={() => props.onChange(!props.value)}>
+        <div className={`filter-dropdown__trigger ${props.value ? 'filter-dropdown__trigger--active' : ''}`} onClick={() => props.onChange(!props.value)}>
             <span className='filter-dropdown__label'>Favorites</span>
-            {props.value && <i className='fa fa-check' style={{fontSize: '10px', color: '#10b981'}} />}
+            {props.value && <i className='fa fa-check' style={{fontSize: '10px', color: '#2563eb'}} />}
         </div>
     );
 };
@@ -504,7 +502,13 @@ export const ApplicationsFilter = (props: AppFilterProps) => {
     };
 
     return (
-        <FiltersGroup title='Application filters' content={props.children} appliedFilter={appliedFilter} onClearFilter={onClearFilter} collapsed={props.collapsed} extra={props.extra}>
+        <FiltersGroup
+            title='Application filters'
+            content={props.children}
+            appliedFilter={appliedFilter}
+            onClearFilter={onClearFilter}
+            collapsed={props.collapsed}
+            extra={props.extra}>
             <FavoriteFilter value={!!props.pref.showFavorites} onChange={val => props.onChange({...props.pref, showFavorites: val})} />
             <SyncFilter {...props} />
             <AppHealthFilter {...props} />

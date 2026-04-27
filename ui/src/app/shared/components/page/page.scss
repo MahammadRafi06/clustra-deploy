@@ -1,10 +1,16 @@
 @import 'node_modules/argo-ui/src/styles/config';
 @import 'node_modules/argo-ui/src/styles/theme';
 @import '../../config.scss';
+@import '../../brand-tokens';
 
 .page-wrapper {
     width: 100%;
     padding-left: $sidebar-width;
+
+    @media (max-width: 720px) {
+        padding-left: $mobile-sidebar-width;
+    }
+
     .page {
         @media (max-width: map-get($breakpoints, medium)) {
             &--has-toolbar {
@@ -44,38 +50,48 @@
         &__top-bar {
             height: $single-toolbar-height;
             left: $sidebar-width;
+
+            @media (max-width: 720px) {
+                left: $mobile-sidebar-width;
+            }
         }
     }
 }
 
 .login-logout-button {
-    border-radius: 3px;
-    @include themify($themes) {
-        color: themed('light-argo-teal-7');
-    }
+    border-radius: 6px;
+    color: $brand-blue;
     padding: 3px;
     cursor: pointer;
 
     &:focus {
-        color: $argo-color-teal-5;
-        box-shadow: 0 0 0 0.1em $argo-color-teal-5;
+        color: $brand-blue-dark;
+        box-shadow: 0 0 0 0.1em rgba($brand-blue, 0.24);
     }
+
     &:hover {
-        @include themify($themes) {
-            color: themed('light-argo-teal-5');
-        }
+        color: $brand-blue-dark;
     }
 }
 
 .page {
     padding-left: 0 !important;
+
     &__top-bar {
         left: $sidebar-width !important;
+
+        @media (max-width: 720px) {
+            left: $mobile-sidebar-width !important;
+        }
     }
 }
 
 .sb-page-wrapper {
     padding-left: $sidebar-width;
+
+    @media (max-width: 720px) {
+        padding-left: $mobile-sidebar-width;
+    }
 
     &__sidebar-collapsed {
         padding-left: $collapsed-sidebar-width;
@@ -92,5 +108,30 @@
         .application-details__status-panel {
             left: $collapsed-sidebar-width;
         }
+
+        @media (max-width: 720px) {
+            padding-left: $mobile-sidebar-width;
+
+            .flex-top-bar {
+                left: $mobile-sidebar-width;
+            }
+
+            .page {
+                &__top-bar {
+                    left: $mobile-sidebar-width !important;
+                }
+            }
+
+            .application-details__status-panel {
+                left: $mobile-sidebar-width;
+            }
+        }
+    }
+}
+
+@media (max-width: 720px) {
+    .flex-top-bar,
+    .application-details__status-panel {
+        left: $mobile-sidebar-width !important;
     }
 }

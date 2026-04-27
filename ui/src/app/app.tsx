@@ -106,15 +106,15 @@ const navItems: NavItem[] = [
 ];
 
 const modelCacheNavItem: NavItem = {
-    title: 'Model Cache',
-    tooltip: 'Manage the shared model cache and operational jobs.',
+    title: 'Model Inventory',
+    tooltip: 'Manage model artifacts, cache health, jobs, and audit history.',
     path: '/model-cache',
     iconClassName: 'fa fa-database'
 };
 
 const deployModelsNavItem: NavItem = {
-    title: 'Deploy Models',
-    tooltip: 'Run model sizing and deployment workflows.',
+    title: 'Model Deployments',
+    tooltip: 'Plan and run private model deployment workflows.',
     path: '/deploy-models',
     iconClassName: 'fa fa-rocket'
 };

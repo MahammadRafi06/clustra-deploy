@@ -139,7 +139,7 @@ export const PodTerminalViewer: React.FC<PodTerminalViewerProps> = ({
 
         terminal = new Terminal({
             convertEol: true,
-            fontFamily: 'Menlo, Monaco, Courier New, monospace',
+            fontFamily: "JetBrains Mono, ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace",
             bellStyle: 'sound',
             fontSize: 14,
             fontWeight: 400,

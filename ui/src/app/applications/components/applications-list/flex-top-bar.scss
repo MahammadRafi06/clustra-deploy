@@ -9,6 +9,12 @@
     left: $sidebar-width;
     align-items: center;
     flex-wrap: wrap;
+
+    @media (max-width: 720px) {
+        left: $mobile-sidebar-width;
+        padding: 0 10px;
+    }
+
     &__actions {
         display: flex;
         align-items: center;
