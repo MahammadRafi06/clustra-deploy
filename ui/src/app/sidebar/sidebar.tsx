@@ -35,6 +35,11 @@ const NAV_GROUPS: NavGroup[] = [
         itemPaths: ['/applications', '/applicationsets', '/deploy-models', '/model-cache']
     },
     {
+        key: 'policies',
+        title: 'Policies',
+        itemPaths: ['/policy-management/workload', '/policy-management/infrastructure', '/policy-management/serving', '/policy-management/manifest', '/policy-management/features']
+    },
+    {
         key: 'platform',
         title: 'Platform',
         itemPaths: ['/settings/repos', '/settings/clusters', '/settings/projects']

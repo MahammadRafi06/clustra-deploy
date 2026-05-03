@@ -67,3 +67,17 @@ func TestClearArgoProxyHeadersClearsStaleSignatureHeaders(t *testing.T) {
 	assert.Empty(t, headers.Get(extension.HeaderProxyTimestamp))
 	assert.Empty(t, headers.Get(extension.HeaderProxySignature))
 }
+
+func TestClustraAIServicePolicyEndpointsDoNotRequireApplicationContext(t *testing.T) {
+	proxyConfig := clustraPageProxyConfig{
+		pageName:          "deploy-models",
+		pathPrefix:        "/api/ai-service",
+		requireAppContext: true,
+	}
+
+	assert.False(t, proxyConfig.requiresApplicationContext("/api/ai-service/api/v1/policy-types"))
+	assert.False(t, proxyConfig.requiresApplicationContext("/api/ai-service/api/v1/policies/custom-policy"))
+	assert.False(t, proxyConfig.requiresApplicationContext("/api/ai-service/api/v1/feature-policies/sglang-kv"))
+	assert.True(t, proxyConfig.requiresApplicationContext("/api/ai-service/api/v1/default"))
+	assert.True(t, proxyConfig.requiresApplicationContext("/api/ai-service/jobs/job-1"))
+}

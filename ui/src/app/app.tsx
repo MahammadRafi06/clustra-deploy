@@ -9,6 +9,7 @@ import applications from './applications';
 import deployModels from './deploy-models';
 import login from './login';
 import modelCache from './model-cache';
+import policyManagement from './policy-management';
 import settings from './settings';
 import {Layout, ThemeWrapper} from './shared/components/layout/layout';
 import {Page} from './shared/components/page/page';
@@ -34,6 +35,7 @@ const routes: Routes = {
     '/login': {component: login.component as any, noLayout: true},
     '/applications': {component: applications.component},
     '/model-cache': {component: modelCache.component},
+    '/policy-management': {component: policyManagement.component},
     '/deploy-models': {component: deployModels.component},
     // TODO: Uncomment when ApplicationSet details page is fully implemented
     // '/applicationsets': {component: applications.component},
@@ -118,6 +120,39 @@ const deployModelsNavItem: NavItem = {
     path: '/deploy-models',
     iconClassName: 'fa fa-rocket'
 };
+
+const policyManagementNavItems: NavItem[] = [
+    {
+        title: 'Workload Policies',
+        tooltip: 'Manage workload-level AI Configurator request policies.',
+        path: '/policy-management/workload',
+        iconClassName: 'fa fa-briefcase'
+    },
+    {
+        title: 'Infrastructure Policies',
+        tooltip: 'Manage infrastructure selection and placement policies.',
+        path: '/policy-management/infrastructure',
+        iconClassName: 'fa fa-server'
+    },
+    {
+        title: 'Serving Policies',
+        tooltip: 'Manage serving runtime and deployment policies.',
+        path: '/policy-management/serving',
+        iconClassName: 'fa fa-network-wired'
+    },
+    {
+        title: 'Manifest Policies',
+        tooltip: 'Manage manifest generation and patch policies.',
+        path: '/policy-management/manifest',
+        iconClassName: 'fa fa-file-code'
+    },
+    {
+        title: 'Feature Policies',
+        tooltip: 'Manage backend-specific engine feature policies.',
+        path: '/policy-management/features',
+        iconClassName: 'fa fa-sliders-h'
+    }
+];
 
 const versionLoader = services.version.version();
 
@@ -204,6 +239,7 @@ export class App extends React.Component<{}, {popupProps: PopupProps; showVersio
         }
         if (canSeeDeployModels) {
             featureNavItems.push(deployModelsNavItem);
+            featureNavItems.push(...policyManagementNavItems);
         }
         const visibleNavItems = [...this.navItems.slice(0, 1), ...featureNavItems, ...this.navItems.slice(1)];
 

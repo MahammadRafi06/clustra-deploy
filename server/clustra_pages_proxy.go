@@ -101,7 +101,7 @@ func (server *ArgoCDServer) newClustraPageProxyHandler(proxyConfig clustraPagePr
 		}
 
 		var selectedApp *v1alpha1.Application
-		if proxyConfig.requireAppContext {
+		if proxyConfig.requiresApplicationContext(r.URL.Path) {
 			app, statusCode, err := server.resolveSelectedApplication(r)
 			if err != nil {
 				server.log.WithFields(log.Fields{"page": proxyConfig.pageName, "path": r.URL.Path}).WithError(err).Warn("invalid clustra page application context")
@@ -120,6 +120,30 @@ func (server *ArgoCDServer) newClustraPageProxyHandler(proxyConfig clustraPagePr
 
 		proxy.ServeHTTP(w, r)
 	})
+}
+
+func (proxyConfig clustraPageProxyConfig) requiresApplicationContext(requestPath string) bool {
+	if !proxyConfig.requireAppContext {
+		return false
+	}
+
+	return !isAIConfiguratorPolicyProxyPath(strings.TrimPrefix(requestPath, proxyConfig.pathPrefix))
+}
+
+func isAIConfiguratorPolicyProxyPath(path string) bool {
+	if path == "" {
+		path = "/"
+	}
+	if !strings.HasPrefix(path, "/") {
+		path = "/" + path
+	}
+
+	for _, prefix := range []string{"/api/v1/policies", "/api/v1/feature-policies", "/api/v1/policy-types"} {
+		if path == prefix || strings.HasPrefix(path, prefix+"/") {
+			return true
+		}
+	}
+	return false
 }
 
 func (server *ArgoCDServer) resolveSelectedApplication(r *http.Request) (*v1alpha1.Application, int, error) {
