@@ -1,23 +1,19 @@
 import * as React from 'react';
 import {useEffect, useMemo, useState} from 'react';
 
-import type {FeatureBackend, PolicyApiClient, PolicyFamily, PolicyRecord, PolicyTypeRecord, RequestPolicyType} from '../api/types';
-import {FEATURE_BACKENDS, REQUEST_POLICY_TYPES} from '../api/types';
+import type {PolicyApiClient, PolicyFamily, PolicyRecord, PolicyTypeRecord, RequestPolicyType} from '../api/types';
+import {REQUEST_POLICY_TYPES} from '../api/types';
 import {
-    applySglangStarterTemplate,
-    buildFeaturePolicyTemplate,
     buildRequestPolicyTemplate,
     formatPolicyJson,
-    isFeatureBackend,
     isRequestPolicyType,
     parsePolicyJson,
     validatePolicyDocument
 } from '../validation';
-import {ArgsBuilder} from './ArgsBuilder';
 import {PolicyJsonEditor} from './PolicyJsonEditor';
 
 type EditorMode = 'create' | 'edit';
-type EditorTab = 'form' | 'json' | 'args';
+type EditorTab = 'form' | 'json';
 
 interface PolicyFormDrawerProps {
     mode: EditorMode;
@@ -25,7 +21,7 @@ interface PolicyFormDrawerProps {
     initialFamily?: PolicyFamily | null;
     initialDocument?: Record<string, unknown> | null;
     initialRequestType?: RequestPolicyType;
-    originalRecord?: PolicyRecord | {policy_id: string; backend: FeatureBackend; type?: never; document: Record<string, unknown>} | null;
+    originalRecord?: PolicyRecord | null;
     onClose: () => void;
     onSaved: () => void;
 }
@@ -99,13 +95,7 @@ export const PolicyFormDrawer: React.FC<PolicyFormDrawerProps> = ({mode, client,
         return initialRequestType || 'workload';
     });
     const [allowTypeChange, setAllowTypeChange] = useState(!initialRequestType);
-    const [requestTemplateReady, setRequestTemplateReady] = useState(mode === 'edit' || !!initialDocument || initialFamily !== 'request');
-    const [featureBackendChoice, setFeatureBackendChoice] = useState<FeatureBackend | null>(() => {
-        if (initialDocument && isFeatureBackend(initialDocument.backend)) {
-            return initialDocument.backend;
-        }
-        return null;
-    });
+    const [requestTemplateReady, setRequestTemplateReady] = useState(mode === 'edit' || !!initialDocument);
     const [policyTypes, setPolicyTypes] = useState<PolicyTypeRecord[]>([]);
     const [policyTypesError, setPolicyTypesError] = useState<string | null>(null);
     const [policyTypesLoading, setPolicyTypesLoading] = useState(false);
@@ -197,28 +187,14 @@ export const PolicyFormDrawer: React.FC<PolicyFormDrawerProps> = ({mode, client,
         setTab('form');
         setValidationErrors([]);
         setServerError(null);
-        if (nextFamily === 'request') {
-            setRequestType(initialRequestType || 'workload');
-            setRequestTemplateReady(false);
-            setPolicyDocument({});
-        } else {
-            setFeatureBackendChoice(null);
-            setPolicyDocument({});
-        }
+        setRequestType(initialRequestType || 'workload');
+        setRequestTemplateReady(false);
+        setPolicyDocument({});
     }
 
     function handleRequestTypeChange(nextType: RequestPolicyType) {
         setRequestType(nextType);
         setRequestTemplateReady(false);
-    }
-
-    function handleBackendChange(nextBackend: FeatureBackend) {
-        setFeatureBackendChoice(nextBackend);
-        if (isObject(document.effects)) {
-            setPolicyDocument(setTopLevel(document, 'backend', nextBackend));
-        } else {
-            setPolicyDocument(copyCommonFields(document, buildFeaturePolicyTemplate(nextBackend)));
-        }
     }
 
     async function handleSubmit(event: React.FormEvent) {
@@ -252,15 +228,9 @@ export const PolicyFormDrawer: React.FC<PolicyFormDrawerProps> = ({mode, client,
         setIsSaving(true);
         try {
             if (mode === 'edit' && originalPolicyId) {
-                if (family === 'request') {
-                    await client.updatePolicy(originalPolicyId, parsed.document);
-                } else {
-                    await client.updateFeaturePolicy(originalPolicyId, parsed.document);
-                }
-            } else if (family === 'request') {
-                await client.createPolicy(parsed.document);
+                await client.updatePolicy(originalPolicyId, parsed.document);
             } else {
-                await client.createFeaturePolicy(parsed.document);
+                await client.createPolicy(parsed.document);
             }
             setIsSaving(false);
             onSaved();
@@ -271,15 +241,12 @@ export const PolicyFormDrawer: React.FC<PolicyFormDrawerProps> = ({mode, client,
     }
 
     const selectedRequestType = requestType;
-    const selectedBackend = isFeatureBackend(document.backend) ? document.backend : featureBackendChoice || 'sglang';
-    const canShowArgs = family === 'feature';
-    const needsBackendChoice = family === 'feature' && mode === 'create' && !initialDocument && !featureBackendChoice && !isFeatureBackend(document.backend);
     const requestTemplatePending = family === 'request' && mode === 'create' && !requestTemplateReady;
 
     const header = (
         <div className='policy-management__drawer-title'>
             <strong>{mode === 'edit' ? 'Edit Policy' : 'Create Policy'}</strong>
-            {family && <span className='policy-management__drawer-subtitle'>{family === 'request' ? 'Request policy' : 'Feature policy'}</span>}
+            {family && <span className='policy-management__drawer-subtitle'>Request policy</span>}
         </div>
     );
 
@@ -297,23 +264,6 @@ export const PolicyFormDrawer: React.FC<PolicyFormDrawerProps> = ({mode, client,
                         <button type='button' className='argo-button argo-button--base-o policy-management__choice-button' onClick={() => handleFamilySelect('request')}>
                             <i className='fa fa-file-alt' aria-hidden='true' /> Request policy
                         </button>
-                        <button type='button' className='argo-button argo-button--base-o policy-management__choice-button' onClick={() => handleFamilySelect('feature')}>
-                            <i className='fa fa-sliders-h' aria-hidden='true' /> Feature policy
-                        </button>
-                    </div>
-                )}
-
-                {needsBackendChoice && (
-                    <div className='policy-management__choice-grid'>
-                        {FEATURE_BACKENDS.map(backend => (
-                            <button
-                                key={backend}
-                                type='button'
-                                className='argo-button argo-button--base-o policy-management__choice-button'
-                                onClick={() => handleBackendChange(backend)}>
-                                <i className='fa fa-sliders-h' aria-hidden='true' /> {backend}
-                            </button>
-                        ))}
                     </div>
                 )}
 
@@ -345,7 +295,7 @@ export const PolicyFormDrawer: React.FC<PolicyFormDrawerProps> = ({mode, client,
                     </div>
                 )}
 
-                {family && !needsBackendChoice && !requestTemplatePending && (
+                {family && !requestTemplatePending && (
                     <>
                         <div className='policy-management__tab-row' role='tablist' aria-label='Policy editor tabs'>
                             {(['form', 'json'] as EditorTab[]).map(item => (
@@ -357,14 +307,6 @@ export const PolicyFormDrawer: React.FC<PolicyFormDrawerProps> = ({mode, client,
                                     {item === 'form' ? 'Form' : 'JSON'}
                                 </button>
                             ))}
-                            {canShowArgs && (
-                                <button
-                                    type='button'
-                                    className={`argo-button ${tab === 'args' ? 'argo-button--base' : 'argo-button--base-o'} policy-management__button`}
-                                    onClick={() => setTab('args')}>
-                                    Args Builder
-                                </button>
-                            )}
                         </div>
 
                         {tab === 'form' && (
@@ -379,57 +321,28 @@ export const PolicyFormDrawer: React.FC<PolicyFormDrawerProps> = ({mode, client,
                                         onChange={event => setPolicyDocument(setTopLevel(document, 'policy_id', event.target.value))}
                                     />
                                 </label>
-                                {family === 'request' ? (
-                                    <label className='argo-form-row'>
-                                        <span>type</span>
-                                        <select
-                                            className='argo-field'
-                                            aria-label='type'
-                                            value={selectedRequestType}
-                                            disabled={mode === 'edit' || !allowTypeChange}
-                                            onChange={event => handleRequestTypeChange(event.target.value as RequestPolicyType)}>
-                                            {REQUEST_POLICY_TYPES.map(type => (
-                                                <option key={type} value={type}>
-                                                    {type}
-                                                </option>
-                                            ))}
-                                        </select>
-                                        {mode === 'create' && !allowTypeChange && (
-                                            <button type='button' className='argo-button argo-button--base-o policy-management__button' onClick={() => setAllowTypeChange(true)}>
-                                                Change type
-                                            </button>
-                                        )}
-                                        {policyTypesLoading && <span className='policy-management__table-meta'>Loading templates...</span>}
-                                        {policyTypesError && <span className='policy-management__text--danger'>{policyTypesError}</span>}
-                                    </label>
-                                ) : (
-                                    <label className='argo-form-row'>
-                                        <span>backend</span>
-                                        <select
-                                            className='argo-field'
-                                            aria-label='backend'
-                                            value={selectedBackend}
-                                            onChange={event => handleBackendChange(event.target.value as FeatureBackend)}>
-                                            {FEATURE_BACKENDS.map(backend => (
-                                                <option key={backend} value={backend}>
-                                                    {backend}
-                                                </option>
-                                            ))}
-                                        </select>
-                                        {mode === 'edit' && <span className='policy-management__table-meta'>Selected /default requests must match this backend.</span>}
-                                    </label>
-                                )}
-                                {family === 'feature' && (
-                                    <label className='argo-form-row'>
-                                        <span>feature</span>
-                                        <input
-                                            className='argo-field'
-                                            aria-label='feature'
-                                            value={documentStringValue(document, 'feature')}
-                                            onChange={event => setPolicyDocument(setTopLevel(document, 'feature', event.target.value))}
-                                        />
-                                    </label>
-                                )}
+                                <label className='argo-form-row'>
+                                    <span>type</span>
+                                    <select
+                                        className='argo-field'
+                                        aria-label='type'
+                                        value={selectedRequestType}
+                                        disabled={mode === 'edit' || !allowTypeChange}
+                                        onChange={event => handleRequestTypeChange(event.target.value as RequestPolicyType)}>
+                                        {REQUEST_POLICY_TYPES.map(type => (
+                                            <option key={type} value={type}>
+                                                {type}
+                                            </option>
+                                        ))}
+                                    </select>
+                                    {mode === 'create' && !allowTypeChange && (
+                                        <button type='button' className='argo-button argo-button--base-o policy-management__button' onClick={() => setAllowTypeChange(true)}>
+                                            Change type
+                                        </button>
+                                    )}
+                                    {policyTypesLoading && <span className='policy-management__table-meta'>Loading templates...</span>}
+                                    {policyTypesError && <span className='policy-management__text--danger'>{policyTypesError}</span>}
+                                </label>
                                 <label className='argo-form-row'>
                                     <span>display_name</span>
                                     <input
@@ -487,27 +400,15 @@ export const PolicyFormDrawer: React.FC<PolicyFormDrawerProps> = ({mode, client,
                                         }
                                     />
                                 </label>
-                                {family === 'request' && (
-                                    <label className='argo-form-row policy-management__field--wide'>
-                                        <span>effects</span>
-                                        <textarea
-                                            className='argo-field policy-management__textarea-code'
-                                            aria-label='effects'
-                                            value={formatPolicyJson(isObject(document.effects) ? (document.effects as Record<string, unknown>) : {})}
-                                            onChange={event => setPolicyDocument(setEffectsText(document, event.target.value))}
-                                        />
-                                    </label>
-                                )}
-                                {family === 'feature' && selectedBackend === 'sglang' && mode === 'create' && (
-                                    <div className='policy-management__field--wide'>
-                                        <button
-                                            type='button'
-                                            className='argo-button argo-button--base-o policy-management__button'
-                                            onClick={() => setPolicyDocument(applySglangStarterTemplate(document))}>
-                                            <i className='fa fa-magic' aria-hidden='true' /> KV cache routing / Qwen3 parser starter
-                                        </button>
-                                    </div>
-                                )}
+                                <label className='argo-form-row policy-management__field--wide'>
+                                    <span>effects</span>
+                                    <textarea
+                                        className='argo-field policy-management__textarea-code'
+                                        aria-label='effects'
+                                        value={formatPolicyJson(isObject(document.effects) ? (document.effects as Record<string, unknown>) : {})}
+                                        onChange={event => setPolicyDocument(setEffectsText(document, event.target.value))}
+                                    />
+                                </label>
                             </div>
                         )}
 
@@ -522,16 +423,14 @@ export const PolicyFormDrawer: React.FC<PolicyFormDrawerProps> = ({mode, client,
                             />
                         )}
 
-                        {tab === 'args' && canShowArgs && <ArgsBuilder document={document} onChange={setPolicyDocument} />}
-
-                        {(tab === 'form' || tab === 'args') && validationErrors.length > 0 && (
+                        {tab === 'form' && validationErrors.length > 0 && (
                             <div className='policy-management__inline-error'>
                                 {validationErrors.map(error => (
                                     <div key={error}>{error}</div>
                                 ))}
                             </div>
                         )}
-                        {(tab === 'form' || tab === 'args') && serverError && <div className='policy-management__inline-error'>{serverError}</div>}
+                        {tab === 'form' && serverError && <div className='policy-management__inline-error'>{serverError}</div>}
 
                         <div className='policy-management__drawer-actions'>
                             <button type='button' className='argo-button argo-button--base-o policy-management__button' onClick={onClose}>

@@ -1,4 +1,4 @@
-import type {FeaturePolicyRecord, PolicyFamily, PolicyRecord, PolicyRow} from './api/types';
+import type {PolicyFamily, PolicyRecord, PolicyRow} from './api/types';
 
 export function formatRelativeTime(iso?: string | null): string {
     if (!iso) {
@@ -32,10 +32,6 @@ export function description(document: Record<string, unknown>): string {
     return typeof document.description === 'string' ? document.description : '';
 }
 
-export function featureName(document: Record<string, unknown>): string {
-    return typeof document.feature === 'string' ? document.feature : '';
-}
-
 export function tags(document: Record<string, unknown>): string[] {
     const metadata = document.metadata && typeof document.metadata === 'object' && !Array.isArray(document.metadata) ? (document.metadata as Record<string, unknown>) : {};
     return Array.isArray(metadata.tags) ? metadata.tags.map(item => String(item)).filter(Boolean) : [];
@@ -46,26 +42,19 @@ export function uiMetadata(document: Record<string, unknown>): Record<string, un
     return metadata.ui && typeof metadata.ui === 'object' && !Array.isArray(metadata.ui) ? (metadata.ui as Record<string, unknown>) : {};
 }
 
-export function toPolicyRows(policies: PolicyRecord[], featurePolicies: FeaturePolicyRecord[]): PolicyRow[] {
-    return [
-        ...policies.map(record => ({
+export function toPolicyRows(policies: PolicyRecord[]): PolicyRow[] {
+    return policies
+        .map(record => ({
             id: record.policy_id,
             family: 'request' as PolicyFamily,
             kindLabel: 'Request policy' as const,
             typeOrBackend: record.type,
             record
-        })),
-        ...featurePolicies.map(record => ({
-            id: record.policy_id,
-            family: 'feature' as PolicyFamily,
-            kindLabel: 'Feature policy' as const,
-            typeOrBackend: record.backend,
-            record
         }))
-    ].sort((left, right) => {
-        const updated = new Date(right.record.updated_at).getTime() - new Date(left.record.updated_at).getTime();
-        return updated === 0 ? left.id.localeCompare(right.id) : updated;
-    });
+        .sort((left, right) => {
+            const updated = new Date(right.record.updated_at).getTime() - new Date(left.record.updated_at).getTime();
+            return updated === 0 ? left.id.localeCompare(right.id) : updated;
+        });
 }
 
 export function matchesSearch(row: PolicyRow, search: string): boolean {
@@ -74,6 +63,6 @@ export function matchesSearch(row: PolicyRow, search: string): boolean {
         return true;
     }
     const document = row.record.document || {};
-    const haystack = [row.id, displayName(document), description(document), featureName(document), ...tags(document)].join(' ').toLowerCase();
+    const haystack = [row.id, displayName(document), description(document), ...tags(document)].join(' ').toLowerCase();
     return haystack.includes(query);
 }

@@ -159,7 +159,7 @@
         align-items: flex-start;
     }
 
-    // Standardized policy-page hero (workload / infra / serving / features).
+    // Standardized policy-page hero (workload / infra / serving).
     // Mirrors the rcfg-v2-library hero so all Policies sub-pages feel
     // like one product.
     &__hero {
@@ -383,7 +383,7 @@
 
     // Primary "Create" CTA — Clustra brand blue, matching v2 surfaces.
     // Aligns the call-to-action color across every policy page (workload,
-    // infrastructure, serving, features, runtime config).
+    // infrastructure, serving, runtime config).
     &__create-button {
         border: 1px solid $brand-blue;
         background: $brand-blue;

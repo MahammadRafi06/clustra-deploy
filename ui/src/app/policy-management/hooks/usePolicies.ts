@@ -2,9 +2,6 @@ import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 
 import type {
     ActiveFilter,
-    FeatureBackend,
-    FeatureBackendFilter,
-    FeaturePolicyRecord,
     ManagedByFilter,
     PolicyApiClient,
     PolicyFamily,
@@ -12,7 +9,6 @@ import type {
     PolicyRow,
     RequestPolicyType
 } from '../api/types';
-import {FEATURE_BACKENDS} from '../api/types';
 import {matchesSearch, toPolicyRows} from '../formatters';
 
 const LOCAL_FILTER_FETCH_SIZE = 200;
@@ -23,7 +19,6 @@ export interface PolicyListFilters {
     active: ActiveFilter;
     managedBy: ManagedByFilter;
     requestType?: RequestPolicyType;
-    backend: FeatureBackendFilter;
     page: number;
     pageSize: number;
 }
@@ -89,33 +84,13 @@ async function fetchAllPolicies(client: PolicyApiClient, type: RequestPolicyType
     return policies;
 }
 
-async function fetchAllFeaturePolicies(client: PolicyApiClient, backend: FeatureBackend, active: boolean | undefined): Promise<FeaturePolicyRecord[]> {
-    const featurePolicies: FeaturePolicyRecord[] = [];
-    let offset = 0;
-    let total: number | undefined;
-
-    while (true) {
-        const result = await client.listFeaturePolicies({backend, active, limit: LOCAL_FILTER_FETCH_SIZE, offset});
-        const page = result.feature_policies || [];
-        featurePolicies.push(...page);
-        total = typeof result.total === 'number' ? result.total : total;
-
-        if (page.length < LOCAL_FILTER_FETCH_SIZE || (typeof total === 'number' && featurePolicies.length >= total)) {
-            break;
-        }
-        offset += LOCAL_FILTER_FETCH_SIZE;
-    }
-
-    return featurePolicies;
-}
-
 async function fetchRows(client: PolicyApiClient, filters: PolicyListFilters): Promise<PolicyListResult> {
     const active = activeParam(filters.active);
     const offset = filters.page * filters.pageSize;
 
     if (filters.family === 'request') {
         if (hasLocalOnlyFilters(filters)) {
-            const rows = filterRows(toPolicyRows(await fetchAllPolicies(client, filters.requestType, active), []), filters);
+            const rows = filterRows(toPolicyRows(await fetchAllPolicies(client, filters.requestType, active)), filters);
             return {
                 rows: paginateRows(rows, filters),
                 total: rows.length
@@ -124,44 +99,12 @@ async function fetchRows(client: PolicyApiClient, filters: PolicyListFilters): P
 
         const result = await client.listPolicies({type: filters.requestType, active, limit: filters.pageSize, offset});
         return {
-            rows: toPolicyRows(result.policies || [], []),
+            rows: toPolicyRows(result.policies || []),
             total: result.total || 0
         };
     }
 
-    if (filters.family === 'runtime') {
-        return {rows: [], total: 0};
-    }
-
-    if (filters.backend !== 'all') {
-        if (hasLocalOnlyFilters(filters)) {
-            const rows = filterRows(toPolicyRows([], await fetchAllFeaturePolicies(client, filters.backend, active)), filters);
-            return {
-                rows: paginateRows(rows, filters),
-                total: rows.length
-            };
-        }
-
-        const result = await client.listFeaturePolicies({backend: filters.backend, active, limit: filters.pageSize, offset});
-        return {
-            rows: toPolicyRows([], result.feature_policies || []),
-            total: result.total || 0
-        };
-    }
-
-    const results = await Promise.all(FEATURE_BACKENDS.map(backend => fetchAllFeaturePolicies(client, backend, active)));
-    const rows = filterRows(
-        toPolicyRows(
-            [],
-            results.flatMap(result => result)
-        ),
-        filters
-    );
-
-    return {
-        rows: paginateRows(rows, filters),
-        total: rows.length
-    };
+    return {rows: [], total: 0};
 }
 
 export function usePolicies(client: PolicyApiClient, filters: PolicyListFilters, invalidationKey = 0) {

@@ -18,6 +18,7 @@ $dm-danger: #b32d2d;
 $dm-warning: #a16915;
 $dm-success: #157a5b;
 $dm-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+$dm-shadow-md: 0 4px 12px rgba(15, 23, 42, 0.06);
 
 .deploy-models {
     background: $dm-bg;
@@ -25,6 +26,7 @@ $dm-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
     flex-direction: column;
     gap: 24px;
     padding: 24px 32px 48px;
+    min-height: calc(100vh - 120px);
     color: $dm-text;
     font-family: $brand-font-sans;
     font-size: 14px;
@@ -39,9 +41,9 @@ $dm-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
         color: $dm-text;
         font-weight: 600;
     }
-    h1 { font-size: 24px; line-height: 1.2; letter-spacing: -0.015em; }
-    h2 { font-size: 20px; line-height: 1.25; letter-spacing: -0.01em; }
-    h3 { font-size: 16px; line-height: 1.3; letter-spacing: -0.005em; }
+    h1 { font-size: 24px; line-height: 1.2; letter-spacing: 0; }
+    h2 { font-size: 20px; line-height: 1.25; letter-spacing: 0; }
+    h3 { font-size: 16px; line-height: 1.3; letter-spacing: 0; }
     h4 { font-size: 14px; line-height: 1.35; }
 
     p { line-height: 1.55; }
@@ -69,7 +71,7 @@ $dm-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
             margin: 6px 0 8px;
             font-size: 28px;
             line-height: 1.15;
-            letter-spacing: -0.02em;
+            letter-spacing: 0;
             font-weight: 600;
             color: $dm-text;
         }
@@ -108,6 +110,8 @@ $dm-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
     &__panel--empty {
         display: grid;
         gap: 16px;
+        min-height: 220px;
+        align-items: center;
     }
 
     &__panel-header {
@@ -125,8 +129,17 @@ $dm-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
     &__panel-title {
         font-size: 18px;
         font-weight: 600;
-        letter-spacing: -0.01em;
+        letter-spacing: 0;
         color: $dm-text;
+    }
+
+    &__panel-title,
+    &__result-title {
+        margin: 0;
+    }
+
+    &__panel-description {
+        margin: 6px 0 0;
     }
 
     &__panel-description,
@@ -201,10 +214,29 @@ $dm-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
-    &__advanced-body {
+    &__context {
         display: grid;
         gap: 16px;
+    }
+
+    &__context-summary {
+        display: grid;
+        gap: 12px;
+        margin-top: 4px;
+        padding: 14px 16px;
+        border: 1px solid $dm-border;
+        border-radius: 10px;
+        background: $brand-slate-50;
+    }
+
+    &__advanced-body {
+        display: grid;
+        gap: 16px 20px;
         grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+        padding: 16px;
+        border: 1px solid $dm-border;
+        border-radius: 10px;
+        background: $brand-slate-50;
     }
 
     &__form {
@@ -243,6 +275,13 @@ $dm-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
         min-width: 0;
     }
 
+    &__field label {
+        color: $dm-text-secondary;
+        font-size: 13px;
+        font-weight: 600;
+        line-height: 1.35;
+    }
+
     &__field-label-row {
         display: flex;
         align-items: center;
@@ -258,6 +297,110 @@ $dm-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
     &__field .argo-field,
     &__textarea {
         width: 100%;
+        height: 38px;
+        padding: 0 12px;
+        border: 1px solid $dm-border-strong;
+        border-radius: 8px;
+        background: $dm-panel;
+        color: $dm-text;
+        font-size: 14px;
+        line-height: 38px;
+        box-shadow: none;
+        transition: border-color 120ms ease, box-shadow 120ms ease, background 120ms ease;
+    }
+
+    &__field .argo-field::placeholder,
+    &__textarea::placeholder {
+        color: rgba($dm-muted, 0.7);
+    }
+
+    &__field .argo-field:hover:not(:disabled),
+    &__textarea:hover:not(:disabled),
+    &__select .select__value:hover {
+        border-color: darken($dm-border-strong, 10%);
+    }
+
+    &__field .argo-field:focus,
+    &__field .argo-field:focus-visible,
+    &__textarea:focus,
+    &__textarea:focus-visible,
+    &__select:focus-within .select__value {
+        outline: none;
+        border-color: $dm-accent;
+        box-shadow: 0 0 0 3px $dm-accent-soft;
+    }
+
+    &__field .argo-field:disabled,
+    &__textarea:disabled {
+        background: rgba($dm-text, 0.04);
+        color: $dm-muted;
+        cursor: not-allowed;
+    }
+
+    &__select {
+        min-width: 0;
+        width: 100%;
+    }
+
+    &__select .select__focus-receiver {
+        position: absolute;
+    }
+
+    &__select .select__value {
+        height: 38px;
+        padding: 0 32px 0 12px;
+        border: 1px solid $dm-border-strong;
+        border-radius: 8px;
+        background: $dm-panel;
+        color: $dm-text;
+        font-size: 14px;
+        line-height: 36px;
+        box-shadow: none;
+        transition: border-color 120ms ease, box-shadow 120ms ease, background 120ms ease;
+    }
+
+    &__select .select__value-arrow {
+        right: 10px;
+        color: $dm-muted;
+    }
+
+    &__select .select__options {
+        top: calc(100% + 6px);
+        border: 1px solid $dm-border;
+        border-radius: 10px;
+        background: $dm-panel;
+        box-shadow: $dm-shadow-md;
+        overflow: hidden auto;
+    }
+
+    &__select .select__options.to-top {
+        top: auto;
+        bottom: calc(100% + 6px);
+    }
+
+    &__select .select__search {
+        padding: 10px 12px;
+        border: 0;
+        border-bottom: 1px solid $dm-border;
+        color: $dm-text;
+        background: $dm-panel;
+    }
+
+    &__select .select__option {
+        padding: 9px 12px;
+        color: $dm-text-secondary;
+        font-size: 13px;
+    }
+
+    &__select .select__option:hover {
+        background: $dm-accent-soft;
+        color: $dm-text;
+    }
+
+    &__select .select__option.selected {
+        background: $brand-slate-100;
+        color: $dm-accent;
+        font-weight: 600;
     }
 
     &__field-help {
@@ -267,10 +410,11 @@ $dm-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
         justify-content: center;
         width: 18px;
         height: 18px;
-        border: 1px solid $brand-border-subtle;
+        border: 1px solid $dm-border;
         border-radius: 999px;
-        color: $brand-text-muted;
+        color: $dm-muted;
         cursor: help;
+        background: $dm-panel;
     }
 
     &__field-help:focus,
@@ -286,13 +430,13 @@ $dm-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
         z-index: 2;
         width: min(300px, calc(100vw - 48px));
         padding: 8px 10px;
-        border: 1px solid $brand-border-subtle;
-        border-radius: 4px;
-        background: $brand-surface-raised;
-        color: $brand-text-secondary;
+        border: 1px solid $dm-border;
+        border-radius: 8px;
+        background: $dm-panel;
+        color: $dm-text-secondary;
         font-size: 0.8125em;
         line-height: 1.4;
-        box-shadow: $brand-shadow-card;
+        box-shadow: $dm-shadow-md;
         opacity: 0;
         visibility: hidden;
         transform: translateY(-4px);
@@ -312,23 +456,22 @@ $dm-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
     }
 
     &__textarea {
+        height: auto;
         min-height: 120px;
+        padding: 10px 12px;
+        line-height: 1.5;
         resize: vertical;
     }
 
     &__field-hint {
         margin: 6px 0 0;
-        color: $brand-text-muted;
+        color: $dm-muted;
         font-size: 0.8125em;
     }
 
     &__required {
         margin-left: 3px;
-        color: $brand-status-error;
-    }
-
-    &__result-title {
-        font-weight: 600;
+        color: $dm-danger;
     }
 
     &__advanced {
@@ -339,6 +482,7 @@ $dm-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
     &__advanced-toggle-row {
         display: flex;
         flex-direction: column;
+        justify-content: flex-end;
     }
 
     &__advanced-toggle-spacer {
@@ -350,6 +494,8 @@ $dm-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
     &__advanced-toggle {
         justify-content: flex-start;
         width: 100%;
+        height: 38px;
+        border-radius: 8px;
     }
 
     .argo-button.argo-button--base-o.deploy-models__advanced-toggle {
@@ -391,7 +537,9 @@ $dm-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
     &__status-banner,
     &__result-section {
         border: 1px solid $dm-border;
-        border-radius: 8px;
+        border-radius: 10px;
+        background: $dm-panel;
+        box-shadow: $dm-shadow;
     }
 
     &__notice,
@@ -413,19 +561,19 @@ $dm-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
     }
 
     &__notice--info {
-        color: $brand-text-secondary;
+        color: $dm-text-secondary;
     }
 
     &__notice--warning {
-        color: $brand-gold;
-        border-color: rgba($brand-gold, 0.2);
-        background: rgba($brand-gold, 0.05);
+        color: $dm-warning;
+        border-color: rgba($dm-warning, 0.25);
+        background: rgba($dm-warning, 0.08);
     }
 
     &__notice--error {
-        color: $brand-status-error;
-        border-color: rgba($brand-status-error, 0.2);
-        background: rgba($brand-status-error, 0.06);
+        color: $dm-danger;
+        border-color: rgba($dm-danger, 0.25);
+        background: rgba($dm-danger, 0.08);
     }
 
     &__actions,
@@ -482,23 +630,23 @@ $dm-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
     }
 
     &__status-pill--success {
-        color: $brand-status-success;
-        background: rgba($brand-status-success, 0.12);
+        color: $dm-success;
+        background: rgba($dm-success, 0.12);
     }
 
     &__status-pill--warning {
-        color: $brand-gold;
-        background: rgba($brand-gold, 0.12);
+        color: $dm-warning;
+        background: rgba($dm-warning, 0.14);
     }
 
     &__status-pill--error {
-        color: $brand-status-error;
-        background: rgba($brand-status-error, 0.12);
+        color: $dm-danger;
+        background: rgba($dm-danger, 0.12);
     }
 
     &__status-pill--info {
-        color: $brand-blue-dark;
-        background: rgba($brand-emerald, 0.12);
+        color: $dm-accent;
+        background: $dm-accent-soft;
     }
 
     &__status-pill--muted {
@@ -527,7 +675,7 @@ $dm-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
     }
 
     &__result-section {
-        padding: 14px;
+        padding: 16px;
     }
 
     &__detail-grid,
@@ -568,19 +716,28 @@ $dm-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
 
     &__run-card {
         width: 100%;
-        padding: 12px;
-        border: 1px solid $brand-border-subtle;
-        border-radius: 4px;
-        background: transparent;
+        padding: 14px;
+        border: 1px solid $dm-border;
+        border-radius: 10px;
+        background: $dm-panel;
         text-align: left;
         transition:
             border-color 0.15s ease,
-            background-color 0.15s ease;
+            background-color 0.15s ease,
+            box-shadow 0.15s ease,
+            transform 0.15s ease;
+    }
+
+    &__run-card:hover {
+        border-color: $dm-border-strong;
+        box-shadow: $dm-shadow-md;
+        transform: translateY(-1px);
     }
 
     &__run-card.is-selected {
-        border-color: rgba($brand-blue, 0.45);
-        background: rgba($brand-emerald, 0.08);
+        border-color: $dm-accent;
+        background: rgba($dm-accent, 0.05);
+        box-shadow: 0 0 0 2px $dm-accent-soft;
     }
 
     &__run-card-meta {
@@ -624,8 +781,8 @@ $dm-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
     &__file-chip {
         padding: 4px 8px;
         border-radius: 999px;
-        background: $brand-bg-muted;
-        color: $brand-text-secondary;
+        background: $brand-slate-100;
+        color: $dm-text-secondary;
         font-size: 0.8125em;
     }
 
@@ -652,25 +809,29 @@ $dm-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
         margin-right: 6px;
     }
 
-    @include themify($themes) {
-        &__notice,
-        &__status-banner,
-        &__result-section,
-        &__field-help-text,
-        &__run-card {
-            background-color: themed('background-1');
-            border-color: themed('border');
+    .argo-button.argo-button--base {
+        border: 1px solid $dm-accent;
+        border-radius: 8px;
+        background: $dm-accent;
+        color: #fff;
+        font-weight: 600;
+        box-shadow: $dm-shadow;
+        transition: background 120ms ease, border-color 120ms ease, box-shadow 120ms ease;
+
+        &:hover:not(:disabled) {
+            border-color: $brand-blue-dark;
+            background: $brand-blue-dark;
+            color: #fff;
+            box-shadow: 0 2px 6px rgba($dm-accent, 0.25);
         }
     }
 
-    @include themify($themes) {
-        &__section-divider::after {
-            border-top-color: themed('border');
-        }
+    .argo-button.argo-button--base-o {
+        border-radius: 8px;
     }
 
     @media (max-width: 720px) {
-        padding: 0 0 1.5em;
+        padding: 16px 16px 32px;
 
         &__panel {
             padding: 16px;
@@ -696,6 +857,11 @@ $dm-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
         }
 
         &__context-grid {
+            grid-template-columns: minmax(0, 1fr);
+        }
+
+        &__advanced-body {
+            padding: 14px;
             grid-template-columns: minmax(0, 1fr);
         }
     }

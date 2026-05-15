@@ -141,12 +141,6 @@ const policyManagementNavItems: NavItem[] = [
         iconClassName: 'fa fa-network-wired'
     },
     {
-        title: 'Feature Policies',
-        tooltip: 'Manage backend-specific engine feature policies.',
-        path: '/policy-management/features',
-        iconClassName: 'fa fa-sliders-h'
-    },
-    {
         title: 'Runtime Config Policies',
         tooltip: 'Manage role-scoped runtime args and env policies.',
         path: '/policy-management/runtime-config',

@@ -33,36 +33,6 @@ test('listPolicies serializes filters through the ai-service proxy', async () =>
     );
 });
 
-test('listFeaturePolicies requires explicit backend filter', async () => {
-    mockFetch.mockResolvedValue(jsonResponse({feature_policies: [], total: 0}));
-
-    await client.listFeaturePolicies({backend: 'sglang', active: false, limit: 25, offset: 0});
-
-    expect(mockFetch).toHaveBeenCalledWith(
-        '/api/ai-service/api/v1/feature-policies?backend=sglang&active=false&limit=25&offset=0',
-        expect.objectContaining({
-            method: 'GET',
-            credentials: 'same-origin'
-        })
-    );
-});
-
-test('createFeaturePolicy posts raw policy document JSON', async () => {
-    mockFetch.mockResolvedValue(jsonResponse({policy_id: 'sglang-kv'}));
-
-    await client.createFeaturePolicy({policy_id: 'sglang-kv', backend: 'sglang'});
-
-    expect(mockFetch).toHaveBeenCalledWith(
-        '/api/ai-service/api/v1/feature-policies',
-        expect.objectContaining({
-            method: 'POST',
-            credentials: 'same-origin',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({policy_id: 'sglang-kv', backend: 'sglang'})
-        })
-    );
-});
-
 test('runtime config catalog items serialize role-aware filters through the ai-service proxy', async () => {
     mockFetch.mockResolvedValue(jsonResponse({items: [], total: 0}));
 

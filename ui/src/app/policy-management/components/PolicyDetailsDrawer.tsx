@@ -2,7 +2,7 @@ import * as React from 'react';
 
 import type {PolicyRow} from '../api/types';
 import {displayName, formatRelativeTime, tags, uiMetadata} from '../formatters';
-import {FeatureArgEntry, formatPolicyJson, parseFeatureArgs} from '../validation';
+import {formatPolicyJson} from '../validation';
 import {PolicyBadge, managedByTone, statusTone} from './PolicyBadges';
 
 interface PolicyDetailsDrawerProps {
@@ -10,21 +10,7 @@ interface PolicyDetailsDrawerProps {
     onClose: () => void;
 }
 
-type DetailsTab = 'document' | 'featureArgs' | 'metadata';
-
-function isObject(value: unknown): value is Record<string, unknown> {
-    return !!value && typeof value === 'object' && !Array.isArray(value);
-}
-
-function roleArgs(document: Record<string, unknown>, mode: 'agg' | 'disagg', role: string) {
-    const effects = isObject(document.effects) ? document.effects : {};
-    const modeValue = isObject(effects[mode]) ? (effects[mode] as Record<string, unknown>) : {};
-    if (Array.isArray(modeValue[role])) {
-        return parseFeatureArgs(modeValue[role]);
-    }
-    const roleValue = isObject(modeValue[role]) ? (modeValue[role] as Record<string, unknown>) : {};
-    return parseFeatureArgs(roleValue.args);
-}
+type DetailsTab = 'document' | 'metadata';
 
 function CopyButton({value, label = 'Copy'}: {value: string; label?: string}) {
     return (
@@ -95,44 +81,12 @@ function JsonDocument({document}: {document: Record<string, unknown>}) {
     return <pre className='policy-management__code-block policy-management__json-highlight'>{formatPolicyJson(document).split('\n').map(renderJsonLine)}</pre>;
 }
 
-function ArgsBreakdown({document}: {document: Record<string, unknown>}) {
-    const sections: Array<[string, FeatureArgEntry[]]> = [
-        ['agg.frontend args', roleArgs(document, 'agg', 'frontend')],
-        ['agg.worker args', roleArgs(document, 'agg', 'worker')],
-        ['disagg.frontend args', roleArgs(document, 'disagg', 'frontend')],
-        ['disagg.prefill args', roleArgs(document, 'disagg', 'prefill')],
-        ['disagg.decode args', roleArgs(document, 'disagg', 'decode')]
-    ];
-
-    return (
-        <div className='policy-management__args-summary'>
-            {sections.map(([title, args]) => (
-                <div key={title} className='policy-management__role-card'>
-                    <div className='policy-management__role-card-header'>{title}</div>
-                    {args.length === 0 ? (
-                        <div className='policy-management__empty-inline'>No args</div>
-                    ) : (
-                        <div className='policy-management__arg-summary-list'>
-                            {args.map((entry, index) => (
-                                <div key={`${entry.flag}-${index}`} className='policy-management__arg-summary-row'>
-                                    <code>{entry.flag}</code>
-                                    <span>{entry.value == null ? 'flag-only' : entry.value}</span>
-                                </div>
-                            ))}
-                        </div>
-                    )}
-                </div>
-            ))}
-        </div>
-    );
-}
-
 export const PolicyDetailsDrawer: React.FC<PolicyDetailsDrawerProps> = ({row, onClose}) => {
-    const [tab, setTab] = React.useState<DetailsTab>(() => (row?.family === 'feature' ? 'featureArgs' : 'document'));
+    const [tab, setTab] = React.useState<DetailsTab>('document');
 
     React.useEffect(() => {
-        setTab(row?.family === 'feature' ? 'featureArgs' : 'document');
-    }, [row?.id, row?.family]);
+        setTab('document');
+    }, [row?.id]);
 
     if (!row) {
         return null;
@@ -144,7 +98,6 @@ export const PolicyDetailsDrawer: React.FC<PolicyDetailsDrawerProps> = ({row, on
     const title = displayName(document) || record.policy_id;
     const tabItems: Array<{key: DetailsTab; label: string}> = [
         {key: 'document', label: 'Document'},
-        ...(row.family === 'feature' ? [{key: 'featureArgs' as DetailsTab, label: 'Feature args'}] : []),
         {key: 'metadata', label: 'Metadata'}
     ];
 
@@ -169,7 +122,7 @@ export const PolicyDetailsDrawer: React.FC<PolicyDetailsDrawerProps> = ({row, on
                 <h4>Policy details</h4>
                 <div className='policy-management__details-grid'>
                     <DetailsField label='Kind' value={row.kindLabel} />
-                    <DetailsField label={row.family === 'feature' ? 'Backend' : 'Type'} value={<code>{row.typeOrBackend}</code>} />
+                    <DetailsField label='Type' value={<code>{row.typeOrBackend}</code>} />
                     <DetailsField label='Creation time' value={record.created_at} />
                     <DetailsField label='Edited time' value={record.updated_at} />
                     <DetailsField
@@ -236,13 +189,6 @@ export const PolicyDetailsDrawer: React.FC<PolicyDetailsDrawerProps> = ({row, on
                             {tagList.length === 0 ? <span className='policy-management__table-meta'>No tags</span> : tagList.map(tag => <PolicyBadge key={tag}>{tag}</PolicyBadge>)}
                         </div>
                         <JsonDocument document={uiMetadata(document)} />
-                    </section>
-                )}
-
-                {tab === 'featureArgs' && row.family === 'feature' && (
-                    <section className='policy-management__drawer-section'>
-                        <h4 className='policy-management__section-title'>Feature Args</h4>
-                        <ArgsBreakdown document={document} />
                     </section>
                 )}
             </div>

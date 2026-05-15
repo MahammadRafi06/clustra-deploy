@@ -1,10 +1,7 @@
 import {ApiError, formatErrorDetail} from '../../deploy-models/errors';
 import type {
     AuditEventListResponse,
-    FeaturePolicyListResponse,
-    FeaturePolicyRecord,
     ListAuditEventsParams,
-    ListFeaturePoliciesParams,
     ListPoliciesParams,
     ListPolicyTypesParams,
     ListRuntimeConfigCatalogConceptsParams,
@@ -135,34 +132,6 @@ export function updatePolicy(policyId: string, document: Record<string, unknown>
 
 export function deletePolicy(policyId: string) {
     return request<void>('DELETE', `/api/v1/policies/${encodeURIComponent(policyId)}`);
-}
-
-export function listFeaturePolicies(params: ListFeaturePoliciesParams = {}) {
-    return request<FeaturePolicyListResponse>(
-        'GET',
-        appendQuery('/api/v1/feature-policies', {
-            backend: params.backend,
-            active: params.active,
-            limit: params.limit,
-            offset: params.offset
-        })
-    );
-}
-
-export function getFeaturePolicy(policyId: string) {
-    return request<FeaturePolicyRecord>('GET', `/api/v1/feature-policies/${encodeURIComponent(policyId)}`);
-}
-
-export function createFeaturePolicy(document: Record<string, unknown>) {
-    return request<FeaturePolicyRecord>('POST', '/api/v1/feature-policies', document);
-}
-
-export function updateFeaturePolicy(policyId: string, document: Record<string, unknown>) {
-    return request<FeaturePolicyRecord>('PUT', `/api/v1/feature-policies/${encodeURIComponent(policyId)}`, document);
-}
-
-export function deleteFeaturePolicy(policyId: string) {
-    return request<void>('DELETE', `/api/v1/feature-policies/${encodeURIComponent(policyId)}`);
 }
 
 export function listRuntimeConfigPolicies(params: ListRuntimeConfigPoliciesParams = {}) {
@@ -314,11 +283,6 @@ export const policyApiClient: PolicyApiClient = {
     createPolicy,
     updatePolicy,
     deletePolicy,
-    listFeaturePolicies,
-    getFeaturePolicy,
-    createFeaturePolicy,
-    updateFeaturePolicy,
-    deleteFeaturePolicy,
     listRuntimeConfigPolicies,
     getRuntimeConfigPolicy,
     createRuntimeConfigPolicy,

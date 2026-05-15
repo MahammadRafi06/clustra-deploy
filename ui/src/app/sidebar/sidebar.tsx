@@ -41,7 +41,6 @@ const NAV_GROUPS: NavGroup[] = [
             '/policy-management/workload',
             '/policy-management/infrastructure',
             '/policy-management/serving',
-            '/policy-management/features',
             '/policy-management/runtime-config'
         ]
     },

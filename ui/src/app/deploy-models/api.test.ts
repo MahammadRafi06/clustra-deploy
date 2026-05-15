@@ -35,8 +35,10 @@ test('submitDefault includes explicit public model name', async () => {
         model_path: 'Qwen/Qwen3-0.6B',
         public_model_name: 'qwen3-small',
         total_gpus: 1,
-        instance_type: 'g6e.xlarge',
-        mode: 'agg'
+        workload_policy: 'workload-default',
+        infrastructure_policy: 'infra-default',
+        serving_policy: 'serving-default',
+        runtime_policy: 'runtime-default'
     });
 
     expect(mockFetch).toHaveBeenCalledWith(
@@ -53,29 +55,35 @@ test('submitDefault includes explicit public model name', async () => {
                 model_path: 'Qwen/Qwen3-0.6B',
                 public_model_name: 'qwen3-small',
                 total_gpus: 1,
-                instance_type: 'g6e.xlarge',
-                mode: 'agg'
+                workload_policy: 'workload-default',
+                infrastructure_policy: 'infra-default',
+                serving_policy: 'serving-default',
+                runtime_policy: 'runtime-default'
             })
         })
     );
 });
 
-test('submitDefault omits blank public model name so backend derives it from model id', async () => {
+test('submitDefault omits blank values before posting', async () => {
     mockFetch.mockResolvedValue(jsonResponse({job_id: 'job-2', status: 'pending', poll_url: '/jobs/job-2'}));
 
     await submitDefault({
         model_path: 'Qwen/Qwen3-0.6B',
         public_model_name: '',
         total_gpus: 1,
-        instance_type: 'g6e.xlarge',
-        mode: 'agg'
+        workload_policy: 'workload-default',
+        infrastructure_policy: 'infra-default',
+        serving_policy: 'serving-default',
+        runtime_policy: 'runtime-default'
     });
 
     const [, init] = mockFetch.mock.calls[0];
     expect(JSON.parse(init.body)).toEqual({
         model_path: 'Qwen/Qwen3-0.6B',
         total_gpus: 1,
-        instance_type: 'g6e.xlarge',
-        mode: 'agg'
+        workload_policy: 'workload-default',
+        infrastructure_policy: 'infra-default',
+        serving_policy: 'serving-default',
+        runtime_policy: 'runtime-default'
     });
 });

@@ -5,8 +5,6 @@ import {EmptyState} from '../shared/components';
 import {policyApiClient} from './api/client';
 import type {
     ActiveFilter,
-    FeatureBackendFilter,
-    FeaturePolicyRecord,
     ManagedByFilter,
     PolicyApiClient,
     PolicyFamily,
@@ -15,7 +13,6 @@ import type {
     PolicyRow,
     RequestPolicyType
 } from './api/types';
-import {FEATURE_BACKENDS} from './api/types';
 import {PolicyConfirmDialog} from './components/PolicyConfirmDialog';
 import {PolicyDetailsDrawer} from './components/PolicyDetailsDrawer';
 import {PolicyError} from './components/PolicyError';
@@ -37,12 +34,6 @@ export type PolicyPageConfig =
           requestType: RequestPolicyType;
       }
     | {
-          key: 'features';
-          family: 'feature';
-          title: string;
-          description: string;
-      }
-    | {
           key: 'runtime-config';
           family: 'runtime';
           title: string;
@@ -59,7 +50,6 @@ export const POLICY_PAGE_CONFIGS: PolicyPageConfig[] = [
         description: 'Manage infrastructure selection and placement policies.'
     },
     {key: 'serving', family: 'request', requestType: 'serving', title: 'Serving Policies', description: 'Manage serving runtime and deployment policies.'},
-    {key: 'features', family: 'feature', title: 'Feature Policies', description: 'Manage backend-specific engine feature policies.'},
     {key: 'runtime-config', family: 'runtime', title: 'Runtime Config Policies', description: 'Manage role-scoped engine and frontend runtime configuration policies.'}
 ];
 
@@ -80,7 +70,7 @@ type EditorState =
           mode: 'edit';
           family: Exclude<PolicyFamily, 'runtime'>;
           document: Record<string, unknown>;
-          original: PolicyRecord | FeaturePolicyRecord;
+          original: PolicyRecord;
       };
 
 interface PolicyManagementWorkspaceProps {
@@ -111,7 +101,6 @@ export const PolicyManagementWorkspace: React.FC<PolicyManagementWorkspaceProps>
     const [search, setSearch] = useState('');
     const [active, setActive] = useState<ActiveFilter>('active');
     const [managedBy, setManagedBy] = useState<ManagedByFilter>('all');
-    const [backend, setBackend] = useState<FeatureBackendFilter>('all');
     const [page, setPage] = useState(0);
     const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
     const [refreshTick, setRefreshTick] = useState(0);
@@ -132,17 +121,15 @@ export const PolicyManagementWorkspace: React.FC<PolicyManagementWorkspaceProps>
             active,
             managedBy,
             requestType: policyPage.family === 'request' ? policyPage.requestType : undefined,
-            backend,
             page,
             pageSize
         }),
-        [active, backend, managedBy, page, pageSize, policyPage, search]
+        [active, managedBy, page, pageSize, policyPage, search]
     );
     const {data, isLoading, error, refetch} = usePolicies(client, filters, refreshTick);
     const totalPages = Math.max(1, Math.ceil(data.total / pageSize));
     const selectedRow = data.rows.find(row => row.id === selectedRowId) || null;
     const selectedIsSystem = selectedRow?.record.managed_by === 'system';
-    const showBackendColumn = policyPage.family === 'feature';
 
     function resetPageAnd(action: () => void) {
         setPage(0);
@@ -185,7 +172,7 @@ export const PolicyManagementWorkspace: React.FC<PolicyManagementWorkspaceProps>
         selectRow(row);
         setDetailsRow(null);
         try {
-            const latest = row.family === 'request' ? await client.getPolicy(row.id) : await client.getFeaturePolicy(row.id);
+            const latest = await client.getPolicy(row.id);
             setEditor({
                 mode: 'edit',
                 family: row.family,
@@ -209,7 +196,7 @@ export const PolicyManagementWorkspace: React.FC<PolicyManagementWorkspaceProps>
         setEditor({
             mode: 'create',
             family: row.family,
-            requestType: row.family === 'request' ? (row.record as {type: RequestPolicyType}).type : undefined,
+            requestType: (row.record as {type: RequestPolicyType}).type,
             document: copyDocumentForDuplicate(row),
             original: null
         });
@@ -235,7 +222,7 @@ export const PolicyManagementWorkspace: React.FC<PolicyManagementWorkspaceProps>
         navigator.clipboard?.writeText(snippet);
         setActionError(null);
         selectRow(row);
-        showToast(row.family === 'feature' ? 'Usage copied. Use feature_policies; do not send extra_engine_args_config directly.' : 'Usage copied.');
+        showToast('Usage copied.');
     }
 
     async function confirmDelete() {
@@ -245,11 +232,7 @@ export const PolicyManagementWorkspace: React.FC<PolicyManagementWorkspaceProps>
         setDeletePending(true);
         setActionError(null);
         try {
-            if (deleteRow.family === 'request') {
-                await client.deletePolicy(deleteRow.id);
-            } else {
-                await client.deleteFeaturePolicy(deleteRow.id);
-            }
+            await client.deletePolicy(deleteRow.id);
             setDeleteRow(null);
             setDetailsRow(null);
             setExpandedRowId(null);
@@ -392,21 +375,6 @@ export const PolicyManagementWorkspace: React.FC<PolicyManagementWorkspaceProps>
                     </div>
                 </header>
 
-                {policyPage.family === 'feature' && (
-                    <div className='policy-management__backend-filter' role='tablist' aria-label='Feature backend'>
-                        <span className='policy-management__filter-label'>Filter by Backend</span>
-                        {(['all', ...FEATURE_BACKENDS] as FeatureBackendFilter[]).map(item => (
-                            <button
-                                key={item}
-                                type='button'
-                                className={`argo-button ${backend === item ? 'argo-button--base' : 'argo-button--base-o'} policy-management__button`}
-                                onClick={() => resetPageAnd(() => setBackend(item))}>
-                                {item === 'all' ? 'All' : item}
-                            </button>
-                        ))}
-                    </div>
-                )}
-
                 <div className='policy-management__filters' role='search' aria-label='Policy filters'>
                     <label className='policy-management__filter-field policy-management__filter-field--search'>
                         <span className='policy-management__filter-label'>Search</span>
@@ -479,7 +447,6 @@ export const PolicyManagementWorkspace: React.FC<PolicyManagementWorkspaceProps>
                     isLoading={isLoading}
                     expandedRowId={expandedRowId}
                     selectedRowId={selectedRowId}
-                    showBackendColumn={showBackendColumn}
                     onView={handleView}
                     onSelect={selectRow}
                 />
@@ -562,15 +529,14 @@ const PolicyTable: React.FC<{
     isLoading: boolean;
     expandedRowId: string | null;
     selectedRowId: string | null;
-    showBackendColumn: boolean;
     onView: (row: PolicyRow) => void;
     onSelect: (row: PolicyRow) => void;
-}> = ({rows, isLoading, expandedRowId, selectedRowId, showBackendColumn, onView, onSelect}) => {
+}> = ({rows, isLoading, expandedRowId, selectedRowId, onView, onSelect}) => {
     if (isLoading) {
         return (
             <div className='policy-management__table-scroll'>
                 <div className='argo-table-list policy-management__table'>
-                    <PolicyTableHeader showBackendColumn={showBackendColumn} />
+                    <PolicyTableHeader />
                     <div className='argo-table-list__row'>
                         <div className='row'>
                             <div className='columns small-12 policy-management__table-empty'>Loading...</div>
@@ -595,7 +561,7 @@ const PolicyTable: React.FC<{
     return (
         <div className='policy-management__table-scroll'>
             <div className='argo-table-list argo-table-list--clickable policy-management__table'>
-                <PolicyTableHeader showBackendColumn={showBackendColumn} />
+                <PolicyTableHeader />
                 {rows.map(row => {
                     const document = row.record.document || {};
                     const isExpanded = expandedRowId === row.id;
@@ -618,7 +584,7 @@ const PolicyTable: React.FC<{
                                         onChange={() => onSelect(row)}
                                     />
                                 </div>
-                                <div className={`columns ${showBackendColumn ? 'small-3' : 'small-4'}`}>
+                                <div className='columns small-4'>
                                     <div className='policy-management__policy-name-cell'>
                                         <button
                                             type='button'
@@ -630,11 +596,6 @@ const PolicyTable: React.FC<{
                                         </button>
                                     </div>
                                 </div>
-                                {showBackendColumn && (
-                                    <div className='columns small-1'>
-                                        <code className='policy-management__table-code'>{row.typeOrBackend}</code>
-                                    </div>
-                                )}
                                 <div className='columns small-1'>
                                     <span className='policy-management__table-cell-text'>{row.record.active ? 'active' : 'inactive'}</span>
                                 </div>
@@ -660,13 +621,12 @@ const PolicyTable: React.FC<{
     );
 };
 
-function PolicyTableHeader({showBackendColumn = false}: {showBackendColumn?: boolean}) {
+function PolicyTableHeader() {
     return (
         <div className='argo-table-list__head'>
             <div className='row'>
                 <div className='columns small-1' />
-                <div className={`columns ${showBackendColumn ? 'small-3' : 'small-4'}`}>POLICY NAME</div>
-                {showBackendColumn && <div className='columns small-1'>BACKEND</div>}
+                <div className='columns small-4'>POLICY NAME</div>
                 <div className='columns small-1'>Status</div>
                 <div className='columns small-1'>Owner</div>
                 <div className='columns small-4'>DESCRIPTION</div>

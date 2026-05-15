@@ -133,10 +133,12 @@ export function JobResultView({job, audit, auditError, auditLoading, auditRecove
 
     const runSummary = [
         {label: 'Model', value: renderValue(requestPayload?.model_path)},
+        {label: 'Public Name', value: renderValue(requestPayload?.public_model_name)},
         {label: 'GPUs', value: renderValue(requestPayload?.total_gpus)},
-        {label: 'Mode', value: renderValue(requestPayload?.mode)},
-        {label: 'Backend', value: renderValue(requestPayload?.backend)},
-        {label: 'Database Mode', value: renderValue(requestPayload?.database_mode)},
+        {label: 'Workload Policy', value: renderValue(requestPayload?.workload_policy)},
+        {label: 'Infra Policy', value: renderValue(requestPayload?.infrastructure_policy)},
+        {label: 'Serving Policy', value: renderValue(requestPayload?.serving_policy)},
+        {label: 'Runtime Policy', value: renderValue(requestPayload?.runtime_policy)},
         {label: 'Storage Root', value: renderValue(auditPayload?.storage_root)}
     ].filter(item => item.value !== '—');
 

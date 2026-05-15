@@ -57,7 +57,7 @@ export function DeployModelsPage() {
                             <div>
                                 <h2 className='deploy-models__panel-title'>Find Best Deployment Plan</h2>
                                 <p className='deploy-models__panel-description'>
-                                    Runs an exact preflight, picks a deployment shape, and writes manifests if the run succeeds.
+                                    Picks a deployment shape and writes manifests if the run succeeds.
                                 </p>
                             </div>
                             <div className='deploy-models__summary'>

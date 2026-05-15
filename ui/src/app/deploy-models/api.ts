@@ -14,7 +14,6 @@ import type {
     ApplicationListResponse,
     AuditTrailResponse,
     DefaultRequest,
-    DefaultPreflightResponse,
     JobAccepted,
     JobListResponse,
     JobResult,
@@ -121,10 +120,6 @@ function _stripUndefined(obj: unknown): Record<string, unknown> {
 
 export function submitDefault(req: DefaultRequest): Promise<JobAccepted> {
     return _request('POST', '/api/v1/default', _stripUndefined(req));
-}
-
-export function submitDefaultPreflight(req: DefaultRequest): Promise<DefaultPreflightResponse> {
-    return _request('POST', '/api/v1/default/preflight', _stripUndefined(req));
 }
 
 // ---------------------------------------------------------------------------

@@ -116,10 +116,7 @@ export interface AuditTrailResponse {
 // Request types
 // ---------------------------------------------------------------------------
 
-export type DeployMode = 'agg' | 'disagg';
-
 export interface DeployFields {
-    mode?: DeployMode;
     application_name?: string;
     public_model_name?: string;
 }
@@ -127,66 +124,10 @@ export interface DeployFields {
 export interface DefaultRequest extends DeployFields {
     model_path: string;
     total_gpus: number;
-    system?: string;
-    instance_type?: string;
-    // Advanced
-    decode_system?: string;
-    decode_instance_type?: string;
-    backend?: string;
-    backend_version?: string;
-    database_mode?: string;
-    isl?: number;
-    osl?: number;
-    ttft?: number;
-    tpot?: number;
-    request_latency?: number;
-    prefix?: number;
-    free_gpu_memory_fraction?: number;
-    max_seq_len?: number;
-    generator_set?: string[];
-    generator_config?: string;
-    generator_dynamo_version?: string;
-    top_n?: number;
-    save_dir?: string;
-}
-
-// ---------------------------------------------------------------------------
-// Response types
-// ---------------------------------------------------------------------------
-
-export interface SupportResponse {
-    model_path: string;
-    system: string;
-    backend: string;
-    agg_supported: boolean;
-    disagg_supported: boolean;
-    check_kind: string;
-    exact_match: boolean;
-    inferred_from_architecture: boolean;
-    architecture: string | null;
-    note: string;
-}
-
-export type PreflightSeverity = 'info' | 'warning' | 'error';
-export type PreflightStatus = 'ready' | 'warning' | 'failed';
-
-export interface PreflightMessage {
-    severity: PreflightSeverity;
-    code: string;
-    message: string;
-}
-
-export interface DefaultPreflightResponse {
-    status: PreflightStatus;
-    can_run_anyway: boolean;
-    mode: string | null;
-    system: string;
-    backend: string;
-    database_mode: string;
-    total_gpus: number;
-    compatibility: SupportResponse | null;
-    messages: PreflightMessage[];
-    recommended_database_mode: string | null;
+    workload_policy: string;
+    infrastructure_policy: string;
+    serving_policy: string;
+    runtime_policy: string;
 }
 
 // ---------------------------------------------------------------------------

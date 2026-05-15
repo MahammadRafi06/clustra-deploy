@@ -1,33 +1,18 @@
 export const REQUEST_POLICY_TYPES = ['workload', 'infrastructure', 'serving'] as const;
-export const FEATURE_BACKENDS = ['trtllm', 'vllm', 'sglang'] as const;
 
 export type RequestPolicyType = (typeof REQUEST_POLICY_TYPES)[number];
-export type FeatureBackend = (typeof FEATURE_BACKENDS)[number];
 export type RuntimeConfigKind = 'args' | 'envs';
 export type DeploymentType = 'agg' | 'disagg';
 export type CatalogScope = 'frontend' | 'engine';
-export type PolicyFamily = 'request' | 'feature' | 'runtime';
-export type PolicyKindFilter = 'all' | 'request' | 'feature' | 'runtime';
+export type PolicyFamily = 'request' | 'runtime';
+export type PolicyKindFilter = 'all' | 'request' | 'runtime';
 export type ActiveFilter = 'all' | 'active' | 'inactive';
 export type ManagedByFilter = 'all' | 'system' | 'custom';
-export type PolicyPageKey = RequestPolicyType | 'features' | 'runtime-config';
-export type FeatureBackendFilter = FeatureBackend | 'all';
+export type PolicyPageKey = RequestPolicyType | 'runtime-config';
 
 export interface PolicyRecord {
     policy_id: string;
     type: string;
-    active: boolean;
-    managed_by: string;
-    document: Record<string, unknown>;
-    created_at: string;
-    updated_at: string;
-    created_by?: string | null;
-    updated_by?: string | null;
-}
-
-export interface FeaturePolicyRecord {
-    policy_id: string;
-    backend: FeatureBackend;
     active: boolean;
     managed_by: string;
     document: Record<string, unknown>;
@@ -53,11 +38,6 @@ export interface PolicyTypeRecord {
 
 export interface PolicyListResponse {
     policies: PolicyRecord[];
-    total: number;
-}
-
-export interface FeaturePolicyListResponse {
-    feature_policies: FeaturePolicyRecord[];
     total: number;
 }
 
@@ -268,13 +248,6 @@ export interface ListPoliciesParams {
     offset?: number;
 }
 
-export interface ListFeaturePoliciesParams {
-    backend?: FeatureBackend;
-    active?: boolean;
-    limit?: number;
-    offset?: number;
-}
-
 export interface ListRuntimeConfigPoliciesParams {
     engine?: string;
     dynamo_version?: string;
@@ -313,9 +286,9 @@ export interface ListRuntimeConfigCatalogItemsParams {
 export interface PolicyRow {
     id: string;
     family: PolicyFamily;
-    kindLabel: 'Request policy' | 'Feature policy' | 'Runtime config policy';
+    kindLabel: 'Request policy' | 'Runtime config policy';
     typeOrBackend: string;
-    record: PolicyRecord | FeaturePolicyRecord | RuntimeConfigPolicyRecord;
+    record: PolicyRecord | RuntimeConfigPolicyRecord;
 }
 
 export interface PolicyApiClient {
@@ -326,11 +299,6 @@ export interface PolicyApiClient {
     createPolicy(document: Record<string, unknown>): Promise<PolicyRecord>;
     updatePolicy(policyId: string, document: Record<string, unknown>): Promise<PolicyRecord>;
     deletePolicy(policyId: string): Promise<void>;
-    listFeaturePolicies(params?: ListFeaturePoliciesParams): Promise<FeaturePolicyListResponse>;
-    getFeaturePolicy(policyId: string): Promise<FeaturePolicyRecord>;
-    createFeaturePolicy(document: Record<string, unknown>): Promise<FeaturePolicyRecord>;
-    updateFeaturePolicy(policyId: string, document: Record<string, unknown>): Promise<FeaturePolicyRecord>;
-    deleteFeaturePolicy(policyId: string): Promise<void>;
     listRuntimeConfigPolicies(params?: ListRuntimeConfigPoliciesParams): Promise<RuntimeConfigPolicyListResponse>;
     getRuntimeConfigPolicy(policyId: string): Promise<RuntimeConfigPolicyRecord>;
     createRuntimeConfigPolicy(document: Record<string, unknown>): Promise<RuntimeConfigPolicyRecord>;

@@ -2,8 +2,7 @@ import * as React from 'react';
 import * as renderer from 'react-test-renderer';
 import {act, ReactTestInstance} from 'react-test-renderer';
 
-import type {FeaturePolicyRecord, PolicyApiClient, PolicyRecord, PolicyRow, RuntimeConfigPolicyRecord, RuntimeConfigRoleSchemaRecord} from './api/types';
-import {ArgsBuilder} from './components/ArgsBuilder';
+import type {PolicyApiClient, PolicyRecord, PolicyRow, RuntimeConfigPolicyRecord, RuntimeConfigRoleSchemaRecord} from './api/types';
 import {PolicyDetailsDrawer} from './components/PolicyDetailsDrawer';
 import {POLICY_PAGE_CONFIGS, PolicyManagementWorkspace, resolvePolicyPagePath} from './pages';
 
@@ -18,7 +17,6 @@ jest.mock('argo-ui', () => {
 
 const workloadPage = POLICY_PAGE_CONFIGS.find(page => page.key === 'workload');
 const infrastructurePage = POLICY_PAGE_CONFIGS.find(page => page.key === 'infrastructure');
-const featurePage = POLICY_PAGE_CONFIGS.find(page => page.key === 'features');
 const runtimePage = POLICY_PAGE_CONFIGS.find(page => page.key === 'runtime-config');
 
 const requestPolicy: PolicyRecord = {
@@ -35,25 +33,6 @@ const requestPolicy: PolicyRecord = {
         active: true,
         metadata: {ui: {sort_order: 100}, tags: ['team-a']},
         effects: {resources: {gpu: 1}}
-    },
-    created_at: '2026-01-01T00:00:00Z',
-    updated_at: '2026-01-02T00:00:00Z'
-};
-
-const systemFeaturePolicy: FeaturePolicyRecord = {
-    policy_id: 'sglang-system',
-    backend: 'sglang',
-    active: true,
-    managed_by: 'system',
-    document: {
-        schema_version: 1,
-        policy_id: 'sglang-system',
-        backend: 'sglang',
-        feature: 'routing',
-        display_name: 'System routing',
-        active: true,
-        metadata: {ui: {sort_order: 10}, tags: ['sglang']},
-        effects: {agg: {frontend: {args: ['--router-mode', 'kv', '--flag-only']}, worker: ['--max-gpu-budget', '-1']}, disagg: {frontend: {args: {}}, prefill: ['--trust-remote-code'], decode: {args: {}}}}
     },
     created_at: '2026-01-01T00:00:00Z',
     updated_at: '2026-01-02T00:00:00Z'
@@ -118,16 +97,6 @@ function makeClient(overrides: Partial<PolicyApiClient> = {}): PolicyApiClient {
         createPolicy: jest.fn().mockResolvedValue(requestPolicy),
         updatePolicy: jest.fn().mockResolvedValue(requestPolicy),
         deletePolicy: jest.fn().mockResolvedValue(undefined),
-        listFeaturePolicies: jest.fn().mockImplementation(params =>
-            Promise.resolve({
-                feature_policies: params?.backend === 'sglang' ? [systemFeaturePolicy] : [],
-                total: params?.backend === 'sglang' ? 1 : 0
-            })
-        ),
-        getFeaturePolicy: jest.fn().mockResolvedValue(systemFeaturePolicy),
-        createFeaturePolicy: jest.fn().mockResolvedValue(systemFeaturePolicy),
-        updateFeaturePolicy: jest.fn().mockResolvedValue(systemFeaturePolicy),
-        deleteFeaturePolicy: jest.fn().mockResolvedValue(undefined),
         listRuntimeConfigPolicies: jest.fn().mockResolvedValue({runtime_config_policies: [], total: 0}),
         getRuntimeConfigPolicy: jest.fn(),
         createRuntimeConfigPolicy: jest.fn(),
@@ -194,8 +163,8 @@ test('routes resolve one page per policy type', () => {
     expect(resolvePolicyPagePath('/policy-management/workload').key).toBe('workload');
     expect(resolvePolicyPagePath('/policy-management/infrastructure').key).toBe('infrastructure');
     expect(resolvePolicyPagePath('/policy-management/serving').key).toBe('serving');
-    expect(resolvePolicyPagePath('/policy-management/features').key).toBe('features');
     expect(resolvePolicyPagePath('/policy-management/runtime-config').key).toBe('runtime-config');
+    expect(resolvePolicyPagePath('/policy-management/unknown').key).toBe('workload');
 });
 
 test('request pages list only their policy type', async () => {
@@ -204,7 +173,6 @@ test('request pages list only their policy type', async () => {
     await renderWorkspace(client, infrastructurePage);
 
     expect(client.listPolicies).toHaveBeenCalledWith(expect.objectContaining({type: 'infrastructure', active: true, limit: 25, offset: 0}));
-    expect(client.listFeaturePolicies).not.toHaveBeenCalled();
 });
 
 test('runtime config library loads schema-driven resources', async () => {
@@ -337,43 +305,6 @@ test('create request flow defaults to the page type and uses policy-type effects
     );
 });
 
-test('create flow posts a custom feature policy after backend selection', async () => {
-    const client = makeClient({
-        listPolicies: jest.fn().mockResolvedValue({policies: [], total: 0}),
-        listFeaturePolicies: jest.fn().mockResolvedValue({feature_policies: [], total: 0})
-    });
-    const tree = await renderWorkspace(client, featurePage);
-
-    act(() => {
-        findButton(tree.root, 'Create').props.onClick();
-    });
-    act(() => {
-        findLastButton(tree.root, 'sglang').props.onClick();
-    });
-    act(() => {
-        findInput(tree.root, 'policy_id').props.onChange({target: {value: 'sglang-kv'}});
-    });
-    act(() => {
-        findInput(tree.root, 'feature').props.onChange({target: {value: 'kv-routing'}});
-    });
-    act(() => {
-        findInput(tree.root, 'display_name').props.onChange({target: {value: 'SGLang KV routing'}});
-    });
-    act(() => {
-        tree.root.findByType('form').props.onSubmit({preventDefault: jest.fn()});
-    });
-    await flush();
-
-    expect(client.createFeaturePolicy).toHaveBeenCalledWith(
-        expect.objectContaining({
-            policy_id: 'sglang-kv',
-            backend: 'sglang',
-            feature: 'kv-routing',
-            display_name: 'SGLang KV routing'
-        })
-    );
-});
-
 test('edit flow fetches latest custom policy before update', async () => {
     const client = makeClient();
     const tree = await renderWorkspace(client, workloadPage);
@@ -418,21 +349,6 @@ test('delete flow soft-disables custom request policies', async () => {
     expect(client.deletePolicy).toHaveBeenCalledWith('custom-workload');
 });
 
-test('system-managed feature policies stay read-only', async () => {
-    const client = makeClient();
-    const tree = await renderWorkspace(client, featurePage);
-
-    act(() => {
-        findInput(tree.root, 'Select sglang-system').props.onChange();
-    });
-
-    expect(findButton(tree.root, 'Delete').props.disabled).toBe(true);
-    act(() => {
-        findButton(tree.root, 'Actions').props.onClick();
-    });
-    expect(findButton(tree.root, 'Edit').props.disabled).toBe(true);
-});
-
 test('request page pagination uses server offset for the selected type', async () => {
     const client = makeClient({
         listPolicies: jest.fn().mockResolvedValue({policies: [requestPolicy], total: 50})
@@ -470,82 +386,4 @@ test('request search fetches all records before local filtering', async () => {
 
     expect(listPolicies).toHaveBeenCalledWith(expect.objectContaining({type: 'workload', active: true, limit: 200, offset: 0}));
     expect(textContent(tree.root)).toContain('custom-later');
-});
-
-test('feature policies page filters by backend tab', async () => {
-    const client = makeClient();
-    const tree = await renderWorkspace(client, featurePage);
-
-    act(() => {
-        findButton(tree.root, 'sglang').props.onClick();
-    });
-    await flush(2);
-
-    expect(client.listFeaturePolicies).toHaveBeenCalledWith(expect.objectContaining({backend: 'sglang', active: true, limit: 25, offset: 0}));
-});
-
-test('backend-specific feature managed_by filter fetches all records before local filtering', async () => {
-    const customFeaturePolicy: FeaturePolicyRecord = {
-        ...systemFeaturePolicy,
-        policy_id: 'sglang-custom',
-        managed_by: 'custom',
-        document: {...systemFeaturePolicy.document, policy_id: 'sglang-custom', display_name: 'Custom feature'}
-    };
-    const listFeaturePolicies = jest.fn().mockImplementation(params =>
-        Promise.resolve({
-            feature_policies: params?.backend === 'sglang' && params?.limit === 200 ? [customFeaturePolicy] : [],
-            total: params?.backend === 'sglang' ? 26 : 0
-        })
-    );
-    const client = makeClient({listFeaturePolicies});
-    const tree = await renderWorkspace(client, featurePage);
-
-    listFeaturePolicies.mockClear();
-    act(() => {
-        findButton(tree.root, 'sglang').props.onClick();
-    });
-    await flush(2);
-    expect(listFeaturePolicies).toHaveBeenCalledWith(expect.objectContaining({backend: 'sglang', active: true, limit: 25, offset: 0}));
-
-    listFeaturePolicies.mockClear();
-    act(() => {
-        findInput(tree.root, 'Managed by filter').props.onChange({target: {value: 'custom'}});
-    });
-    await flush(2);
-
-    expect(listFeaturePolicies).toHaveBeenCalledWith(expect.objectContaining({backend: 'sglang', active: true, limit: 200, offset: 0}));
-    expect(textContent(tree.root)).toContain('sglang-custom');
-});
-
-test('array-form feature args display in details and edit as token arrays', () => {
-    const row: PolicyRow = {
-        id: 'sglang-system',
-        family: 'feature',
-        kindLabel: 'Feature policy',
-        typeOrBackend: 'sglang',
-        record: systemFeaturePolicy
-    };
-    const details = renderer.create(<PolicyDetailsDrawer row={row} onClose={jest.fn()} />);
-
-    expect(textContent(details.root)).toContain('--router-mode');
-    expect(textContent(details.root)).toContain('kv');
-    expect(textContent(details.root)).toContain('--flag-only');
-    expect(textContent(details.root)).toContain('--trust-remote-code');
-    expect(textContent(details.root)).toContain('--max-gpu-budget');
-    expect(textContent(details.root)).toContain('-1');
-
-    const onChange = jest.fn();
-    const builder = renderer.create(<ArgsBuilder document={systemFeaturePolicy.document} onChange={onChange} />);
-    const valueInputs = builder.root.findAll(node => node.type === 'input' && node.props['aria-label'] === 'agg frontend value');
-    act(() => {
-        valueInputs[0].props.onChange({target: {value: 'round-robin'}});
-    });
-
-    expect(onChange.mock.calls[0][0].effects.agg.frontend.args).toEqual(['--router-mode', 'round-robin', '--flag-only']);
-
-    const workerValueInputs = builder.root.findAll(node => node.type === 'input' && node.props['aria-label'] === 'agg worker value');
-    act(() => {
-        workerValueInputs[0].props.onChange({target: {value: '-2'}});
-    });
-    expect(onChange.mock.calls[1][0].effects.agg.worker).toEqual(['--max-gpu-budget', '-2']);
 });
