@@ -141,20 +141,63 @@ const policyManagementNavItems: NavItem[] = [
         iconClassName: 'fa fa-network-wired'
     },
     {
-        title: 'Manifest Policies',
-        tooltip: 'Manage manifest generation and patch policies.',
-        path: '/policy-management/manifest',
-        iconClassName: 'fa fa-file-code'
-    },
-    {
         title: 'Feature Policies',
         tooltip: 'Manage backend-specific engine feature policies.',
         path: '/policy-management/features',
         iconClassName: 'fa fa-sliders-h'
+    },
+    {
+        title: 'Runtime Config Policies',
+        tooltip: 'Manage role-scoped runtime args and env policies.',
+        path: '/policy-management/runtime-config',
+        iconClassName: 'fa fa-cogs'
     }
 ];
 
 const versionLoader = services.version.version();
+const isDevelopmentBuild = process.env.NODE_ENV !== 'production';
+
+const defaultAuthSettings: AuthSettings = {
+    url: '',
+    statusBadgeEnabled: false,
+    statusBadgeRootUrl: '',
+    googleAnalytics: {
+        trackingID: '',
+        anonymizeUsers: true
+    },
+    dexConfig: {
+        connectors: []
+    },
+    oidcConfig: null,
+    help: {
+        chatUrl: '',
+        chatText: '',
+        binaryUrls: {}
+    },
+    userLoginsDisabled: false,
+    kustomizeVersions: [],
+    uiCssURL: '',
+    uiBannerContent: '',
+    uiBannerURL: '',
+    uiBannerPermanent: false,
+    uiBannerPosition: '',
+    execEnabled: false,
+    appsInAnyNamespaceEnabled: false,
+    hydratorEnabled: false,
+    syncWithReplaceAllowed: false
+};
+
+async function canSeeClustraPage(subresource: string): Promise<boolean> {
+    try {
+        return await services.accounts.canI('clustra-pages', 'get', subresource);
+    } catch (error) {
+        if (isDevelopmentBuild) {
+            console.warn(`Showing Clustra page "${subresource}" because the local Argo CD permission API is unavailable.`, error);
+            return true;
+        }
+        return false;
+    }
+}
 
 async function isExpiredSSO() {
     try {
@@ -205,13 +248,22 @@ export class App extends React.Component<{}, {popupProps: PopupProps; showVersio
         this.subscribeUnauthorized().then(subscription => {
             this.unauthorizedSubscription = subscription;
         });
-        const [canSeeModelCache, canSeeDeployModels] = await Promise.all([
-            services.accounts.canI('clustra-pages', 'get', 'model-cache').catch(() => false),
-            services.accounts.canI('clustra-pages', 'get', 'deploy-models').catch(() => false)
-        ]);
-        const authSettings = await services.authService.settings();
+        const [canSeeModelCache, canSeeDeployModels] = await Promise.all([canSeeClustraPage('model-cache'), canSeeClustraPage('deploy-models')]);
+        const authSettings = await services.authService.settings().catch(error => {
+            if (isDevelopmentBuild) {
+                console.warn('Using local development auth settings because the Argo CD settings API is unavailable.', error);
+                return defaultAuthSettings;
+            }
+            throw error;
+        });
         const {trackingID, anonymizeUsers} = authSettings.googleAnalytics || {trackingID: '', anonymizeUsers: true};
-        const {loggedIn, username} = await services.users.get();
+        const {loggedIn, username} = await services.users.get().catch(error => {
+            if (isDevelopmentBuild) {
+                console.warn('Using local development user info because the Argo CD user API is unavailable.', error);
+                return {loggedIn: true, username: 'local-dev', iss: 'local-dev', groups: []};
+            }
+            throw error;
+        });
         if (trackingID) {
             const ga = await import('react-ga');
             ga.initialize(trackingID);

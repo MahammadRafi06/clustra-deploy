@@ -1,4 +1,4 @@
-import {setArgoProxyContext, submitDefault, submitGenerate} from './api';
+import {setArgoProxyContext, submitDefault} from './api';
 
 const mockFetch = jest.fn();
 
@@ -60,10 +60,10 @@ test('submitDefault includes explicit public model name', async () => {
     );
 });
 
-test('submitGenerate omits blank public model name so backend derives it from model id', async () => {
+test('submitDefault omits blank public model name so backend derives it from model id', async () => {
     mockFetch.mockResolvedValue(jsonResponse({job_id: 'job-2', status: 'pending', poll_url: '/jobs/job-2'}));
 
-    await submitGenerate({
+    await submitDefault({
         model_path: 'Qwen/Qwen3-0.6B',
         public_model_name: '',
         total_gpus: 1,

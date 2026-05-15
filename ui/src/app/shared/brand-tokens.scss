@@ -18,9 +18,11 @@ $brand-blue: #2563eb;
 $brand-blue-dark: #1d4ed8;
 $brand-indigo: #4f46e5;
 
-// Typography
-$brand-font-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-$brand-font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace;
+// Typography. Geist is Vercel's open-source typeface — the modern
+// enterprise SaaS default in 2025 (Vercel, Linear-adjacent products,
+// Resend, etc.). System-font fallbacks keep first-paint snappy.
+$brand-font-sans: 'Geist', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+$brand-font-mono: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace;
 
 // Legacy color names now point at the website system.
 $brand-navy: $brand-site-bg;

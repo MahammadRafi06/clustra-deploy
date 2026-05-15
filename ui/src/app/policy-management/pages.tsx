@@ -3,7 +3,18 @@ import {useMemo, useState} from 'react';
 
 import {EmptyState} from '../shared/components';
 import {policyApiClient} from './api/client';
-import type {ActiveFilter, FeatureBackendFilter, ManagedByFilter, PolicyApiClient, PolicyFamily, PolicyPageKey, PolicyRow, RequestPolicyType} from './api/types';
+import type {
+    ActiveFilter,
+    FeatureBackendFilter,
+    FeaturePolicyRecord,
+    ManagedByFilter,
+    PolicyApiClient,
+    PolicyFamily,
+    PolicyPageKey,
+    PolicyRecord,
+    PolicyRow,
+    RequestPolicyType
+} from './api/types';
 import {FEATURE_BACKENDS} from './api/types';
 import {PolicyConfirmDialog} from './components/PolicyConfirmDialog';
 import {PolicyDetailsDrawer} from './components/PolicyDetailsDrawer';
@@ -11,6 +22,7 @@ import {PolicyError} from './components/PolicyError';
 import {PolicyFormDrawer} from './components/PolicyFormDrawer';
 import {description as policyDescription, displayName, formatRelativeTime} from './formatters';
 import {PolicyListFilters, usePolicies} from './hooks/usePolicies';
+import {RuntimeConfigLibrary} from './runtime-config/v2/RuntimeConfigLibrary';
 import {buildUsageSnippet, formatPolicyJson} from './validation';
 
 const DEFAULT_PAGE_SIZE = 25;
@@ -29,6 +41,12 @@ export type PolicyPageConfig =
           family: 'feature';
           title: string;
           description: string;
+      }
+    | {
+          key: 'runtime-config';
+          family: 'runtime';
+          title: string;
+          description: string;
       };
 
 export const POLICY_PAGE_CONFIGS: PolicyPageConfig[] = [
@@ -41,8 +59,8 @@ export const POLICY_PAGE_CONFIGS: PolicyPageConfig[] = [
         description: 'Manage infrastructure selection and placement policies.'
     },
     {key: 'serving', family: 'request', requestType: 'serving', title: 'Serving Policies', description: 'Manage serving runtime and deployment policies.'},
-    {key: 'manifest', family: 'request', requestType: 'manifest', title: 'Manifest Policies', description: 'Manage manifest generation and patch policies.'},
-    {key: 'features', family: 'feature', title: 'Feature Policies', description: 'Manage backend-specific engine feature policies.'}
+    {key: 'features', family: 'feature', title: 'Feature Policies', description: 'Manage backend-specific engine feature policies.'},
+    {key: 'runtime-config', family: 'runtime', title: 'Runtime Config Policies', description: 'Manage role-scoped engine and frontend runtime configuration policies.'}
 ];
 
 export function resolvePolicyPagePath(pathname: string): PolicyPageConfig {
@@ -53,16 +71,16 @@ export function resolvePolicyPagePath(pathname: string): PolicyPageConfig {
 type EditorState =
     | {
           mode: 'create';
-          family: PolicyFamily;
+          family: Exclude<PolicyFamily, 'runtime'>;
           document?: Record<string, unknown> | null;
           original?: null;
           requestType?: RequestPolicyType;
       }
     | {
           mode: 'edit';
-          family: PolicyFamily;
+          family: Exclude<PolicyFamily, 'runtime'>;
           document: Record<string, unknown>;
-          original: PolicyRow['record'];
+          original: PolicyRecord | FeaturePolicyRecord;
       };
 
 interface PolicyManagementWorkspaceProps {
@@ -86,6 +104,10 @@ function rowAriaLabel(action: string, row: PolicyRow) {
 }
 
 export const PolicyManagementWorkspace: React.FC<PolicyManagementWorkspaceProps> = ({client = policyApiClient, page: policyPage}) => {
+    if (policyPage.family === 'runtime') {
+        return <RuntimeConfigLibrary client={client} title={policyPage.title} description={policyPage.description} />;
+    }
+
     const [search, setSearch] = useState('');
     const [active, setActive] = useState<ActiveFilter>('active');
     const [managedBy, setManagedBy] = useState<ManagedByFilter>('all');
@@ -156,6 +178,9 @@ export const PolicyManagementWorkspace: React.FC<PolicyManagementWorkspaceProps>
     }
 
     async function handleEdit(row: PolicyRow) {
+        if (row.family === 'runtime') {
+            return;
+        }
         setActionError(null);
         selectRow(row);
         setDetailsRow(null);
@@ -174,6 +199,9 @@ export const PolicyManagementWorkspace: React.FC<PolicyManagementWorkspaceProps>
     }
 
     function handleDuplicate(row: PolicyRow) {
+        if (row.family === 'runtime') {
+            return;
+        }
         setActionError(null);
         selectRow(row);
         setDetailsRow(null);
@@ -195,7 +223,7 @@ export const PolicyManagementWorkspace: React.FC<PolicyManagementWorkspaceProps>
         setActionsOpen(false);
         setEditor({
             mode: 'create',
-            family: policyPage.family,
+            family: policyPage.family as Exclude<PolicyFamily, 'runtime'>,
             requestType: policyPage.family === 'request' ? policyPage.requestType : undefined,
             document: null,
             original: null
@@ -299,23 +327,29 @@ export const PolicyManagementWorkspace: React.FC<PolicyManagementWorkspaceProps>
     return (
         <main className='policy-management' role='main' aria-label='AI Configurator Policies'>
             <section className='policy-management__panel'>
-                <div className='policy-management__list-header'>
-                    <div>
-                        <div className='policy-management__page-title'>
-                            {policyPage.title} <span className='policy-management__count'>({data.total})</span> <span className='policy-management__info-link'>Info</span>
-                        </div>
-                        <div className='policy-management__section-description'>{policyPage.description}</div>
+                <header className='policy-management__hero'>
+                    <div className='policy-management__hero-titles'>
+                        <div className='rcfg-v2-library__eyebrow'>Policies</div>
+                        <h1 className='policy-management__page-title'>
+                            {policyPage.title}
+                            <span className='policy-management__count' aria-label={`${data.total} total`}>{data.total}</span>
+                        </h1>
+                        <p className='policy-management__section-description'>{policyPage.description}</p>
                     </div>
-                    <div className='policy-management__toolbar-actions'>
+                    <div className='policy-management__hero-actions'>
                         <button
                             type='button'
-                            className='argo-button argo-button--base-o policy-management__round-button'
+                            className='rcfg-v2-icon-btn'
                             aria-label='Refresh policies'
                             title='Refresh policies'
                             onClick={() => refetch()}>
                             <i className='fa fa-sync' aria-hidden='true' />
                         </button>
-                        {selectedRow && <span className='policy-management__selected-target'>Selected: {selectedRow.id}</span>}
+                        {selectedRow && (
+                            <span className='policy-management__selected-target'>
+                                Selected: <code>{selectedRow.id}</code>
+                            </span>
+                        )}
                         <div className='policy-management__action-menu'>
                             <button
                                 type='button'
@@ -346,17 +380,17 @@ export const PolicyManagementWorkspace: React.FC<PolicyManagementWorkspaceProps>
                         </div>
                         <button
                             type='button'
-                            className='argo-button argo-button--base-o policy-management__button'
+                            className='argo-button argo-button--base-o policy-management__button policy-management__button--danger-outline'
                             disabled={!selectedRow || selectedIsSystem}
                             title={selectedIsSystem ? 'System-managed policies are read-only' : 'Delete selected policy'}
                             onClick={handleSelectedDelete}>
                             Delete
                         </button>
                         <button type='button' className='argo-button argo-button--base policy-management__create-button' onClick={handleCreate}>
-                            Create policy
+                            <i className='fa fa-plus' aria-hidden='true' /> Create policy
                         </button>
                     </div>
-                </div>
+                </header>
 
                 {policyPage.family === 'feature' && (
                     <div className='policy-management__backend-filter' role='tablist' aria-label='Feature backend'>

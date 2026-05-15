@@ -2,7 +2,7 @@ import * as React from 'react';
 import * as renderer from 'react-test-renderer';
 import {act, ReactTestInstance} from 'react-test-renderer';
 
-import type {FeaturePolicyRecord, PolicyApiClient, PolicyRecord, PolicyRow} from './api/types';
+import type {FeaturePolicyRecord, PolicyApiClient, PolicyRecord, PolicyRow, RuntimeConfigPolicyRecord, RuntimeConfigRoleSchemaRecord} from './api/types';
 import {ArgsBuilder} from './components/ArgsBuilder';
 import {PolicyDetailsDrawer} from './components/PolicyDetailsDrawer';
 import {POLICY_PAGE_CONFIGS, PolicyManagementWorkspace, resolvePolicyPagePath} from './pages';
@@ -19,6 +19,7 @@ jest.mock('argo-ui', () => {
 const workloadPage = POLICY_PAGE_CONFIGS.find(page => page.key === 'workload');
 const infrastructurePage = POLICY_PAGE_CONFIGS.find(page => page.key === 'infrastructure');
 const featurePage = POLICY_PAGE_CONFIGS.find(page => page.key === 'features');
+const runtimePage = POLICY_PAGE_CONFIGS.find(page => page.key === 'runtime-config');
 
 const requestPolicy: PolicyRecord = {
     policy_id: 'custom-workload',
@@ -58,6 +59,51 @@ const systemFeaturePolicy: FeaturePolicyRecord = {
     updated_at: '2026-01-02T00:00:00Z'
 };
 
+const runtimeConfigPolicy: RuntimeConfigPolicyRecord = {
+    policy_id: 'runtime-smoke',
+    engine: 'sglang',
+    engine_version: '0.5.10.post1',
+    dynamo_version: '1.1.1',
+    deployment_type: 'disagg',
+    active: true,
+    managed_by: 'alice',
+    document: {
+        schema_version: 1,
+        policy_id: 'runtime-smoke',
+        display_name: 'Runtime smoke',
+        description: 'Runtime details test',
+        engine: 'sglang',
+        engine_version: '0.5.10.post1',
+        dynamo_version: '1.1.1',
+        deployment_type: 'disagg',
+        selections: {
+            frontend: {args: {router_mode: 'kv'}, envs: {}},
+            prefill: {args: {enable_lora: true}, envs: {DYN_SGL_EMBEDDING_WORKER: true}}
+        }
+    },
+    created_at: '2026-01-01T00:00:00Z',
+    updated_at: '2026-01-02T00:00:00Z',
+    created_by: 'alice',
+    updated_by: 'alice'
+};
+
+const runtimeRoleSchema: RuntimeConfigRoleSchemaRecord = {
+    deployment_type: 'disagg',
+    active: true,
+    managed_by: 'system',
+    schema: {
+        deployment_type: 'disagg',
+        active: true,
+        roles: [
+            {role: 'frontend', label: 'Frontend', catalog_scope: 'frontend'},
+            {role: 'prefill', label: 'Prefill Worker', catalog_scope: 'engine'},
+            {role: 'decode', label: 'Decode Worker', catalog_scope: 'engine'}
+        ]
+    },
+    created_at: '2026-01-01T00:00:00Z',
+    updated_at: '2026-01-02T00:00:00Z'
+};
+
 function makeClient(overrides: Partial<PolicyApiClient> = {}): PolicyApiClient {
     return {
         listPolicyTypes: jest.fn().mockResolvedValue({policy_types: [], total: 0}),
@@ -82,6 +128,19 @@ function makeClient(overrides: Partial<PolicyApiClient> = {}): PolicyApiClient {
         createFeaturePolicy: jest.fn().mockResolvedValue(systemFeaturePolicy),
         updateFeaturePolicy: jest.fn().mockResolvedValue(systemFeaturePolicy),
         deleteFeaturePolicy: jest.fn().mockResolvedValue(undefined),
+        listRuntimeConfigPolicies: jest.fn().mockResolvedValue({runtime_config_policies: [], total: 0}),
+        getRuntimeConfigPolicy: jest.fn(),
+        createRuntimeConfigPolicy: jest.fn(),
+        updateRuntimeConfigPolicy: jest.fn(),
+        deleteRuntimeConfigPolicy: jest.fn().mockResolvedValue(undefined),
+        exportRuntimeConfigPolicy: jest.fn(),
+        resolveRuntimeConfigPolicy: jest.fn(),
+        listRuntimeConfigRoleSchemas: jest.fn().mockResolvedValue({role_schemas: [], total: 0}),
+        getRuntimeConfigRoleSchema: jest.fn(),
+        updateRuntimeConfigRoleSchema: jest.fn(),
+        listRuntimeConfigCatalogs: jest.fn().mockResolvedValue({catalogs: [], total: 0}),
+        deleteRuntimeConfigCatalog: jest.fn(),
+        listRuntimeConfigCatalogItems: jest.fn().mockResolvedValue({items: [], total: 0}),
         ...overrides
     };
 }
@@ -135,8 +194,8 @@ test('routes resolve one page per policy type', () => {
     expect(resolvePolicyPagePath('/policy-management/workload').key).toBe('workload');
     expect(resolvePolicyPagePath('/policy-management/infrastructure').key).toBe('infrastructure');
     expect(resolvePolicyPagePath('/policy-management/serving').key).toBe('serving');
-    expect(resolvePolicyPagePath('/policy-management/manifest').key).toBe('manifest');
     expect(resolvePolicyPagePath('/policy-management/features').key).toBe('features');
+    expect(resolvePolicyPagePath('/policy-management/runtime-config').key).toBe('runtime-config');
 });
 
 test('request pages list only their policy type', async () => {
@@ -146,6 +205,70 @@ test('request pages list only their policy type', async () => {
 
     expect(client.listPolicies).toHaveBeenCalledWith(expect.objectContaining({type: 'infrastructure', active: true, limit: 25, offset: 0}));
     expect(client.listFeaturePolicies).not.toHaveBeenCalled();
+});
+
+test('runtime config library loads schema-driven resources', async () => {
+    const client = makeClient();
+
+    await renderWorkspace(client, runtimePage);
+
+    // v2 library starts with the "All status" filter so archived policies are visible
+    // for audit; client-side filters narrow the view from there.
+    expect(client.listRuntimeConfigPolicies).toHaveBeenCalledWith(expect.objectContaining({limit: 200, offset: 0}));
+    expect(client.listRuntimeConfigCatalogs).toHaveBeenCalledWith(expect.objectContaining({active: true, limit: 200, offset: 0}));
+    expect(client.listRuntimeConfigRoleSchemas).toHaveBeenCalledWith(expect.objectContaining({active: true, limit: 20, offset: 0}));
+    expect(client.listPolicies).not.toHaveBeenCalled();
+});
+
+test('runtime config library renders a policy card; name opens details, Edit opens the editor', async () => {
+    const client = makeClient({
+        listRuntimeConfigPolicies: jest.fn().mockResolvedValue({runtime_config_policies: [runtimeConfigPolicy], total: 1}),
+        getRuntimeConfigPolicy: jest.fn().mockResolvedValue(runtimeConfigPolicy),
+        listRuntimeConfigRoleSchemas: jest.fn().mockResolvedValue({role_schemas: [runtimeRoleSchema], total: 1})
+    });
+    const tree = await renderWorkspace(client, runtimePage);
+
+    // The library renders cards (no table). The card title is the display name, with
+    // the policy_id rendered as a <code> tag. Both should be visible.
+    const text = textContent(tree.root);
+    expect(text).toContain('Runtime smoke');
+    expect(text).toContain('runtime-smoke');
+
+    // Click the display-name button to open the read-only details drawer.
+    const titleButton = tree.root.find(node =>
+        node.type === 'button' &&
+        typeof node.props.className === 'string' &&
+        node.props.className.includes('rcfg-v2-card__name')
+    );
+    act(() => {
+        titleButton.props.onClick();
+    });
+    await flush(2);
+
+    // The drawer should be rendered and not yet hit the get-policy endpoint
+    // (the drawer reads from the list response). Editor stays closed.
+    const drawer = tree.root.find(node => typeof node.props?.className === 'string' && node.props.className.includes('rcfg-v2-drawer'));
+    expect(drawer).toBeDefined();
+    expect(client.getRuntimeConfigPolicy).not.toHaveBeenCalled();
+
+    // The drawer footer's Edit button transitions to the editor. The drawer
+    // uses the primary create-button class to match the wizard/library hero,
+    // which distinguishes it from the card's lighter Edit action.
+    const drawerEditButton = tree.root.find(node =>
+        node.type === 'button' &&
+        typeof node.props.className === 'string' &&
+        node.props.className.includes('policy-management__create-button') &&
+        typeof node.children?.[0] === 'string' &&
+        node.children[0] === 'Edit'
+    );
+    act(() => {
+        drawerEditButton.props.onClick();
+    });
+    await flush(2);
+
+    expect(client.getRuntimeConfigPolicy).toHaveBeenCalledWith('runtime-smoke');
+    expect(textContent(tree.root)).toContain('Edit policy');
+    expect(findInput(tree.root, 'display_name').props.value).toBe('Runtime smoke');
 });
 
 test('policy name opens details without adding an extra table row or AWS-style icons', async () => {

@@ -12,6 +12,8 @@
     "postinstall": "cp -f src/assets/favicon/* node_modules/argo-ui/src/assets/favicon/ 2>/dev/null || true"
   },
   "dependencies": {
+    "@fontsource/geist-mono": "^5.2.7",
+    "@fontsource/geist-sans": "^5.2.5",
     "@fontsource/inter": "^5.2.8",
     "@fortawesome/fontawesome-free": "^6.7.2",
     "@types/react-virtualized": "^9.21.21",

@@ -3,6 +3,10 @@ export interface ErrorInfo {
     requestId: string | null;
     traceId: string | null;
     status: number | null;
+    /** Machine-readable code from RFC 7807 extension (e.g. "policy.constraint_violation"). */
+    code: string | null;
+    /** Dotted JSON path to the offending field from RFC 7807 extension. */
+    fieldPath: string | null;
 }
 
 interface ApiErrorInit {
@@ -10,19 +14,25 @@ interface ApiErrorInit {
     status?: number;
     requestId?: string | null;
     traceId?: string | null;
+    code?: string | null;
+    fieldPath?: string | null;
 }
 
 export class ApiError extends Error {
     status: number | null;
     requestId: string | null;
     traceId: string | null;
+    code: string | null;
+    fieldPath: string | null;
 
-    constructor({message, status, requestId, traceId}: ApiErrorInit) {
+    constructor({message, status, requestId, traceId, code, fieldPath}: ApiErrorInit) {
         super(message);
         this.name = 'ApiError';
         this.status = status ?? null;
         this.requestId = requestId ?? null;
         this.traceId = traceId ?? null;
+        this.code = code ?? null;
+        this.fieldPath = fieldPath ?? null;
     }
 }
 
@@ -65,7 +75,9 @@ export function toErrorInfo(error: unknown): ErrorInfo {
             message: error.message,
             requestId: error.requestId,
             traceId: error.traceId,
-            status: error.status
+            status: error.status,
+            code: error.code,
+            fieldPath: error.fieldPath
         };
     }
     if (error instanceof Error) {
@@ -73,7 +85,9 @@ export function toErrorInfo(error: unknown): ErrorInfo {
             message: error.message,
             requestId: null,
             traceId: null,
-            status: null
+            status: null,
+            code: null,
+            fieldPath: null
         };
     }
     if (typeof error === 'string') {
@@ -81,14 +95,18 @@ export function toErrorInfo(error: unknown): ErrorInfo {
             message: error,
             requestId: null,
             traceId: null,
-            status: null
+            status: null,
+            code: null,
+            fieldPath: null
         };
     }
     return {
         message: 'Unexpected error',
         requestId: null,
         traceId: null,
-        status: null
+        status: null,
+        code: null,
+        fieldPath: null
     };
 }
 

@@ -1,13 +1,16 @@
-export const REQUEST_POLICY_TYPES = ['workload', 'infrastructure', 'serving', 'manifest'] as const;
+export const REQUEST_POLICY_TYPES = ['workload', 'infrastructure', 'serving'] as const;
 export const FEATURE_BACKENDS = ['trtllm', 'vllm', 'sglang'] as const;
 
 export type RequestPolicyType = (typeof REQUEST_POLICY_TYPES)[number];
 export type FeatureBackend = (typeof FEATURE_BACKENDS)[number];
-export type PolicyFamily = 'request' | 'feature';
-export type PolicyKindFilter = 'all' | 'request' | 'feature';
+export type RuntimeConfigKind = 'args' | 'envs';
+export type DeploymentType = 'agg' | 'disagg';
+export type CatalogScope = 'frontend' | 'engine';
+export type PolicyFamily = 'request' | 'feature' | 'runtime';
+export type PolicyKindFilter = 'all' | 'request' | 'feature' | 'runtime';
 export type ActiveFilter = 'all' | 'active' | 'inactive';
 export type ManagedByFilter = 'all' | 'system' | 'custom';
-export type PolicyPageKey = RequestPolicyType | 'features';
+export type PolicyPageKey = RequestPolicyType | 'features' | 'runtime-config';
 export type FeatureBackendFilter = FeatureBackend | 'all';
 
 export interface PolicyRecord {
@@ -58,6 +61,195 @@ export interface FeaturePolicyListResponse {
     total: number;
 }
 
+export interface RuntimeConfigPolicyRecord {
+    policy_id: string;
+    engine: string;
+    engine_version: string;
+    dynamo_version: string;
+    deployment_type: DeploymentType;
+    active: boolean;
+    managed_by: string;
+    document: Record<string, unknown>;
+    /** Count of catalogs whose snapshot sha256 differs from the current catalog. 0 = clean. */
+    drift_count?: number;
+    created_at: string;
+    updated_at: string;
+    created_by?: string | null;
+    updated_by?: string | null;
+}
+
+export interface RuntimeConfigPolicyListResponse {
+    runtime_config_policies: RuntimeConfigPolicyRecord[];
+    total: number;
+}
+
+export interface RuntimeConfigRoleEntry {
+    role: string;
+    label: string;
+    catalog_scope: CatalogScope;
+    [key: string]: unknown;
+}
+
+export interface RuntimeConfigRoleSchemaRecord {
+    deployment_type: DeploymentType;
+    active: boolean;
+    managed_by: string;
+    schema: {
+        deployment_type: DeploymentType;
+        active?: boolean;
+        roles: RuntimeConfigRoleEntry[];
+        [key: string]: unknown;
+    };
+    created_at: string;
+    updated_at: string;
+    created_by?: string | null;
+    updated_by?: string | null;
+}
+
+export interface RuntimeConfigRoleSchemaListResponse {
+    role_schemas: RuntimeConfigRoleSchemaRecord[];
+    total: number;
+}
+
+export interface RuntimeConfigCatalogRecord {
+    catalog_id: string;
+    engine: string;
+    engine_version: string;
+    dynamo_version: string;
+    kind: RuntimeConfigKind;
+    active: boolean;
+    source?: string | null;
+    /** Hex sha256 of the canonical catalog document; null on legacy rows. */
+    sha256?: string | null;
+    created_at: string;
+    updated_at: string;
+    uploaded_by?: string | null;
+}
+
+export interface RuntimeConfigCatalogListResponse {
+    catalogs: RuntimeConfigCatalogRecord[];
+    total: number;
+}
+
+export interface RuntimeConfigCatalogItemRecord {
+    catalog_id: string;
+    name: string;
+    display_name: string;
+    engine: string;
+    engine_version: string;
+    dynamo_version: string;
+    kind: RuntimeConfigKind;
+    ui: 'primary' | 'advanced' | 'less_frequent' | string;
+    aic: boolean;
+    type?: string | null;
+    default_value?: unknown;
+    record: Record<string, unknown>;
+    position: number;
+    active: boolean;
+    applicable_deployment_types?: string[] | null;
+    applicable_roles?: string[] | null;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface RuntimeConfigCatalogItemListResponse {
+    items: RuntimeConfigCatalogItemRecord[];
+    total: number;
+}
+
+export interface RuntimeConfigCatalogDrift {
+    catalog_id: string;
+    snapshot_sha256: string;
+    current_sha256: string | null;
+}
+
+export interface RuntimeConfigPolicyExport {
+    policy_id: string;
+    engine: string;
+    engine_version: string;
+    dynamo_version: string;
+    deployment_type: DeploymentType;
+    roles: Record<string, {args: Record<string, unknown>; envs: Record<string, unknown>}>;
+    catalog_drift?: RuntimeConfigCatalogDrift[];
+}
+
+export interface RuntimeConfigCatalogImportItem {
+    engine: string;
+    engine_version: string;
+    dynamo_version: string;
+    kind: RuntimeConfigKind;
+    document: Record<string, unknown>;
+    catalog_id?: string;
+    sha256?: string;
+}
+
+export interface RuntimeConfigCatalogImportRequest {
+    catalogs: RuntimeConfigCatalogImportItem[];
+}
+
+export interface RuntimeConfigCatalogConcept {
+    concept: string;
+    item_count: number;
+    engines: string[];
+}
+
+export interface RuntimeConfigCatalogConceptListResponse {
+    concepts: RuntimeConfigCatalogConcept[];
+    total: number;
+}
+
+export interface ListRuntimeConfigCatalogConceptsParams {
+    engine?: string;
+    kind?: RuntimeConfigKind;
+}
+
+export type RuntimeConfigPolicyMigrationChangeType = 'rename' | 'dropped';
+
+export interface RuntimeConfigPolicyMigrationChange {
+    type: RuntimeConfigPolicyMigrationChangeType;
+    role: string;
+    kind: RuntimeConfigKind;
+    from_name: string;
+    to_name?: string | null;
+    reason?: string | null;
+}
+
+export interface RuntimeConfigPolicyMigrationResponse {
+    policy_id: string;
+    applied: boolean;
+    changes: RuntimeConfigPolicyMigrationChange[];
+    validation_errors: string[];
+    policy: RuntimeConfigPolicyRecord | null;
+}
+
+export interface AuditEventRecord {
+    request_id: string;
+    job_id?: string | null;
+    endpoint: string;
+    event_type: string;
+    triggered_by?: string | null;
+    created_at: string;
+    payload: Record<string, unknown>;
+}
+
+export interface AuditEventListResponse {
+    events: AuditEventRecord[];
+    total: number;
+}
+
+export interface ListAuditEventsParams {
+    request_id?: string;
+    job_id?: string;
+    endpoint?: string;
+    event_type?: string;
+    triggered_by?: string;
+    policy_id?: string;
+    since?: string;
+    until?: string;
+    limit?: number;
+    offset?: number;
+}
+
 export interface PolicyTypeListResponse {
     policy_types: PolicyTypeRecord[];
     total: number;
@@ -83,12 +275,47 @@ export interface ListFeaturePoliciesParams {
     offset?: number;
 }
 
+export interface ListRuntimeConfigPoliciesParams {
+    engine?: string;
+    dynamo_version?: string;
+    deployment_type?: DeploymentType;
+    active?: boolean;
+    has_drift?: boolean;
+    limit?: number;
+    offset?: number;
+}
+
+export interface ListRuntimeConfigCatalogsParams {
+    engine?: string;
+    dynamo_version?: string;
+    kind?: RuntimeConfigKind;
+    active?: boolean;
+    limit?: number;
+    offset?: number;
+}
+
+export interface ListRuntimeConfigCatalogItemsParams {
+    engine?: string;
+    version?: string;
+    engine_version?: string;
+    dynamo_version?: string;
+    kind?: RuntimeConfigKind;
+    deployment_type?: DeploymentType;
+    role?: string;
+    ui?: string;
+    q?: string;
+    concept?: string;
+    active?: boolean;
+    limit?: number;
+    offset?: number;
+}
+
 export interface PolicyRow {
     id: string;
     family: PolicyFamily;
-    kindLabel: 'Request policy' | 'Feature policy';
+    kindLabel: 'Request policy' | 'Feature policy' | 'Runtime config policy';
     typeOrBackend: string;
-    record: PolicyRecord | FeaturePolicyRecord;
+    record: PolicyRecord | FeaturePolicyRecord | RuntimeConfigPolicyRecord;
 }
 
 export interface PolicyApiClient {
@@ -104,4 +331,22 @@ export interface PolicyApiClient {
     createFeaturePolicy(document: Record<string, unknown>): Promise<FeaturePolicyRecord>;
     updateFeaturePolicy(policyId: string, document: Record<string, unknown>): Promise<FeaturePolicyRecord>;
     deleteFeaturePolicy(policyId: string): Promise<void>;
+    listRuntimeConfigPolicies(params?: ListRuntimeConfigPoliciesParams): Promise<RuntimeConfigPolicyListResponse>;
+    getRuntimeConfigPolicy(policyId: string): Promise<RuntimeConfigPolicyRecord>;
+    createRuntimeConfigPolicy(document: Record<string, unknown>): Promise<RuntimeConfigPolicyRecord>;
+    updateRuntimeConfigPolicy(policyId: string, document: Record<string, unknown>): Promise<RuntimeConfigPolicyRecord>;
+    deleteRuntimeConfigPolicy(policyId: string): Promise<void>;
+    exportRuntimeConfigPolicy(policyId: string): Promise<RuntimeConfigPolicyExport>;
+    resolveRuntimeConfigPolicy(policyId: string): Promise<RuntimeConfigPolicyExport>;
+    listRuntimeConfigRoleSchemas(params?: {active?: boolean; limit?: number; offset?: number}): Promise<RuntimeConfigRoleSchemaListResponse>;
+    getRuntimeConfigRoleSchema(deploymentType: DeploymentType): Promise<RuntimeConfigRoleSchemaRecord>;
+    updateRuntimeConfigRoleSchema(deploymentType: DeploymentType, schema: Record<string, unknown>): Promise<RuntimeConfigRoleSchemaRecord>;
+    listRuntimeConfigCatalogs(params?: ListRuntimeConfigCatalogsParams): Promise<RuntimeConfigCatalogListResponse>;
+    deleteRuntimeConfigCatalog(catalogId: string): Promise<RuntimeConfigCatalogRecord>;
+    listRuntimeConfigCatalogItems(params?: ListRuntimeConfigCatalogItemsParams): Promise<RuntimeConfigCatalogItemListResponse>;
+    listRuntimeConfigCatalogConcepts(params?: ListRuntimeConfigCatalogConceptsParams): Promise<RuntimeConfigCatalogConceptListResponse>;
+    importRuntimeConfigCatalogs(request: RuntimeConfigCatalogImportRequest): Promise<RuntimeConfigCatalogListResponse>;
+    patchRuntimeConfigPolicy(policyId: string, patch: Record<string, unknown>): Promise<RuntimeConfigPolicyRecord>;
+    migrateRuntimeConfigPolicy(policyId: string, apply: boolean): Promise<RuntimeConfigPolicyMigrationResponse>;
+    listAuditEvents(params?: ListAuditEventsParams): Promise<AuditEventListResponse>;
 }
