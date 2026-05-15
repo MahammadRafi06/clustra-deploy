@@ -15,17 +15,11 @@ import type {
     AuditTrailResponse,
     DefaultRequest,
     DefaultPreflightResponse,
-    EstimateRequest,
-    EstimateResponse,
-    ExpRequest,
-    GenerateRequest,
     JobAccepted,
     JobListResponse,
     JobResult,
     Project,
-    ProjectListResponse,
-    SupportRequest,
-    SupportResponse
+    ProjectListResponse
 } from './types';
 
 const BASE = '/api/ai-service';
@@ -131,26 +125,6 @@ export function submitDefault(req: DefaultRequest): Promise<JobAccepted> {
 
 export function submitDefaultPreflight(req: DefaultRequest): Promise<DefaultPreflightResponse> {
     return _request('POST', '/api/v1/default/preflight', _stripUndefined(req));
-}
-
-export function submitExp(req: ExpRequest): Promise<JobAccepted> {
-    return _request('POST', '/api/v1/exp', _stripUndefined(req));
-}
-
-export function submitGenerate(req: GenerateRequest): Promise<JobAccepted> {
-    return _request('POST', '/api/v1/generate', _stripUndefined(req));
-}
-
-// ---------------------------------------------------------------------------
-// Sync endpoints
-// ---------------------------------------------------------------------------
-
-export function submitSupport(req: SupportRequest): Promise<SupportResponse> {
-    return _request('POST', '/api/v1/support', _stripUndefined(req));
-}
-
-export function submitEstimate(req: EstimateRequest): Promise<EstimateResponse> {
-    return _request('POST', '/api/v1/estimate', _stripUndefined(req));
 }
 
 // ---------------------------------------------------------------------------

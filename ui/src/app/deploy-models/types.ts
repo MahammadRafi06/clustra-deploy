@@ -150,75 +150,6 @@ export interface DefaultRequest extends DeployFields {
     save_dir?: string;
 }
 
-export interface ExpRequest extends DeployFields {
-    yaml_path?: string;
-    config?: Record<string, unknown>;
-    top_n?: number;
-    save_dir?: string;
-}
-
-export interface GenerateRequest extends DeployFields {
-    model_path: string;
-    total_gpus: number;
-    system?: string;
-    instance_type?: string;
-    backend?: string;
-    backend_version?: string;
-    output_dir?: string;
-}
-
-export interface SupportRequest {
-    model_path: string;
-    system?: string;
-    instance_type?: string;
-    backend?: string;
-    backend_version?: string;
-}
-
-export type EstimateMode = 'agg' | 'disagg';
-
-export interface EstimateRequest {
-    model_path: string;
-    system?: string;
-    instance_type?: string;
-    estimate_mode?: EstimateMode;
-    backend?: string;
-    backend_version?: string;
-    database_mode?: string;
-    isl?: number;
-    osl?: number;
-    batch_size?: number;
-    ctx_tokens?: number;
-    tp_size?: number;
-    pp_size?: number;
-    attention_dp_size?: number;
-    moe_tp_size?: number;
-    moe_ep_size?: number;
-    gemm_quant_mode?: string;
-    kvcache_quant_mode?: string;
-    fmha_quant_mode?: string;
-    moe_quant_mode?: string;
-    comm_quant_mode?: string;
-    decode_system?: string;
-    decode_instance_type?: string;
-    prefill_tp_size?: number;
-    prefill_pp_size?: number;
-    prefill_attention_dp_size?: number;
-    prefill_moe_tp_size?: number;
-    prefill_moe_ep_size?: number;
-    prefill_batch_size?: number;
-    prefill_num_workers?: number;
-    decode_tp_size?: number;
-    decode_pp_size?: number;
-    decode_attention_dp_size?: number;
-    decode_moe_tp_size?: number;
-    decode_moe_ep_size?: number;
-    decode_batch_size?: number;
-    decode_num_workers?: number;
-    free_gpu_memory_fraction?: number;
-    max_seq_len?: number;
-}
-
 // ---------------------------------------------------------------------------
 // Response types
 // ---------------------------------------------------------------------------
@@ -256,34 +187,6 @@ export interface DefaultPreflightResponse {
     compatibility: SupportResponse | null;
     messages: PreflightMessage[];
     recommended_database_mode: string | null;
-}
-
-export interface EstimateResponse {
-    model_path: string;
-    system_name: string;
-    decode_system: string | null;
-    backend_name: string;
-    backend_version: string;
-    mode: string;
-    ttft: number;
-    tpot: number;
-    request_latency: number;
-    power_w: number;
-    isl: number;
-    osl: number;
-    batch_size: number;
-    ctx_tokens: number;
-    tp_size: number;
-    pp_size: number;
-    tokens_per_second: number;
-    tokens_per_second_per_gpu: number;
-    tokens_per_second_per_user: number;
-    seq_per_second: number;
-    concurrency: number;
-    num_total_gpus: number;
-    kv_cache_warning: string | null;
-    per_ops_data: unknown;
-    raw: Record<string, unknown>;
 }
 
 // ---------------------------------------------------------------------------

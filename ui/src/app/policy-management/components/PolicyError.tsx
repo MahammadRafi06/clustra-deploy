@@ -11,6 +11,11 @@ export function PolicyError({error, prefix}: {error: unknown; prefix?: string}) 
     return (
         <div className='policy-management__error' role='alert'>
             <ErrorNotification e={{message}} />
+            {info.fieldPath && (
+                <div className='policy-management__error-field' aria-label='Offending field'>
+                    <i className='fa fa-crosshairs' aria-hidden='true' /> Field: <code>{info.fieldPath}</code>
+                </div>
+            )}
             {reference && <div className='policy-management__error-reference'>{reference}</div>}
         </div>
     );

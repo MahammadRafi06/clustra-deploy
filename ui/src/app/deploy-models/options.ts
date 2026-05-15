@@ -46,7 +46,7 @@ export const EC2_INSTANCE_HINT = 'Choose the EC2 instance size you want. The bac
 export const DEPLOYMENT_MODE_HINT = 'Aggregated uses one serving tier. Disaggregated splits prefill and decode into separate tiers.';
 
 export const FIELD_HELP = {
-    modelPath: 'Model identifier or registry path that AIC should size, estimate, or generate manifests for.',
+    modelPath: 'Model identifier or registry path that AIC should size and generate manifests for.',
     publicModelName: 'Optional model name exposed by the public OpenAI-compatible API. Leave blank to use the model id.',
     totalGpus: 'Total GPU budget across the full deployment. In disaggregated mode, this includes both prefill and decode tiers.',
     deployMode: 'Aggregated keeps prefill and decode together. Disaggregated splits them into separate serving tiers.',
@@ -64,27 +64,5 @@ export const FIELD_HELP = {
     topN: 'Number of candidate plans or results to return.',
     generatorSet: 'Advanced generator rules and overrides applied before manifests are written.',
     generatorConfig: 'Server-side YAML path for expert generator behavior.',
-    generatorDynamoVersion: 'Optional Dynamo version override for expert tuning.',
-    estimateMode: 'Estimate one shared serving tier or separate prefill/decode tiers.',
-    tpSize: 'Tensor parallel shard count.',
-    ppSize: 'Pipeline parallel stage count.',
-    attentionDpSize: 'Attention data-parallel replica count.',
-    moeTpSize: 'MoE tensor parallel shard count.',
-    moeEpSize: 'MoE expert parallel shard count.',
-    gemmQuantMode: 'Matrix-multiply quantization mode used by the runtime, if supported by the backend.',
-    kvCacheQuantMode: 'KV-cache quantization mode used for cache memory reduction, if supported.',
-    fmhaQuantMode: 'Attention-kernel quantization mode for fused multi-head attention, if supported.',
-    moeQuantMode: 'Mixture-of-experts quantization mode applied to expert weights or activations.',
-    commQuantMode: 'Communication quantization mode for reducing data movement overhead between workers.',
-    decodeInstanceType: 'Optional EC2 instance type for the decode tier when you want a different hardware shape than prefill.',
-    prefillBatchSize: 'Maximum batch size allocated to the prefill tier in disaggregated estimates.',
-    prefillNumWorkers: 'Number of prefill workers to provision in disaggregated estimates.',
-    prefillTpSize: 'Tensor parallel shard count for prefill workers only.',
-    prefillPpSize: 'Pipeline parallel stage count for prefill workers only.',
-    decodeBatchSize: 'Maximum batch size allocated to the decode tier in disaggregated estimates.',
-    decodeNumWorkers: 'Number of decode workers to provision in disaggregated estimates.',
-    decodeTpSize: 'Tensor parallel shard count for decode workers only.',
-    decodePpSize: 'Pipeline parallel stage count for decode workers only.',
-    yamlPath: 'Path to a server-side config file that already exists within the service output area.',
-    inlineConfig: 'Paste a JSON config when you want to replay an experiment without referencing a server-side file.'
+    generatorDynamoVersion: 'Optional Dynamo version override for expert tuning.'
 } as const;

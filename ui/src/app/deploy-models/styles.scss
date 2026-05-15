@@ -2,15 +2,107 @@
 @import 'node_modules/argo-ui/src/styles/theme';
 @import '../shared/brand-tokens';
 
+// Runtime Config v2 palette — aligned to the Clustra brand tokens.
+// Mirrors the variables defined in policy-management.scss so this page
+// renders with the same surfaces, typography, and contrast.
+$dm-bg: $brand-site-bg;
+$dm-panel: $brand-surface-raised;
+$dm-border: $brand-slate-200;
+$dm-border-strong: $brand-slate-300;
+$dm-text: $brand-slate-900;
+$dm-muted: $brand-slate-600;
+$dm-text-secondary: $brand-slate-700;
+$dm-accent: $brand-blue;
+$dm-accent-soft: rgba(37, 99, 235, 0.1);
+$dm-danger: #b32d2d;
+$dm-warning: #a16915;
+$dm-success: #157a5b;
+$dm-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+
 .deploy-models {
-    display: grid;
-    gap: 18px;
-    padding: 1em 1em 2em;
-    color: $brand-text-primary;
+    background: $dm-bg;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    padding: 24px 32px 48px;
+    color: $dm-text;
+    font-family: $brand-font-sans;
+    font-size: 14px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    font-feature-settings: 'ss01';
+
+    h1, h2, h3, h4, h5 {
+        font-family: $brand-font-sans;
+        color: $dm-text;
+        font-weight: 600;
+    }
+    h1 { font-size: 24px; line-height: 1.2; letter-spacing: -0.015em; }
+    h2 { font-size: 20px; line-height: 1.25; letter-spacing: -0.01em; }
+    h3 { font-size: 16px; line-height: 1.3; letter-spacing: -0.005em; }
+    h4 { font-size: 14px; line-height: 1.35; }
+
+    p { line-height: 1.55; }
+    code, kbd, pre {
+        font-family: $brand-font-mono;
+        font-feature-settings: 'liga' 0;
+    }
+
+    &__eyebrow {
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: $dm-muted;
+        font-size: 11px;
+        font-weight: 700;
+    }
+
+    &__hero {
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+        gap: 24px;
+        flex-wrap: wrap;
+
+        h1 {
+            margin: 6px 0 8px;
+            font-size: 28px;
+            line-height: 1.15;
+            letter-spacing: -0.02em;
+            font-weight: 600;
+            color: $dm-text;
+        }
+        p {
+            margin: 0;
+            color: $dm-muted;
+            max-width: 640px;
+            font-size: 14px;
+            line-height: 1.55;
+        }
+    }
+
+    &__hero-titles {
+        flex: 1 1 360px;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    &__hero-actions {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        flex-wrap: wrap;
+    }
 
     &__panel {
-        padding: 20px;
-        border-radius: 8px;
+        background: $dm-panel;
+        border: 1px solid $dm-border;
+        border-radius: 12px;
+        padding: 22px 24px 26px;
+        box-shadow: $dm-shadow;
     }
 
     &__panel--empty {
@@ -23,7 +115,7 @@
         justify-content: space-between;
         gap: 16px;
         align-items: flex-start;
-        margin-bottom: 16px;
+        margin-bottom: 18px;
     }
 
     &__panel-header--split {
@@ -31,19 +123,24 @@
     }
 
     &__panel-title {
-        font-size: 1.1em;
+        font-size: 18px;
         font-weight: 600;
+        letter-spacing: -0.01em;
+        color: $dm-text;
     }
 
     &__panel-description,
     &__secondary-text,
     &__muted-text {
-        color: $brand-text-secondary;
-        font-size: 0.8125em;
+        color: $dm-muted;
+        font-size: 14px;
+        line-height: 1.55;
+        max-width: 640px;
     }
 
     &__muted-text {
-        color: $brand-text-muted;
+        color: $dm-muted;
+        font-size: 13px;
     }
 
     &__context-badges {
@@ -65,17 +162,19 @@
         display: inline-flex;
         align-items: center;
         gap: 6px;
-        padding: 4px 10px;
-        border: 1px solid rgba($brand-emerald, 0.25);
-        border-radius: 4px;
-        color: $brand-blue-dark;
-        background: rgba($brand-emerald, 0.08);
+        padding: 2px 8px;
+        border-radius: 999px;
+        font-size: 11px;
+        line-height: 18px;
+        font-weight: 600;
+        letter-spacing: 0.01em;
+        color: $dm-accent;
+        background: $dm-accent-soft;
     }
 
     &__context-badge--project {
-        border-color: rgba($brand-gold, 0.25);
-        color: $brand-gold;
-        background: rgba($brand-gold, 0.08);
+        color: $dm-warning;
+        background: rgba(217, 142, 43, 0.16);
     }
 
     &__summary,
@@ -88,18 +187,12 @@
     &__summary-label,
     &__context-summary-label,
     &__context-summary-title,
-    &__task-label,
-    &__metric-label,
-    &__support-label {
+    &__metric-label {
         color: $brand-text-muted;
         font-size: 0.75em;
         font-weight: 600;
         letter-spacing: 0.04em;
         text-transform: uppercase;
-    }
-
-    &__support-label--muted {
-        color: $brand-text-muted;
     }
 
     &__context-grid {
@@ -132,8 +225,6 @@
     }
 
     &__form > &__field--textarea,
-    &__form > &__field--key-yaml-path,
-    &__form > &__field--key-config,
     &__form > &__field:has(> &__choice-group),
     &__form > &__advanced-body,
     &__form > &__section-divider,
@@ -143,8 +234,7 @@
     &__form > &__job-console,
     &__form > &__actions,
     &__form > &__result,
-    &__form > &__result-section,
-    &__form > &__support-result {
+    &__form > &__result-section {
         grid-column: 1 / -1;
     }
 
@@ -237,76 +327,8 @@
         color: $brand-status-error;
     }
 
-    &__task-grid {
-        display: grid;
-        gap: 12px;
-        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    }
-
-    &__task-button {
-        width: 100%;
-        min-height: 112px;
-        justify-content: flex-start;
-        text-align: left;
-        align-items: flex-start;
-        border-radius: 8px !important;
-        padding: 18px !important;
-    }
-
-    &__task-content {
-        display: grid;
-        gap: 4px;
-    }
-
-    &__task-title,
     &__result-title {
         font-weight: 600;
-    }
-
-    &__task-description {
-        color: $brand-text-secondary;
-        font-size: 0.8125em;
-    }
-
-    &__task-meta {
-        display: flex;
-        gap: 6px;
-        flex-wrap: wrap;
-        margin-top: 4px;
-    }
-
-    &__task-badge {
-        display: inline-flex;
-        align-items: center;
-        padding: 2px 8px;
-        border: 1px solid $brand-border-subtle;
-        border-radius: 999px;
-        color: $brand-text-muted;
-        font-size: 0.75em;
-    }
-
-    .argo-button.argo-button--base.deploy-models__task-button {
-        background: $brand-blue !important;
-        border-color: $brand-blue !important;
-        color: #ffffff !important;
-
-        .deploy-models__task-label,
-        .deploy-models__task-title,
-        .deploy-models__task-description {
-            color: #ffffff !important;
-        }
-
-        .deploy-models__task-badge {
-            border-color: rgba(255, 255, 255, 0.34);
-            color: rgba(255, 255, 255, 0.86);
-        }
-    }
-
-    .argo-button.argo-button--base-o.deploy-models__task-button {
-        background: $brand-surface-raised !important;
-        border: 1px solid $brand-border-strong !important;
-        box-shadow: none !important;
-        color: $brand-text-primary !important;
     }
 
     &__advanced {
@@ -367,10 +389,9 @@
 
     &__notice,
     &__status-banner,
-    &__result-section,
-    &__support-result {
-        border: 1px solid $brand-border-subtle;
-        border-radius: 4px;
+    &__result-section {
+        border: 1px solid $dm-border;
+        border-radius: 8px;
     }
 
     &__notice,
@@ -405,31 +426,6 @@
         color: $brand-status-error;
         border-color: rgba($brand-status-error, 0.2);
         background: rgba($brand-status-error, 0.06);
-    }
-
-    &__target-notice {
-        display: grid;
-        gap: 12px;
-        margin-bottom: 16px;
-        padding: 14px;
-        border: 1px solid rgba($brand-emerald, 0.2);
-        border-radius: 4px;
-        background: rgba($brand-emerald, 0.06);
-    }
-
-    &__target-notice.is-read-only {
-        border-color: rgba($brand-gold, 0.2);
-        background: rgba($brand-gold, 0.05);
-    }
-
-    &__target-copy,
-    &__target-grid {
-        display: grid;
-        gap: 8px 12px;
-    }
-
-    &__target-grid {
-        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
     }
 
     &__actions,
@@ -476,10 +472,12 @@
     &__status-pill {
         display: inline-flex;
         align-items: center;
-        padding: 3px 8px;
-        border-radius: 4px;
-        font-size: 0.75em;
+        padding: 2px 8px;
+        border-radius: 999px;
+        font-size: 11px;
+        line-height: 18px;
         font-weight: 600;
+        letter-spacing: 0.01em;
         text-transform: uppercase;
     }
 
@@ -528,8 +526,7 @@
         flex-wrap: wrap;
     }
 
-    &__result-section,
-    &__support-result {
+    &__result-section {
         padding: 14px;
     }
 
@@ -646,19 +643,6 @@
         margin-left: auto;
     }
 
-    &__support-result {
-        display: grid;
-        gap: 10px;
-    }
-
-    &__support-row {
-        display: flex;
-        justify-content: space-between;
-        gap: 12px;
-        align-items: center;
-        flex-wrap: wrap;
-    }
-
     &__button-spinner,
     &__status-spinner {
         display: inline-flex;
@@ -672,7 +656,6 @@
         &__notice,
         &__status-banner,
         &__result-section,
-        &__support-result,
         &__field-help-text,
         &__run-card {
             background-color: themed('background-1');
@@ -695,7 +678,6 @@
 
         &__panel-header,
         &__status-banner,
-        &__support-row,
         &__result-header,
         &__timeline-header,
         &__run-card-header {

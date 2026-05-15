@@ -3,45 +3,66 @@
 	src: url("./fonts/codicon.ttf") format("truetype");
 }
 
-/* === Inter - 300 */
+/* === Geist Sans - 400 */
 @font-face {
-	font-family: 'Inter';
-	font-style: normal;
-	font-weight: 300;
-	font-display: swap;
-	src: url("./fonts/inter/inter-latin-300-normal.woff2") format("woff2");
-}
-
-/* === Inter - 400 */
-@font-face {
-	font-family: 'Inter';
+	font-family: 'Geist';
 	font-style: normal;
 	font-weight: 400;
 	font-display: swap;
-	src: url("./fonts/inter/inter-latin-400-normal.woff2") format("woff2");
+	src: url("./fonts/geist-sans/geist-sans-latin-400-normal.woff2") format("woff2");
 }
 
-/* === Inter - 500 */
+/* === Geist Sans - 500 */
 @font-face {
-	font-family: 'Inter';
+	font-family: 'Geist';
 	font-style: normal;
 	font-weight: 500;
 	font-display: swap;
-	src: url("./fonts/inter/inter-latin-500-normal.woff2") format("woff2");
+	src: url("./fonts/geist-sans/geist-sans-latin-500-normal.woff2") format("woff2");
 }
 
-/* === Inter - 700 */
+/* === Geist Sans - 600 */
 @font-face {
-	font-family: 'Inter';
+	font-family: 'Geist';
+	font-style: normal;
+	font-weight: 600;
+	font-display: swap;
+	src: url("./fonts/geist-sans/geist-sans-latin-600-normal.woff2") format("woff2");
+}
+
+/* === Geist Sans - 700 */
+@font-face {
+	font-family: 'Geist';
 	font-style: normal;
 	font-weight: 700;
 	font-display: swap;
-	src: url("./fonts/inter/inter-latin-700-normal.woff2") format("woff2");
+	src: url("./fonts/geist-sans/geist-sans-latin-700-normal.woff2") format("woff2");
+}
+
+/* === Geist Mono - 400 */
+@font-face {
+	font-family: 'Geist Mono';
+	font-style: normal;
+	font-weight: 400;
+	font-display: swap;
+	src: url("./fonts/geist-mono/geist-mono-latin-400-normal.woff2") format("woff2");
+}
+
+/* === Geist Mono - 500 */
+@font-face {
+	font-family: 'Geist Mono';
+	font-style: normal;
+	font-weight: 500;
+	font-display: swap;
+	src: url("./fonts/geist-mono/geist-mono-latin-500-normal.woff2") format("woff2");
 }
 
 :root {
-	--font-inter: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-	--font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace;
+	/* Variable name kept as --font-inter for backwards compatibility with
+	   existing call sites; the value now points to Geist. */
+	--font-inter: 'Geist', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+	--font-sans: var(--font-inter);
+	--font-mono: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace;
 }
 
 html {
@@ -54,7 +75,7 @@ body {
 	margin: 0;
 	background: #eef2f7;
 	color: #0f172a;
-	font-family: var(--font-inter) !important;
+	font-family: var(--font-sans) !important;
 	font-feature-settings: normal;
 	letter-spacing: 0;
 }
@@ -63,7 +84,7 @@ button,
 input,
 textarea,
 select {
-	font-family: var(--font-inter) !important;
+	font-family: var(--font-sans) !important;
 	letter-spacing: 0;
 }
 

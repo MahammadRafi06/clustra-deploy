@@ -201,11 +201,18 @@ export function validatePolicyDocument(document: Record<string, unknown>, option
         if (!isPlainObject(document.effects) || Object.keys(document.effects).length === 0) {
             errors.push('effects must be populated from the selected policy type template.');
         }
-    } else {
+    } else if (options.family === 'feature') {
         if (!isFeatureBackend(document.backend)) {
             errors.push(`backend must be one of: ${FEATURE_BACKENDS.join(', ')}.`);
         }
         errors.push(...validateFeaturePolicyArgs(document));
+    } else {
+        if (typeof document.engine !== 'string' || !document.engine.trim()) {
+            errors.push('engine is required.');
+        }
+        if (typeof document.deployment_type !== 'string' || !['agg', 'disagg'].includes(document.deployment_type)) {
+            errors.push('deployment_type must be agg or disagg.');
+        }
     }
 
     return {valid: errors.length === 0, errors};
@@ -358,6 +365,12 @@ export function buildUsageSnippet(family: PolicyFamily, document: Record<string,
             policies: {
                 [String(document.type || '')]: [policyId]
             }
+        };
+    }
+    if (family === 'runtime') {
+        return {
+            policy_id: policyId,
+            resolve_url: `/api/v1/runtime-config-policies/${policyId}/resolve`
         };
     }
     return {

@@ -21,7 +21,7 @@ test('validatePolicyDocument rejects invalid slugs and unsupported request types
 
     expect(result.valid).toBe(false);
     expect(result.errors).toContain('policy_id must be a lowercase slug using letters, numbers, dots, underscores, or hyphens.');
-    expect(result.errors).toContain('type must be one of: workload, infrastructure, serving, manifest.');
+    expect(result.errors).toContain('type must be one of: workload, infrastructure, serving.');
 });
 
 test('validatePolicyDocument rejects public extra_engine_args_config input', () => {

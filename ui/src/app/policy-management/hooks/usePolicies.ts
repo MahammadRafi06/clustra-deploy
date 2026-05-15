@@ -129,6 +129,10 @@ async function fetchRows(client: PolicyApiClient, filters: PolicyListFilters): P
         };
     }
 
+    if (filters.family === 'runtime') {
+        return {rows: [], total: 0};
+    }
+
     if (filters.backend !== 'all') {
         if (hasLocalOnlyFilters(filters)) {
             const rows = filterRows(toPolicyRows([], await fetchAllFeaturePolicies(client, filters.backend, active)), filters);
