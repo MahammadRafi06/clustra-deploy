@@ -104,17 +104,59 @@ order of expected friction:
 
 ### Server / Go
 
-The following files have Clustra modifications interleaved with upstream code.
-Resolve case-by-case:
+A naive `git diff upstream/release-3.4 -- '*.go'` makes it look like ~35 Go
+files diverge. **This is misleading.** A Phase 3 audit (2026-05-16) confirmed
+the divergence falls into four buckets, only one of which needs hand-resolving:
 
-- `server/server.go`, `server/clustra_pages_proxy.go`
-- `server/extension/extension.go`, `server/deeplinks/deeplinks.go`
-- `controller/appcontroller.go`, `controller/hook.go`
-- `applicationset/controllers/applicationset_controller.go`
-- `cmd/argocd/commands/app.go`
-- `util/glob/glob.go` — replaced with custom impl
-- `util/argo/resource_tracking.go`, `util/rbac/rbac.go`
-- `util/webhook/webhook.go`
+**Bucket 1 — Truly Clustra-specific (~50 lines total, hand-resolve):**
+
+- `server/clustra_pages_proxy.go` — **new file** (208 lines). Not a conflict
+  surface at all; just take it as-is.
+- `server/server.go` — **1 line** in `newHTTPServer`:
+  `server.registerClustraPageProxies(mux)` after `mux.Handle("/api/", handler)`.
+- `util/rbac/rbac.go` — **2 lines** registering the `clustra-pages` RBAC
+  resource.
+- `server/extension/extension.go` — **~45 lines** for Deploy Models extension
+  wiring (from commit `2dea601ac Ship Deploy Models GA experience`).
+
+These are the only places that need careful manual conflict resolution.
+
+**Bucket 2 — Cherry-picks already in `upstream/release-3.4` (collapse on merge):**
+
+Several PRs were cherry-picked into our `main` and are also present in
+`upstream/release-3.4` under different commit SHAs. Git's 3-way merge resolves
+these cleanly because the underlying code is identical. Examples seen during
+the Phase 3 audit (PR numbers, not exhaustive):
+
+- #27002, #27229, #27390, #27402 → `controller/appcontroller.go`
+- #26724, #26996 → `controller/hook.go`
+- #26811 → `applicationset/controllers/applicationset_controller.go`
+- #27115, #27476, #26793 → `server/server.go`
+
+If a sync surfaces conflicts in these files but the conflict markers wrap
+identical code, take either side.
+
+**Bucket 3 — Cherry-picks NOT yet in `upstream/release-3.4` (we are ahead):**
+
+We pulled some bug-fix PRs ahead of upstream's release-3.4. These resolve
+themselves when upstream backports them. Until then, expect the diff to remain.
+
+- #25759 → `util/glob/glob.go` (RBAC glob cache)
+- #26594 → `util/webhook/webhook.go` (Bitbucket diffstat)
+- #26642 → `applicationset/controllers/applicationset_controller.go` +
+  `applicationset/utils/createOrUpdate.go` (appset concurrency)
+- #27052 → `server/deeplinks/deeplinks.go` (URL validator)
+- #26936 → `cmd/argocd/commands/app.go` (typo fix)
+
+If upstream backports any of these, the conflict will be identical-code on both
+sides — take either.
+
+**Bucket 4 — Pure upstream-lag (zero Clustra changes):**
+
+Files like `util/argo/resource_tracking.go`, `cmd/argocd/commands/app_test.go`,
+and `controller/appcontroller_test.go` show large "diffs" but have **zero
+commits unique to our `main`**. The diff is 100% upstream patches we haven't
+absorbed yet. Take upstream's version unconditionally.
 
 ### Auto-resolved (via `.gitattributes`)
 
