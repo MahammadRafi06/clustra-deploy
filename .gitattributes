@@ -16,3 +16,23 @@ manifests/install-with-hydrator.yaml linguist-generated=true
 manifests/namespace-install.yaml linguist-generated=true
 manifests/namespace-install-with-hydrator.yaml linguist-generated=true
 pkg/apis/api-rules/violation_exceptions.list linguist-generated=true
+
+# Clustra fork: auto-resolve files we never maintain by hand to upstream's version
+# during merge. Requires a one-time per-clone setup of the "theirs" merge driver:
+#   git config --local merge.theirs.name "always take theirs"
+#   git config --local merge.theirs.driver "cp -f %B %A"
+# See CLUSTRA_FORK.md for the full sync workflow.
+docs/snyk/** merge=theirs
+manifests/install.yaml merge=theirs
+manifests/install-with-hydrator.yaml merge=theirs
+manifests/namespace-install.yaml merge=theirs
+manifests/namespace-install-with-hydrator.yaml merge=theirs
+manifests/core-install.yaml merge=theirs
+manifests/core-install-with-hydrator.yaml merge=theirs
+manifests/ha/install.yaml merge=theirs
+manifests/ha/install-with-hydrator.yaml merge=theirs
+manifests/ha/namespace-install.yaml merge=theirs
+manifests/ha/namespace-install-with-hydrator.yaml merge=theirs
+manifests/crds/*-crd.yaml merge=theirs
+assets/swagger.json merge=theirs
+

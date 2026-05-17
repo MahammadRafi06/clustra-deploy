@@ -3,14 +3,9 @@ import {createBrowserHistory} from 'history';
 import * as PropTypes from 'prop-types';
 import * as React from 'react';
 import {Helmet} from 'react-helmet';
-import {Redirect, Route, RouteComponentProps, Router, Switch} from 'react-router';
+import {Redirect, Route, Router, Switch} from 'react-router';
 import {Subscription} from 'rxjs';
-import applications from './applications';
-import deployModels from './deploy-models';
-import login from './login';
-import modelCache from './model-cache';
-import policyManagement from './policy-management';
-import settings from './settings';
+import {applyClustraFeatureGuards, CLUSTRA_BASE_NAV_ITEMS, CLUSTRA_ROUTES, NavItem, Routes, safeGetAuthSettings, safeGetUser} from './clustra';
 import {Layout, ThemeWrapper} from './shared/components/layout/layout';
 import {Page} from './shared/components/page/page';
 import {VersionPanel} from './shared/components/version-info/version-info-panel';
@@ -19,7 +14,6 @@ import {services} from './shared/services';
 import requests from './shared/services/requests';
 import {hashCode} from './shared/utils';
 import {Banner} from './ui-banner/ui-banner';
-import userInfo from './user-info';
 import {AuthSettings} from './shared/models';
 import {SystemLevelExtension} from './shared/services/extensions-service';
 
@@ -29,169 +23,10 @@ const base = bases.length > 0 ? bases[0].getAttribute('href') || '/' : '/';
 export const history = createBrowserHistory({basename: base});
 requests.setBaseHRef(base);
 
-type Routes = {[path: string]: {component: React.ComponentType<RouteComponentProps<any>>; noLayout?: boolean}};
-
-const routes: Routes = {
-    '/login': {component: login.component as any, noLayout: true},
-    '/applications': {component: applications.component},
-    '/model-cache': {component: modelCache.component},
-    '/policy-management': {component: policyManagement.component},
-    '/deploy-models': {component: deployModels.component},
-    // TODO: Uncomment when ApplicationSet details page is fully implemented
-    // '/applicationsets': {component: applications.component},
-    '/settings': {component: settings.component},
-    '/user-info': {component: userInfo.component}
-};
-
-interface NavItem {
-    title: string;
-    tooltip?: string;
-    path: string;
-    iconClassName: string;
-    children?: NavItem[];
-}
-
-const navItems: NavItem[] = [
-    {
-        title: 'Applications',
-        tooltip: 'Manage your applications, and diagnose health problems.',
-        path: '/applications',
-        iconClassName: 'argo-icon argo-icon-application'
-    },
-    {
-        title: 'Repositories',
-        tooltip: 'Configure connected repositories',
-        path: '/settings/repos',
-        iconClassName: 'fa fa-code-branch'
-    },
-    {
-        title: 'Certificates',
-        tooltip: 'Configure repository certificates and known hosts',
-        path: '/settings/certs',
-        iconClassName: 'fa fa-certificate'
-    },
-    {
-        title: 'GnuPG Keys',
-        tooltip: 'Configure GnuPG public keys for commit verification',
-        path: '/settings/gpgkeys',
-        iconClassName: 'fa fa-key'
-    },
-    {
-        title: 'Clusters',
-        tooltip: 'Configure connected Kubernetes clusters',
-        path: '/settings/clusters',
-        iconClassName: 'fa fa-server'
-    },
-    {
-        title: 'Projects',
-        tooltip: 'Configure Clustra Deploy projects',
-        path: '/settings/projects',
-        iconClassName: 'fa fa-folder'
-    },
-    {
-        title: 'Accounts',
-        tooltip: 'Configure accounts',
-        path: '/settings/accounts',
-        iconClassName: 'fa fa-users'
-    },
-    {
-        title: 'Appearance',
-        tooltip: 'Configure themes in UI',
-        path: '/settings/appearance',
-        iconClassName: 'fa fa-palette'
-    },
-    {
-        title: 'User Info',
-        path: '/user-info',
-        iconClassName: 'fa fa-user-circle'
-    }
-];
-
-const modelCacheNavItem: NavItem = {
-    title: 'Model Inventory',
-    tooltip: 'Manage model artifacts, cache health, jobs, and audit history.',
-    path: '/model-cache',
-    iconClassName: 'fa fa-database'
-};
-
-const deployModelsNavItem: NavItem = {
-    title: 'Model Deployments',
-    tooltip: 'Plan and run private model deployment workflows.',
-    path: '/deploy-models',
-    iconClassName: 'fa fa-rocket'
-};
-
-const policyManagementNavItems: NavItem[] = [
-    {
-        title: 'Workload Policies',
-        tooltip: 'Manage workload-level AI Configurator request policies.',
-        path: '/policy-management/workload',
-        iconClassName: 'fa fa-briefcase'
-    },
-    {
-        title: 'Infrastructure Policies',
-        tooltip: 'Manage infrastructure selection and placement policies.',
-        path: '/policy-management/infrastructure',
-        iconClassName: 'fa fa-server'
-    },
-    {
-        title: 'Serving Policies',
-        tooltip: 'Manage serving runtime and deployment policies.',
-        path: '/policy-management/serving',
-        iconClassName: 'fa fa-network-wired'
-    },
-    {
-        title: 'Runtime Config Policies',
-        tooltip: 'Manage role-scoped runtime args and env policies.',
-        path: '/policy-management/runtime-config',
-        iconClassName: 'fa fa-cogs'
-    }
-];
+const routes: Routes = CLUSTRA_ROUTES;
+const navItems: NavItem[] = CLUSTRA_BASE_NAV_ITEMS;
 
 const versionLoader = services.version.version();
-const isDevelopmentBuild = process.env.NODE_ENV !== 'production';
-
-const defaultAuthSettings: AuthSettings = {
-    url: '',
-    statusBadgeEnabled: false,
-    statusBadgeRootUrl: '',
-    googleAnalytics: {
-        trackingID: '',
-        anonymizeUsers: true
-    },
-    dexConfig: {
-        connectors: []
-    },
-    oidcConfig: null,
-    help: {
-        chatUrl: '',
-        chatText: '',
-        binaryUrls: {}
-    },
-    userLoginsDisabled: false,
-    kustomizeVersions: [],
-    uiCssURL: '',
-    uiBannerContent: '',
-    uiBannerURL: '',
-    uiBannerPermanent: false,
-    uiBannerPosition: '',
-    execEnabled: false,
-    appsInAnyNamespaceEnabled: false,
-    hydratorEnabled: false,
-    syncWithReplaceAllowed: false
-};
-
-async function canSeeClustraPage(subresource: string): Promise<boolean> {
-    try {
-        return await services.accounts.canI('clustra-pages', 'get', subresource);
-    } catch (error) {
-        if (isDevelopmentBuild) {
-            console.warn(`Showing Clustra page "${subresource}" because the local Argo CD permission API is unavailable.`, error);
-            return true;
-        }
-        return false;
-    }
-}
 
 async function isExpiredSSO() {
     try {
@@ -242,22 +77,9 @@ export class App extends React.Component<{}, {popupProps: PopupProps; showVersio
         this.subscribeUnauthorized().then(subscription => {
             this.unauthorizedSubscription = subscription;
         });
-        const [canSeeModelCache, canSeeDeployModels] = await Promise.all([canSeeClustraPage('model-cache'), canSeeClustraPage('deploy-models')]);
-        const authSettings = await services.authService.settings().catch(error => {
-            if (isDevelopmentBuild) {
-                console.warn('Using local development auth settings because the Argo CD settings API is unavailable.', error);
-                return defaultAuthSettings;
-            }
-            throw error;
-        });
+        const authSettings = await safeGetAuthSettings();
         const {trackingID, anonymizeUsers} = authSettings.googleAnalytics || {trackingID: '', anonymizeUsers: true};
-        const {loggedIn, username} = await services.users.get().catch(error => {
-            if (isDevelopmentBuild) {
-                console.warn('Using local development user info because the Argo CD user API is unavailable.', error);
-                return {loggedIn: true, username: 'local-dev', iss: 'local-dev', groups: []};
-            }
-            throw error;
-        });
+        const {loggedIn, username} = await safeGetUser();
         if (trackingID) {
             const ga = await import('react-ga');
             ga.initialize(trackingID);
@@ -279,16 +101,7 @@ export class App extends React.Component<{}, {popupProps: PopupProps; showVersio
             document.head.appendChild(link);
         }
 
-        const featureNavItems = [] as NavItem[];
-        if (canSeeModelCache) {
-            featureNavItems.push(modelCacheNavItem);
-        }
-        if (canSeeDeployModels) {
-            featureNavItems.push(deployModelsNavItem);
-            featureNavItems.push(...policyManagementNavItems);
-        }
-        const visibleNavItems = [...this.navItems.slice(0, 1), ...featureNavItems, ...this.navItems.slice(1)];
-
+        const visibleNavItems = await applyClustraFeatureGuards(this.navItems);
         this.navItems = visibleNavItems;
         this.setState({...this.state, navItems: visibleNavItems, routes: this.routes, authSettings});
     }
