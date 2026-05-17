@@ -49,7 +49,7 @@ function runtimePolicyOptions(records: RuntimeConfigPolicyRecord[]): SelectOptio
     return records.map(record => ({
         value: record.policy_id,
         label: policyLabel(record),
-        description: [record.engine, record.engine_version, record.deployment_type].filter(Boolean).join(' / ')
+        description: [record.deployment_type, record.engine, record.engine_version, record.dynamo_version].filter(Boolean).join(' / ')
     }));
 }
 
@@ -115,25 +115,17 @@ export function DefaultPage() {
             model_path: values.model_path,
             public_model_name: values.public_model_name,
             total_gpus: Number(values.total_gpus),
-            workload_policy: values.workload_policy,
-            infrastructure_policy: values.infrastructure_policy,
-            serving_policy: values.serving_policy,
-            runtime_policy: values.runtime_policy
+            policies: {
+                workload: [values.workload_policy],
+                infrastructure: [values.infrastructure_policy],
+                serving: [values.serving_policy]
+            },
+            runtime_config_policy_id: values.runtime_config_policy_id
         };
     }
 
     async function handleSubmit() {
-        if (
-            !validateRequired([
-                'model_path',
-                'public_model_name',
-                'total_gpus',
-                'workload_policy',
-                'infrastructure_policy',
-                'serving_policy',
-                'runtime_policy'
-            ])
-        ) {
+        if (!validateRequired(['model_path', 'public_model_name', 'total_gpus', 'workload_policy', 'infrastructure_policy', 'serving_policy', 'runtime_config_policy_id'])) {
             return;
         }
 
@@ -238,16 +230,16 @@ export function DefaultPage() {
             />
             <FieldInput
                 def={{
-                    key: 'runtime_policy',
-                    label: 'Runtime Policy',
+                    key: 'runtime_config_policy_id',
+                    label: 'Runtime Config Policy',
                     type: 'select',
                     required: true,
-                    placeholder: 'Select runtime policy',
+                    placeholder: 'Select runtime config policy',
                     options: policyOptions.runtime,
                     hint: policyLoadingHint
                 }}
-                value={values.runtime_policy || ''}
-                error={errors.runtime_policy}
+                value={values.runtime_config_policy_id || ''}
+                error={errors.runtime_config_policy_id}
                 onChange={handleFieldChange}
             />
 

@@ -28,17 +28,19 @@ function jsonResponse(body: unknown, init: Partial<Response> = {}) {
     };
 }
 
-test('submitDefault includes explicit public model name', async () => {
+test('submitDefault posts policy-mode runtime config request shape', async () => {
     mockFetch.mockResolvedValue(jsonResponse({job_id: 'job-1', status: 'pending', poll_url: '/jobs/job-1'}));
 
     await submitDefault({
         model_path: 'Qwen/Qwen3-0.6B',
         public_model_name: 'qwen3-small',
         total_gpus: 1,
-        workload_policy: 'workload-default',
-        infrastructure_policy: 'infra-default',
-        serving_policy: 'serving-default',
-        runtime_policy: 'runtime-default'
+        policies: {
+            workload: ['workload-default'],
+            infrastructure: ['infra-default'],
+            serving: ['serving-default']
+        },
+        runtime_config_policy_id: 'runtime-default'
     });
 
     expect(mockFetch).toHaveBeenCalledWith(
@@ -55,10 +57,12 @@ test('submitDefault includes explicit public model name', async () => {
                 model_path: 'Qwen/Qwen3-0.6B',
                 public_model_name: 'qwen3-small',
                 total_gpus: 1,
-                workload_policy: 'workload-default',
-                infrastructure_policy: 'infra-default',
-                serving_policy: 'serving-default',
-                runtime_policy: 'runtime-default'
+                policies: {
+                    workload: ['workload-default'],
+                    infrastructure: ['infra-default'],
+                    serving: ['serving-default']
+                },
+                runtime_config_policy_id: 'runtime-default'
             })
         })
     );
@@ -71,19 +75,23 @@ test('submitDefault omits blank values before posting', async () => {
         model_path: 'Qwen/Qwen3-0.6B',
         public_model_name: '',
         total_gpus: 1,
-        workload_policy: 'workload-default',
-        infrastructure_policy: 'infra-default',
-        serving_policy: 'serving-default',
-        runtime_policy: 'runtime-default'
+        policies: {
+            workload: ['workload-default'],
+            infrastructure: ['infra-default'],
+            serving: ['serving-default']
+        },
+        runtime_config_policy_id: 'runtime-default'
     });
 
     const [, init] = mockFetch.mock.calls[0];
     expect(JSON.parse(init.body)).toEqual({
         model_path: 'Qwen/Qwen3-0.6B',
         total_gpus: 1,
-        workload_policy: 'workload-default',
-        infrastructure_policy: 'infra-default',
-        serving_policy: 'serving-default',
-        runtime_policy: 'runtime-default'
+        policies: {
+            workload: ['workload-default'],
+            infrastructure: ['infra-default'],
+            serving: ['serving-default']
+        },
+        runtime_config_policy_id: 'runtime-default'
     });
 });

@@ -35,6 +35,11 @@ function asStringArray(value: unknown): string[] {
     return Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : [];
 }
 
+function renderPolicyList(value: unknown): string {
+    const policyIds = asStringArray(value);
+    return policyIds.length > 0 ? policyIds.join(', ') : renderValue(value);
+}
+
 function formatTimestamp(value: string): string {
     return new Date(value).toLocaleString([], {
         month: 'short',
@@ -127,6 +132,8 @@ export function JobResultView({job, audit, auditError, auditLoading, auditRecove
     const latencies = result.best_latencies as Record<string, Record<string, number>> | undefined;
     const auditPayload = asRecord(result.audit);
     const requestPayload = asRecord(auditPayload?.request);
+    const originalRequestPayload = asRecord(auditPayload?.original_request);
+    const originalPolicyPayload = asRecord(originalRequestPayload?.policies);
     const gitopsPayload = asRecord(auditPayload?.gitops);
     const generatedFiles = asStringArray(auditPayload?.generated_files);
     const gitopsStatus = getRunStatusDescriptor(job);
@@ -135,10 +142,13 @@ export function JobResultView({job, audit, auditError, auditLoading, auditRecove
         {label: 'Model', value: renderValue(requestPayload?.model_path)},
         {label: 'Public Name', value: renderValue(requestPayload?.public_model_name)},
         {label: 'GPUs', value: renderValue(requestPayload?.total_gpus)},
-        {label: 'Workload Policy', value: renderValue(requestPayload?.workload_policy)},
-        {label: 'Infra Policy', value: renderValue(requestPayload?.infrastructure_policy)},
-        {label: 'Serving Policy', value: renderValue(requestPayload?.serving_policy)},
-        {label: 'Runtime Policy', value: renderValue(requestPayload?.runtime_policy)},
+        {label: 'Workload Policy', value: renderPolicyList(originalPolicyPayload?.workload ?? requestPayload?.workload_policy)},
+        {label: 'Infra Policy', value: renderPolicyList(originalPolicyPayload?.infrastructure ?? requestPayload?.infrastructure_policy)},
+        {label: 'Serving Policy', value: renderPolicyList(originalPolicyPayload?.serving ?? requestPayload?.serving_policy)},
+        {
+            label: 'Runtime Config Policy',
+            value: renderValue(requestPayload?.runtime_config_policy_id ?? originalRequestPayload?.runtime_config_policy_id ?? requestPayload?.runtime_policy)
+        },
         {label: 'Storage Root', value: renderValue(auditPayload?.storage_root)}
     ].filter(item => item.value !== '—');
 

@@ -121,13 +121,18 @@ export interface DeployFields {
     public_model_name?: string;
 }
 
+export interface DefaultPolicySelection {
+    workload?: string[];
+    infrastructure: string[];
+    serving: string[];
+    [policyType: string]: string[] | undefined;
+}
+
 export interface DefaultRequest extends DeployFields {
     model_path: string;
     total_gpus: number;
-    workload_policy: string;
-    infrastructure_policy: string;
-    serving_policy: string;
-    runtime_policy: string;
+    policies: DefaultPolicySelection;
+    runtime_config_policy_id: string;
 }
 
 // ---------------------------------------------------------------------------
