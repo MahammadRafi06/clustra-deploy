@@ -42,6 +42,46 @@ git config --local merge.theirs.driver "cp -f %B %A"
 After that, files marked `merge=theirs` in `.gitattributes` will auto-resolve to
 upstream's version during a merge.
 
+### `gh` CLI default repo
+
+Both `origin` and `upstream` are GitHub remotes, so `gh` resolves to whichever
+it sees first — usually **upstream** (`argoproj/argo-cd`). Without an override,
+`gh pr create` and similar commands target the wrong repo and fail with
+misleading errors like "No commits between main and …".
+
+Pin the default once per clone:
+
+```bash
+gh repo set-default MahammadRafi06/clustra-deploy
+```
+
+Or pass `--repo MahammadRafi06/clustra-deploy` explicitly on every `gh` call.
+
+### Go test tool versions
+
+Several `util/*` test packages shell out to external binaries. The system
+versions are usually wrong. Use the project-pinned ones on PATH when running
+`go test`:
+
+```bash
+# Install project-pinned tool versions into ./dist (one-time):
+./hack/installers/install-kustomize.sh   # kustomize 5.8.1
+./hack/installers/install-helm.sh        # helm 3.20.1
+
+# Then prefix PATH on every test invocation:
+PATH="$PWD/dist:$PWD/hack:$PATH" go test ./...
+```
+
+Why each path matters:
+- `./dist` — pinned kustomize (5.8.1) and helm (3.20.1). System kustomize is
+  typically older (e.g. 5.3.0 from `/snap/bin`) and triggers behavior mismatches
+  in `util/kustomize/TestKustomizeBuild*`.
+- `./hack` — `gpg-wrapper.sh` lives here. Without it on PATH, `util/gpg` and
+  `util/git/TestVerifyCommitSignature` fail with `executable file not found`.
+
+If `util/<tool>` tests fail, check `hack/tool-versions.sh` for the expected
+version and run the matching installer in `hack/installers/`.
+
 ## Sync workflow
 
 When you want to pull new upstream features or fixes:
@@ -63,7 +103,10 @@ git merge upstream/release-3.4
 
 # 5. Verify the result builds and tests pass
 cd ui && yarn install && yarn build && yarn test && yarn lint
-cd .. && go test ./...
+cd ..
+go build ./...
+# Use project-pinned tool versions; see "Go test tool versions" above.
+PATH="$PWD/dist:$PWD/hack:$PATH" go test ./controller/... ./applicationset/... ./server/... ./util/...
 
 # 6. Smoke-test the customized routes:
 #    - /applications (Argo CD core)
@@ -72,7 +115,10 @@ cd .. && go test ./...
 #    - /policy-management/runtime-config (Runtime Config v2)
 #    - /settings/clusters, /settings/projects (Argo CD settings)
 
-# 7. PR the sync branch into main. Squash or keep history per team preference.
+# 7. PR the sync branch into main. Always pass --repo to avoid hitting upstream.
+git push -u origin chore/sync-upstream-<date>
+gh pr create --repo MahammadRafi06/clustra-deploy --base main \
+  --head chore/sync-upstream-<date> --title "Catch up to upstream/release-3.4 (N commits)"
 ```
 
 ## Known conflict hotspots
