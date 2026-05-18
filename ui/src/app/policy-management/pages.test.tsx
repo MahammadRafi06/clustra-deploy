@@ -98,6 +98,7 @@ function makeClient(overrides: Partial<PolicyApiClient> = {}): PolicyApiClient {
         updatePolicy: jest.fn().mockResolvedValue(requestPolicy),
         deletePolicy: jest.fn().mockResolvedValue(undefined),
         listRuntimeConfigPolicies: jest.fn().mockResolvedValue({runtime_config_policies: [], total: 0}),
+        listManifestOverlays: jest.fn().mockResolvedValue({overlays: [], total: 0}),
         getRuntimeConfigPolicy: jest.fn(),
         createRuntimeConfigPolicy: jest.fn(),
         updateRuntimeConfigPolicy: jest.fn(),
@@ -110,6 +111,11 @@ function makeClient(overrides: Partial<PolicyApiClient> = {}): PolicyApiClient {
         listRuntimeConfigCatalogs: jest.fn().mockResolvedValue({catalogs: [], total: 0}),
         deleteRuntimeConfigCatalog: jest.fn(),
         listRuntimeConfigCatalogItems: jest.fn().mockResolvedValue({items: [], total: 0}),
+        listRuntimeConfigCatalogConcepts: jest.fn().mockResolvedValue({concepts: [], total: 0}),
+        importRuntimeConfigCatalogs: jest.fn(),
+        patchRuntimeConfigPolicy: jest.fn(),
+        migrateRuntimeConfigPolicy: jest.fn(),
+        listAuditEvents: jest.fn().mockResolvedValue({events: [], total: 0}),
         ...overrides
     };
 }

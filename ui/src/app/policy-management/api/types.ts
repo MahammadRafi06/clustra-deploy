@@ -63,6 +63,35 @@ export interface RuntimeConfigPolicyListResponse {
     total: number;
 }
 
+export interface ManifestOverlayRecord {
+    overlay_id: string;
+    overlay_key: string;
+    display_name: string;
+    description?: string | null;
+    active: boolean;
+    is_default: boolean;
+    managed_by: string;
+    cloud_provider: string;
+    engine: string;
+    engine_version: string;
+    dynamo_version: string;
+    deployment_type: DeploymentType;
+    crd_version: string;
+    template_yaml: string;
+    values_schema: Record<string, unknown>;
+    default_values: Record<string, unknown>;
+    ui_metadata: Record<string, unknown>;
+    created_at: string;
+    updated_at: string;
+    created_by?: string | null;
+    updated_by?: string | null;
+}
+
+export interface ManifestOverlayListResponse {
+    overlays: ManifestOverlayRecord[];
+    total: number;
+}
+
 export interface RuntimeConfigRoleEntry {
     role: string;
     label: string;
@@ -258,6 +287,19 @@ export interface ListRuntimeConfigPoliciesParams {
     offset?: number;
 }
 
+export interface ListManifestOverlaysParams {
+    overlay_key?: string;
+    cloud_provider?: string;
+    engine?: string;
+    engine_version?: string;
+    dynamo_version?: string;
+    deployment_type?: DeploymentType;
+    crd_version?: string;
+    active?: boolean;
+    limit?: number;
+    offset?: number;
+}
+
 export interface ListRuntimeConfigCatalogsParams {
     engine?: string;
     dynamo_version?: string;
@@ -300,6 +342,7 @@ export interface PolicyApiClient {
     updatePolicy(policyId: string, document: Record<string, unknown>): Promise<PolicyRecord>;
     deletePolicy(policyId: string): Promise<void>;
     listRuntimeConfigPolicies(params?: ListRuntimeConfigPoliciesParams): Promise<RuntimeConfigPolicyListResponse>;
+    listManifestOverlays(params?: ListManifestOverlaysParams): Promise<ManifestOverlayListResponse>;
     getRuntimeConfigPolicy(policyId: string): Promise<RuntimeConfigPolicyRecord>;
     createRuntimeConfigPolicy(document: Record<string, unknown>): Promise<RuntimeConfigPolicyRecord>;
     updateRuntimeConfigPolicy(policyId: string, document: Record<string, unknown>): Promise<RuntimeConfigPolicyRecord>;

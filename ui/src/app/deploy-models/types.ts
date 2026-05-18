@@ -133,6 +133,7 @@ export interface DefaultRequest extends DeployFields {
     total_gpus: number;
     policies: DefaultPolicySelection;
     runtime_config_policy_id: string;
+    overlay_key?: string;
 }
 
 // ---------------------------------------------------------------------------

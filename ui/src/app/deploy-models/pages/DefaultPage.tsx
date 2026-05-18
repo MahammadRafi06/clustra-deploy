@@ -1,7 +1,7 @@
 import React, {useEffect, useMemo, useState} from 'react';
 
 import {policyApiClient} from '../../policy-management/api/client';
-import type {PolicyRecord, RequestPolicyType, RuntimeConfigPolicyRecord} from '../../policy-management/api/types';
+import type {ManifestOverlayRecord, PolicyRecord, RequestPolicyType, RuntimeConfigPolicyRecord} from '../../policy-management/api/types';
 import {Spinner} from '../../shared/components';
 
 import {submitDefault} from '../api';
@@ -19,17 +19,28 @@ type RequestPolicyOptions = Record<RequestPolicyType, SelectOption[]>;
 
 interface PolicyOptionState extends RequestPolicyOptions {
     runtime: SelectOption[];
+    infrastructureRecords: PolicyRecord[];
+    runtimeRecords: RuntimeConfigPolicyRecord[];
+    overlayRecords: ManifestOverlayRecord[];
 }
 
 const EMPTY_POLICY_OPTIONS: PolicyOptionState = {
     workload: [],
     infrastructure: [],
     serving: [],
-    runtime: []
+    runtime: [],
+    infrastructureRecords: [],
+    runtimeRecords: [],
+    overlayRecords: []
 };
 
 function documentString(document: Record<string, unknown>, key: string): string {
     return typeof document[key] === 'string' ? (document[key] as string) : '';
+}
+
+function documentObject(document: Record<string, unknown>, key: string): Record<string, unknown> {
+    const value = document[key];
+    return value && typeof value === 'object' && !Array.isArray(value) ? (value as Record<string, unknown>) : {};
 }
 
 function policyLabel(record: PolicyRecord | RuntimeConfigPolicyRecord): string {
@@ -53,6 +64,33 @@ function runtimePolicyOptions(records: RuntimeConfigPolicyRecord[]): SelectOptio
     }));
 }
 
+function overlayOptions(records: ManifestOverlayRecord[]): SelectOption[] {
+    const byKey = new Map<string, ManifestOverlayRecord[]>();
+    records.forEach(record => {
+        const existing = byKey.get(record.overlay_key) || [];
+        existing.push(record);
+        byKey.set(record.overlay_key, existing);
+    });
+    return Array.from(byKey.entries()).map(([overlayKey, grouped]) => {
+        const primary = grouped.find(record => record.is_default) || grouped[0];
+        const crdVersions = Array.from(new Set(grouped.map(record => record.crd_version))).sort();
+        return {
+            value: overlayKey,
+            label: primary.display_name ? `${primary.display_name} (${overlayKey})` : overlayKey,
+            description: [
+                primary.cloud_provider,
+                primary.engine,
+                primary.engine_version,
+                primary.dynamo_version,
+                primary.deployment_type,
+                crdVersions.length ? `CRD: ${crdVersions.join(', ')}` : ''
+            ]
+                .filter(Boolean)
+                .join(' / ')
+        };
+    });
+}
+
 export function DefaultPage() {
     const {values, errors, setValue, validateRequired, reset} = useFormState();
     const [jobId, setJobId] = useState<string | null>(null);
@@ -72,9 +110,10 @@ export function DefaultPage() {
             policyApiClient.listPolicies({type: 'workload', active: true, limit: POLICY_OPTION_FETCH_LIMIT, offset: 0}),
             policyApiClient.listPolicies({type: 'infrastructure', active: true, limit: POLICY_OPTION_FETCH_LIMIT, offset: 0}),
             policyApiClient.listPolicies({type: 'serving', active: true, limit: POLICY_OPTION_FETCH_LIMIT, offset: 0}),
-            policyApiClient.listRuntimeConfigPolicies({active: true, limit: POLICY_OPTION_FETCH_LIMIT, offset: 0})
+            policyApiClient.listRuntimeConfigPolicies({active: true, limit: POLICY_OPTION_FETCH_LIMIT, offset: 0}),
+            policyApiClient.listManifestOverlays({active: true, limit: POLICY_OPTION_FETCH_LIMIT, offset: 0})
         ])
-            .then(([workload, infrastructure, serving, runtime]) => {
+            .then(([workload, infrastructure, serving, runtime, overlays]) => {
                 if (cancelled) {
                     return;
                 }
@@ -82,7 +121,10 @@ export function DefaultPage() {
                     workload: requestPolicyOptions(workload.policies || []),
                     infrastructure: requestPolicyOptions(infrastructure.policies || []),
                     serving: requestPolicyOptions(serving.policies || []),
-                    runtime: runtimePolicyOptions(runtime.runtime_config_policies || [])
+                    runtime: runtimePolicyOptions(runtime.runtime_config_policies || []),
+                    infrastructureRecords: infrastructure.policies || [],
+                    runtimeRecords: runtime.runtime_config_policies || [],
+                    overlayRecords: overlays.overlays || []
                 });
             })
             .catch(error => {
@@ -103,6 +145,34 @@ export function DefaultPage() {
 
     const policyLoadingHint = useMemo(() => (policyOptionsLoading ? 'Loading active policies...' : undefined), [policyOptionsLoading]);
 
+    const matchingOverlayOptions = useMemo(() => {
+        const selectedRuntime = policyOptions.runtimeRecords.find(record => record.policy_id === values.runtime_config_policy_id);
+        const selectedInfrastructure = policyOptions.infrastructureRecords.find(record => record.policy_id === values.infrastructure_policy);
+        const infraEffects = selectedInfrastructure ? documentObject(selectedInfrastructure.document || {}, 'effects') : {};
+        const cloudProvider = typeof infraEffects.cloud_provider === 'string' ? infraEffects.cloud_provider : undefined;
+        const filtered = policyOptions.overlayRecords.filter(record => {
+            if (cloudProvider && record.cloud_provider !== cloudProvider) {
+                return false;
+            }
+            if (!selectedRuntime) {
+                return true;
+            }
+            return (
+                record.engine === selectedRuntime.engine &&
+                record.engine_version === selectedRuntime.engine_version &&
+                record.dynamo_version === selectedRuntime.dynamo_version &&
+                record.deployment_type === selectedRuntime.deployment_type
+            );
+        });
+        return overlayOptions(filtered.length || selectedRuntime || cloudProvider ? filtered : policyOptions.overlayRecords);
+    }, [policyOptions.infrastructureRecords, policyOptions.overlayRecords, policyOptions.runtimeRecords, values.infrastructure_policy, values.runtime_config_policy_id]);
+
+    useEffect(() => {
+        if (values.overlay_key && !matchingOverlayOptions.some(option => option.value === values.overlay_key)) {
+            setValue('overlay_key', '');
+        }
+    }, [matchingOverlayOptions, setValue, values.overlay_key]);
+
     function handleFieldChange(key: string, value: string) {
         setValue(key, value);
         if (submitError) {
@@ -111,7 +181,7 @@ export function DefaultPage() {
     }
 
     function buildRequest() {
-        return {
+        const request = {
             model_path: values.model_path,
             public_model_name: values.public_model_name,
             total_gpus: Number(values.total_gpus),
@@ -122,6 +192,7 @@ export function DefaultPage() {
             },
             runtime_config_policy_id: values.runtime_config_policy_id
         };
+        return values.overlay_key ? {...request, overlay_key: values.overlay_key} : request;
     }
 
     async function handleSubmit() {
@@ -240,6 +311,20 @@ export function DefaultPage() {
                 }}
                 value={values.runtime_config_policy_id || ''}
                 error={errors.runtime_config_policy_id}
+                onChange={handleFieldChange}
+            />
+            <FieldInput
+                def={{
+                    key: 'overlay_key',
+                    label: 'Manifest Overlay',
+                    type: 'select',
+                    required: false,
+                    placeholder: 'Use matching default overlay',
+                    options: matchingOverlayOptions,
+                    hint: policyLoadingHint
+                }}
+                value={values.overlay_key || ''}
+                error={errors.overlay_key}
                 onChange={handleFieldChange}
             />
 

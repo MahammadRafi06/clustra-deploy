@@ -40,7 +40,8 @@ test('submitDefault posts policy-mode runtime config request shape', async () =>
             infrastructure: ['infra-default'],
             serving: ['serving-default']
         },
-        runtime_config_policy_id: 'runtime-default'
+        runtime_config_policy_id: 'runtime-default',
+        overlay_key: 'aws-vllm-disagg'
     });
 
     expect(mockFetch).toHaveBeenCalledWith(
@@ -62,7 +63,8 @@ test('submitDefault posts policy-mode runtime config request shape', async () =>
                     infrastructure: ['infra-default'],
                     serving: ['serving-default']
                 },
-                runtime_config_policy_id: 'runtime-default'
+                runtime_config_policy_id: 'runtime-default',
+                overlay_key: 'aws-vllm-disagg'
             })
         })
     );

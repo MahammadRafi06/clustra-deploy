@@ -2,12 +2,14 @@ import {ApiError, formatErrorDetail} from '../../deploy-models/errors';
 import type {
     AuditEventListResponse,
     ListAuditEventsParams,
+    ListManifestOverlaysParams,
     ListPoliciesParams,
     ListPolicyTypesParams,
     ListRuntimeConfigCatalogConceptsParams,
     ListRuntimeConfigCatalogItemsParams,
     ListRuntimeConfigCatalogsParams,
     ListRuntimeConfigPoliciesParams,
+    ManifestOverlayListResponse,
     PolicyApiClient,
     PolicyListResponse,
     PolicyRecord,
@@ -149,6 +151,24 @@ export function listRuntimeConfigPolicies(params: ListRuntimeConfigPoliciesParam
     );
 }
 
+export function listManifestOverlays(params: ListManifestOverlaysParams = {}) {
+    return request<ManifestOverlayListResponse>(
+        'GET',
+        appendQuery('/api/v1/overlays', {
+            overlay_key: params.overlay_key,
+            cloud_provider: params.cloud_provider,
+            engine: params.engine,
+            engine_version: params.engine_version,
+            dynamo_version: params.dynamo_version,
+            deployment_type: params.deployment_type,
+            crd_version: params.crd_version,
+            active: params.active,
+            limit: params.limit,
+            offset: params.offset
+        })
+    );
+}
+
 export function getRuntimeConfigPolicy(policyId: string) {
     return request<RuntimeConfigPolicyRecord>('GET', `/api/v1/runtime-config-policies/${encodeURIComponent(policyId)}`);
 }
@@ -284,6 +304,7 @@ export const policyApiClient: PolicyApiClient = {
     updatePolicy,
     deletePolicy,
     listRuntimeConfigPolicies,
+    listManifestOverlays,
     getRuntimeConfigPolicy,
     createRuntimeConfigPolicy,
     updateRuntimeConfigPolicy,
