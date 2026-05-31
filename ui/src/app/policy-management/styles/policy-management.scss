@@ -3,11 +3,33 @@
 @import '../../shared/config.scss';
 @import '../../shared/brand-tokens';
 
+// Theme-aware: repoint the theme-varying direct brand tokens at the semantic CSS
+// variables (shared/clustra-theme.scss). None of these are used in SCSS color
+// functions in this file, so var() substitution is safe. Hues used in color
+// functions ($brand-blue, $brand-status-error, $brand-slate-900, $brand-emerald,
+// $brand-violet, $brand-gold, $brand-status-success) stay literal — their
+// translucent tints read on both light and dark surfaces.
+$brand-text-primary: var(--ct-text);
+$brand-text-secondary: var(--ct-text-secondary);
+$brand-text-muted: var(--ct-text-muted);
+$brand-surface-raised: var(--ct-surface);
+$brand-border-subtle: var(--ct-border);
+$brand-site-bg: var(--ct-bg);
+$brand-bg-soft: var(--ct-bg-soft);
+$brand-blue-dark: var(--ct-accent-strong);
+$brand-slate-50: var(--ct-surface-2);
+$brand-slate-100: var(--ct-bg-muted);
+$brand-slate-200: var(--ct-border);
+$brand-slate-300: var(--ct-border-strong);
+$brand-slate-600: var(--ct-text-muted);
+$brand-slate-700: var(--ct-text-secondary);
+
 .policy-management {
     display: grid;
-    gap: 18px;
-    padding: 1em 1em 2em;
+    gap: 16px;
+    padding: 24px 32px 48px;
     color: $brand-text-primary;
+    font-feature-settings: 'ss01';
 
     &--runtime-wizard {
         position: fixed;
@@ -47,7 +69,7 @@
         z-index: 3;
         padding: 14px 30px;
         border-bottom: 1px solid $brand-border-subtle;
-        background: rgba($brand-surface-raised, 0.98);
+        background: var(--ct-surface);
         box-shadow: 0 2px 10px rgba(15, 23, 42, 0.04);
         backdrop-filter: blur(10px);
     }
@@ -102,7 +124,7 @@
         z-index: 2;
         padding: 10px 30px;
         border-top: 1px solid $brand-border-subtle;
-        background: rgba($brand-surface-raised, 0.96);
+        background: var(--ct-surface);
         box-shadow: 0 -4px 12px rgba(15, 23, 42, 0.04);
         backdrop-filter: blur(10px);
 
@@ -1851,24 +1873,24 @@
         margin-top: 4px;
     }
 
-    @include themify($themes) {
-        &__toast,
-        &__inline-banner,
-        &__inline-error,
-        &__inline-panel,
-        &__details-card,
-        &__runtime-detail-card,
-        &__runtime-detail-json,
-        &__role-card,
-        &__code-block,
-        &__monaco-frame {
-            background-color: themed('background-1');
-            border-color: themed('border');
-        }
+    // Surfaces/borders resolve to the semantic theme vars (light/dark aware)
+    // instead of argo's themify palette, so the page shares one canvas.
+    &__toast,
+    &__inline-banner,
+    &__inline-error,
+    &__inline-panel,
+    &__details-card,
+    &__runtime-detail-card,
+    &__runtime-detail-json,
+    &__role-card,
+    &__code-block,
+    &__monaco-frame {
+        background-color: var(--ct-surface);
+        border-color: var(--ct-border);
+    }
 
-        &__drawer-section {
-            border-color: themed('border');
-        }
+    &__drawer-section {
+        border-color: var(--ct-border);
     }
 
     @media (max-width: 860px) {
@@ -1959,21 +1981,25 @@
 // Runtime Config v2 palette — aligned to the Clustra brand tokens
 // (`shared/brand-tokens.scss`). Contrast against $rcfg-v2-panel (#ffffff)
 // targets WCAG AA: 4.5:1 for text, 3:1 for UI components / icons.
-$rcfg-v2-bg: $brand-site-bg;                       // #f8fafc
-$rcfg-v2-panel: $brand-surface-raised;             // #ffffff
-$rcfg-v2-border: $brand-slate-200;                 // #e2e8f0
-$rcfg-v2-border-strong: $brand-slate-300;          // #cbd5e1
-$rcfg-v2-text: $brand-slate-900;                   // #0f172a — 18:1 on white
-$rcfg-v2-muted: $brand-slate-600;                  // #475569 — 7.5:1 on white
-$rcfg-v2-text-secondary: $brand-slate-700;         // #334155 — 10:1 on white
-$rcfg-v2-accent: $brand-blue;                      // #2563eb — 5.2:1 on white
-$rcfg-v2-accent-soft: rgba(37, 99, 235, 0.10);
-$rcfg-v2-danger: #b32d2d;                          // 5.4:1 on white
-$rcfg-v2-warning: #a16915;                         // 4.9:1 on white
-$rcfg-v2-success: #157a5b;                         // 4.9:1 on white
-$rcfg-v2-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
-$rcfg-v2-shadow-md: 0 4px 12px rgba(15, 23, 42, 0.06);
-$rcfg-v2-shadow-lg: 0 12px 32px rgba(15, 23, 42, 0.08);
+// Now resolve to the semantic theme variables (shared/clustra-theme.scss) so the
+// runtime-config surface is light/dark aware. Light values match the previous
+// palette exactly. Tints that need an alpha overlay use the `-rgb` channels.
+$rcfg-v2-bg: var(--ct-bg);
+$rcfg-v2-panel: var(--ct-surface);
+$rcfg-v2-border: var(--ct-border);
+$rcfg-v2-border-strong: var(--ct-border-strong);
+$rcfg-v2-border-hover: var(--ct-border-hover);
+$rcfg-v2-text: var(--ct-text);
+$rcfg-v2-muted: var(--ct-text-muted);
+$rcfg-v2-text-secondary: var(--ct-text-secondary);
+$rcfg-v2-accent: var(--ct-accent);
+$rcfg-v2-accent-soft: var(--ct-accent-soft);
+$rcfg-v2-danger: var(--ct-danger);
+$rcfg-v2-warning: var(--ct-warning);
+$rcfg-v2-success: var(--ct-success);
+$rcfg-v2-shadow: var(--ct-shadow-sm);
+$rcfg-v2-shadow-md: var(--ct-shadow-md);
+$rcfg-v2-shadow-lg: var(--ct-shadow-lg);
 
 /* =============================================================================
    Runtime Config v2 — Typography baseline (Okta / Linear feel)
@@ -3737,7 +3763,7 @@ $rcfg-v2-shadow-lg: 0 12px 32px rgba(15, 23, 42, 0.08);
             color: rgba(108, 120, 145, 0.7);
         }
         &:hover:not(:disabled) {
-            border-color: darken($rcfg-v2-border-strong, 10%);
+            border-color: $rcfg-v2-border-hover;
         }
         &:focus,
         &:focus-visible {

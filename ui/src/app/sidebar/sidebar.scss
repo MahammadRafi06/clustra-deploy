@@ -2,8 +2,8 @@
 @import '../shared/config.scss';
 @import '../shared/brand-tokens';
 
-$deselected-text: $brand-text-muted;
-
+// Theme-aware: surfaces/text/borders resolve to the semantic CSS variables in
+// shared/clustra-theme.scss, so the sidebar follows the light/dark toggle.
 .sidebar {
     min-width: $sidebar-width;
     width: $sidebar-width;
@@ -13,14 +13,19 @@ $deselected-text: $brand-text-muted;
     position: fixed;
     height: 100vh;
     max-height: 100vh;
-    color: $brand-text-primary;
-    background-color: $brand-surface-raised;
-    border-right: 1px solid $brand-border-subtle;
+    color: var(--ct-text);
+    background-color: var(--ct-surface);
+    border-right: 1px solid var(--ct-border);
     overflow: auto;
     z-index: 2;
     display: flex;
     flex-direction: column;
-    box-shadow: 4px 0 24px rgba(15, 23, 42, 0.04);
+    box-shadow: var(--ct-shadow-sm);
+    // Smooth the width change when collapsing rather than snapping.
+    transition:
+        min-width 0.24s $ease-out,
+        width 0.24s $ease-out,
+        padding 0.24s $ease-out;
 
     &__container {
         padding: 0 2px;
@@ -30,7 +35,7 @@ $deselected-text: $brand-text-muted;
 
     &__bottom {
         padding: 15px 2px;
-        border-top: 1px solid $brand-border-subtle;
+        border-top: 1px solid var(--ct-border);
     }
 
     &__logo-container {
@@ -52,7 +57,7 @@ $deselected-text: $brand-text-muted;
     &__brand-name {
         font-size: 15px;
         font-weight: 700;
-        color: $brand-text-primary;
+        color: var(--ct-text);
         line-height: 1.1;
     }
 
@@ -81,13 +86,13 @@ $deselected-text: $brand-text-muted;
         display: flex;
         align-items: center;
         gap: 8px;
-        color: $brand-blue-dark;
+        color: var(--ct-accent-strong);
         min-height: 20px;
         padding: 8px 10px 2px;
         width: 100%;
 
         &:before {
-            background: $brand-blue;
+            background: var(--ct-accent);
             border-radius: 999px;
             content: '';
             display: block;
@@ -98,9 +103,9 @@ $deselected-text: $brand-text-muted;
 
     &__nav-group-title {
         flex: 1;
-        font-size: 12px;
-        font-weight: 800;
-        letter-spacing: 0;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.04em;
         line-height: 1.2;
         text-transform: uppercase;
     }
@@ -111,17 +116,18 @@ $deselected-text: $brand-text-muted;
         gap: 2px;
         margin-left: 12px;
         padding-left: 9px;
-        border-left: 1px solid rgba($brand-blue, 0.22);
+        border-left: 1px solid var(--ct-border-strong);
     }
 
     &__nav-item {
         cursor: pointer;
         display: flex;
         align-items: center;
+        gap: 10px;
         min-height: 36px;
         line-height: 1.2;
         padding: 8px 10px;
-        color: $brand-slate-600;
+        color: var(--ct-text-muted);
         border-radius: 7px;
         font-size: 14px;
         font-weight: 500;
@@ -131,25 +137,35 @@ $deselected-text: $brand-text-muted;
             border-color 0.15s ease,
             color 0.15s ease;
 
-        > div {
-            display: flex;
-            align-items: center;
-            min-width: 0;
-            width: 100%;
+        &:hover {
+            background: var(--ct-surface-2);
+            border-color: var(--ct-border);
+            color: var(--ct-text);
         }
 
-        &:hover {
-            background: $brand-slate-50;
-            border-color: $brand-border-subtle;
-            color: $brand-text-primary;
+        &:focus-visible {
+            outline: 2px solid var(--ct-accent);
+            outline-offset: -2px;
         }
 
         &--active {
-            background: rgba($brand-blue, 0.1);
-            border-color: rgba($brand-blue, 0.18);
-            box-shadow: inset 3px 0 0 $brand-blue;
-            color: $brand-blue-dark;
+            background: rgb(var(--ct-accent-rgb) / 0.12);
+            border-color: rgb(var(--ct-accent-rgb) / 0.2);
+            box-shadow: inset 3px 0 0 var(--ct-accent);
+            color: var(--ct-accent-strong);
         }
+    }
+
+    // Nav icons (rendered from each NavItem.iconClassName). Fixed-width so the
+    // labels align into a tidy column, and so the collapsed rail centers them.
+    &__nav-icon {
+        flex: 0 0 18px;
+        width: 18px;
+        text-align: center;
+        font-size: 14px;
+        line-height: 1;
+        color: inherit;
+        opacity: 0.95;
     }
 
     &__nav-title {
@@ -167,22 +183,31 @@ $deselected-text: $brand-text-muted;
         display: flex;
         align-items: center;
         min-height: 30px;
-        color: $brand-text-muted;
+        color: var(--ct-text-muted);
         padding: 6px 10px 6px 16px;
-        border-left: 2px solid $brand-border-subtle;
+        border-left: 2px solid var(--ct-border);
         margin-left: 13px;
         font-size: 13px;
         line-height: 1.3;
         border-radius: 0 6px 6px 0;
+        transition:
+            background-color 0.15s ease,
+            color 0.15s ease,
+            border-color 0.15s ease;
 
         &:hover {
-            color: $brand-blue-dark;
-            background: rgba($brand-blue, 0.05);
+            color: var(--ct-accent-strong);
+            background: rgb(var(--ct-accent-rgb) / 0.08);
+        }
+
+        &:focus-visible {
+            outline: 2px solid var(--ct-accent);
+            outline-offset: -2px;
         }
 
         &--active {
-            color: $brand-blue-dark;
-            border-left-color: $brand-blue;
+            color: var(--ct-accent-strong);
+            border-left-color: var(--ct-accent);
         }
     }
 
@@ -190,13 +215,16 @@ $deselected-text: $brand-text-muted;
         text-align: center;
         cursor: pointer;
         font-size: 18px;
-        color: $brand-text-muted;
+        color: var(--ct-text-muted);
         padding: 4px;
         border-radius: 8px;
+        transition:
+            background-color 0.15s ease,
+            color 0.15s ease;
 
         &:hover {
-            color: $brand-blue;
-            background: rgba($brand-blue, 0.06);
+            color: var(--ct-accent);
+            background: rgb(var(--ct-accent-rgb) / 0.08);
         }
     }
 
@@ -208,6 +236,7 @@ $deselected-text: $brand-text-muted;
 
         .sidebar__logo-container {
             margin-bottom: 0.5em;
+            justify-content: center;
         }
 
         .sidebar__logo__icon {
@@ -219,16 +248,28 @@ $deselected-text: $brand-text-muted;
             margin: 0;
         }
 
+        // Collapsed rail: keep the nav as an icon-only column (previously the
+        // whole nav was hidden, leaving an empty bar). Group headers + subnavs
+        // hide; the icons stay and center.
         .sidebar__nav {
+            gap: 8px;
+        }
+
+        .sidebar__nav-group-header,
+        .sidebar__subnav {
             display: none;
+        }
+
+        .sidebar__nav-group-items {
+            margin-left: 0;
+            padding-left: 0;
+            border-left: 0;
         }
 
         .sidebar__nav-item {
             justify-content: center;
-
-            > div {
-                justify-content: center;
-            }
+            gap: 0;
+            padding: 8px 0;
         }
 
         .sidebar__filter-button {
@@ -237,7 +278,7 @@ $deselected-text: $brand-text-muted;
             i {
                 font-size: 14px;
                 margin-top: 2em;
-                color: $deselected-text;
+                color: var(--ct-text-muted);
             }
         }
     }
@@ -277,10 +318,6 @@ $deselected-text: $brand-text-muted;
             padding: 8px;
             font-size: 12px;
             letter-spacing: 0;
-
-            > div {
-                justify-content: flex-start;
-            }
         }
 
         &__nav-title {

@@ -2,18 +2,34 @@
 @import 'node_modules/argo-ui/src/styles/theme';
 @import '../../shared/brand-tokens';
 
+// Theme-aware: repoint the theme-varying direct brand tokens at the semantic
+// CSS variables (shared/clustra-theme.scss). Status/accent hues
+// ($brand-gold/-status-error/-emerald/-violet/-blue) stay as-is — their
+// translucent tints read on both light and dark surfaces. $brand-slate-900/-100
+// are intentionally-dark elements (hash chips) and are left literal.
+$brand-text-primary: var(--ct-text);
+$brand-text-muted: var(--ct-text-muted);
+$brand-text-secondary: var(--ct-text-secondary);
+$brand-border-subtle: var(--ct-border);
+$brand-bg-muted: var(--ct-bg-muted);
+$brand-blue-dark: var(--ct-accent-strong);
+
 .model-cache {
-    padding: 1em 1em 2em;
+    padding: 24px 32px 48px;
     color: $brand-text-primary;
+    font-feature-settings: 'ss01';
 
     &__page {
         display: grid;
-        gap: 18px;
+        gap: 16px;
     }
 
     &__panel {
-        padding: 20px;
-        border-radius: 8px;
+        padding: 24px;
+        border-radius: 12px;
+        background: var(--ct-surface);
+        border: 1px solid var(--ct-border);
+        box-shadow: var(--ct-shadow-sm);
     }
 
     &__toolbar,
@@ -90,6 +106,7 @@
     &__pressure-banner {
         border: 1px solid $brand-border-subtle;
         border-radius: 8px;
+        background: var(--ct-surface);
     }
 
     &__health-card,
@@ -97,12 +114,12 @@
     &__inline-form,
     &__toast,
     &__pressure-banner {
-        padding: 14px;
+        padding: 16px;
     }
 
     &__health-label,
     &__meta-label {
-        color: $brand-text-muted;
+        color: $brand-text-secondary;
         font-size: 0.75em;
         font-weight: 600;
         letter-spacing: 0.04em;
@@ -111,20 +128,21 @@
 
     &__health-value,
     &__meta-value {
-        margin-top: 4px;
+        margin-top: 8px;
         font-weight: 600;
     }
 
     &__progress {
-        margin-top: 8px;
-        height: 4px;
-        border-radius: 4px;
+        margin-top: 12px;
+        height: 6px;
+        border-radius: 3px;
+        background: var(--ct-bg-muted);
         overflow: hidden;
     }
 
     &__progress-fill {
         height: 100%;
-        border-radius: 4px;
+        border-radius: 3px;
     }
 
     &__progress-fill--success {
@@ -182,15 +200,27 @@
 
     &__table-row {
         cursor: pointer;
+        transition: background-color 0.12s ease;
+
+        &:hover {
+            background: rgb(var(--ct-accent-rgb) / 0.05);
+        }
+
+        &:focus-visible {
+            outline: 2px solid var(--ct-accent);
+            outline-offset: -2px;
+        }
     }
 
     &__table-row--selected {
+        background: rgb(var(--ct-accent-rgb) / 0.1);
     }
 
     &__table-empty {
-        padding: 18px;
+        padding: 24px 18px;
         text-align: center;
-        color: $brand-text-secondary;
+        color: $brand-text-muted;
+        font-size: 0.875em;
     }
 
     &__model-main {
@@ -468,48 +498,31 @@
         margin: 0;
     }
 
-    @include themify($themes) {
-        &__health-card,
-        &__bulk-bar,
-        &__job-card,
-        &__inline-form,
-        &__result-card,
-        &__related-item,
-        &__inline-banner,
-        &__toast,
-        &__pressure-banner,
-        &__log-viewer {
-            background-color: themed('background-1');
-            border-color: themed('border');
-        }
+    // Surfaces/borders resolve to the semantic theme vars (light/dark aware)
+    // instead of argo's themify palette, so the whole page shares one canvas.
+    &__health-card,
+    &__bulk-bar,
+    &__job-card,
+    &__inline-form,
+    &__result-card,
+    &__related-item {
+        background-color: var(--ct-surface);
+        border-color: var(--ct-border);
     }
 
-    @include themify($themes) {
-        &__drawer-toolbar--stack,
-        &__drawer-section {
-            border-color: themed('border');
-        }
-    }
-
-    @include themify($themes) {
-        &__progress {
-            background-color: themed('border');
-        }
-    }
-
-    @include themify($themes) {
-        &__table-row--selected {
-            background-color: themed('light-argo-teal-1');
-        }
+    &__drawer-toolbar--stack,
+    &__drawer-section {
+        border-color: var(--ct-border);
     }
 
     &__table-row--selected {
-        background-color: rgba($brand-blue, 0.08) !important;
+        background-color: rgb(var(--ct-accent-rgb) / 0.1);
     }
 
+    // Log/hash viewer stays a dark embedded terminal in both themes.
     &__log-viewer {
-        background: $brand-slate-900 !important;
-        color: $brand-slate-100;
+        background: #060a12 !important;
+        color: #cbd5e1;
     }
 
     @media (max-width: 720px) {

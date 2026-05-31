@@ -137,6 +137,47 @@ export interface DefaultRequest extends DeployFields {
 }
 
 // ---------------------------------------------------------------------------
+// Deployment management types (mirror clustra-ai-service DeploymentSummary /
+// DeploymentListResponse / UndeployResult in routers/deployments.py)
+// ---------------------------------------------------------------------------
+
+export type DeploymentStatus = 'committing' | 'active' | 'removing' | 'removed' | 'failed';
+
+export interface DeploymentSummary {
+    deployment_id: string;
+    job_id: string | null;
+    app_name: string | null;
+    deploy_mode: string;
+    repo_url: string;
+    branch: string;
+    repo_target_subdir: string;
+    repo_artifact_paths: string[];
+    status: DeploymentStatus;
+    triggered_by_display: string | null;
+    triggered_by_subject: string | null;
+    created_at: string;
+    commit_sha: string | null;
+    removed_at: string | null;
+    removal_sha: string | null;
+    removal_error: string | null;
+}
+
+export interface DeploymentListResponse {
+    deployments: DeploymentSummary[];
+    total: number;
+}
+
+export interface UndeployResult {
+    deployment_id: string;
+    status: DeploymentStatus;
+    file_paths: string[];
+    commit_sha: string | null;
+    removal_sha: string | null;
+    removal_error: string | null;
+    message: string;
+}
+
+// ---------------------------------------------------------------------------
 // ArgoCD application-page extension props
 // ---------------------------------------------------------------------------
 

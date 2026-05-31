@@ -75,8 +75,20 @@ export const Sidebar = (props: SidebarProps) => {
                                     return (
                                         <React.Fragment key={item.path}>
                                             <Tooltip content={<div className='sidebar__tooltip'>{item?.tooltip || item.title}</div>} {...tooltipProps}>
-                                                <div className={`sidebar__nav-item ${isActive ? 'sidebar__nav-item--active' : ''}`} onClick={() => context.history.push(item.path)}>
-                                                    <div>{!props.pref.hideSidebar && <span className='sidebar__nav-title'>{item.title}</span>}</div>
+                                                <div
+                                                    className={`sidebar__nav-item ${isActive ? 'sidebar__nav-item--active' : ''}`}
+                                                    role='button'
+                                                    tabIndex={0}
+                                                    aria-current={isActive ? 'page' : undefined}
+                                                    onClick={() => context.history.push(item.path)}
+                                                    onKeyDown={e => {
+                                                        if (e.key === 'Enter' || e.key === ' ') {
+                                                            e.preventDefault();
+                                                            context.history.push(item.path);
+                                                        }
+                                                    }}>
+                                                    {item.iconClassName && <i className={`sidebar__nav-icon ${item.iconClassName}`} aria-hidden='true' />}
+                                                    {!props.pref.hideSidebar && <span className='sidebar__nav-title'>{item.title}</span>}
                                                 </div>
                                             </Tooltip>
                                             {isActive && !props.pref.hideSidebar && item.children && item.children.length > 0 && (
@@ -85,9 +97,19 @@ export const Sidebar = (props: SidebarProps) => {
                                                         <Tooltip key={child.path} content={<div className='sidebar__tooltip'>{child.title}</div>} {...tooltipProps}>
                                                             <div
                                                                 className={`sidebar__subnav-item ${isNavItemActive(child, locationPath) ? 'sidebar__subnav-item--active' : ''}`}
+                                                                role='button'
+                                                                tabIndex={0}
+                                                                aria-current={isNavItemActive(child, locationPath) ? 'page' : undefined}
                                                                 onClick={e => {
                                                                     e.stopPropagation();
                                                                     context.history.push(child.path);
+                                                                }}
+                                                                onKeyDown={e => {
+                                                                    if (e.key === 'Enter' || e.key === ' ') {
+                                                                        e.preventDefault();
+                                                                        e.stopPropagation();
+                                                                        context.history.push(child.path);
+                                                                    }
                                                                 }}>
                                                                 <span className='sidebar__nav-title'>{child.title}</span>
                                                             </div>

@@ -1,4 +1,4 @@
-import React, {useEffect, useMemo, useState} from 'react';
+import React, {useEffect, useMemo, useRef, useState} from 'react';
 
 import {policyApiClient} from '../../policy-management/api/client';
 import type {ManifestOverlayRecord, PolicyRecord, RequestPolicyType, RuntimeConfigPolicyRecord} from '../../policy-management/api/types';
@@ -11,7 +11,17 @@ import type {SelectOption} from '../components/FieldInput';
 import {JobRunConsole} from '../components/JobRunConsole';
 import {useFormState} from '../hooks/useFormState';
 import {useJobPoller} from '../hooks/useJobPoller';
+import {getGitOpsStatus, isJobSettled} from '../jobState';
 import {FIELD_HELP} from '../options';
+
+interface DefaultPageProps {
+    /**
+     * Fired once when a run settles with a committed GitOps result, i.e. a new
+     * deployment manifest landed in Git. The deploy-models page uses this to
+     * refresh the deployments table without the user having to reload.
+     */
+    onDeploySettled?: () => void;
+}
 
 const POLICY_OPTION_FETCH_LIMIT = 200;
 
@@ -91,7 +101,7 @@ function overlayOptions(records: ManifestOverlayRecord[]): SelectOption[] {
     });
 }
 
-export function DefaultPage() {
+export function DefaultPage({onDeploySettled}: DefaultPageProps = {}) {
     const {values, errors, setValue, validateRequired, reset} = useFormState();
     const [jobId, setJobId] = useState<string | null>(null);
     const [submitting, setSubmitting] = useState(false);
@@ -100,6 +110,21 @@ export function DefaultPage() {
     const [policyOptionsLoading, setPolicyOptionsLoading] = useState(true);
     const [policyOptionsError, setPolicyOptionsError] = useState<unknown | null>(null);
     const {job, cancelling, cancelError, pollRecovery, cancel, retry, reset: resetPoller} = useJobPoller(jobId);
+    const deploySettledNotifiedRef = useRef(false);
+
+    // Notify the parent exactly once when this run reaches a committed, settled
+    // state so the deployments table can refresh. Resets when the run clears
+    // (New run / form reset) so the next deploy can notify again.
+    useEffect(() => {
+        if (!job) {
+            deploySettledNotifiedRef.current = false;
+            return;
+        }
+        if (!deploySettledNotifiedRef.current && isJobSettled(job) && getGitOpsStatus(job) === 'committed') {
+            deploySettledNotifiedRef.current = true;
+            onDeploySettled?.();
+        }
+    }, [job, onDeploySettled]);
 
     useEffect(() => {
         let cancelled = false;

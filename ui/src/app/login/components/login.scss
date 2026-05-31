@@ -1,20 +1,36 @@
 @import 'node_modules/argo-ui/src/styles/config';
 @import '../../shared/brand-tokens';
 
+// Theme-aware: every theme-varying brand token is repointed at the semantic CSS
+// variables (shared/clustra-theme.scss). No SCSS color functions are used here,
+// so plain var() substitution is safe and the page follows the light/dark toggle.
+$brand-text-primary: var(--ct-text);
+$brand-text-secondary: var(--ct-text-secondary);
+$brand-text-muted: var(--ct-text-muted);
+$brand-surface-raised: var(--ct-surface);
+$brand-border-subtle: var(--ct-border);
+$brand-border-muted: var(--ct-border-strong);
+$brand-bg-soft: var(--ct-bg);
+$brand-blue: var(--ct-accent);
+$brand-blue-dark: var(--ct-accent-strong);
+$brand-status-error: var(--ct-danger);
+$brand-shadow-soft: var(--ct-shadow-lg);
+
 .login {
     min-height: 100vh;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 14px;
+    gap: 16px;
     padding: 40px 20px;
     background:
-        linear-gradient(rgba(37, 99, 235, 0.035) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(37, 99, 235, 0.035) 1px, transparent 1px),
+        linear-gradient(rgb(var(--ct-accent-rgb) / 0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgb(var(--ct-accent-rgb) / 0.04) 1px, transparent 1px),
         $brand-bg-soft;
     background-size: 40px 40px;
     color: $brand-text-primary;
+    font-feature-settings: 'ss01';
 
     &__hero-logo {
         height: 72px;
@@ -37,15 +53,15 @@
         font-weight: 400;
         line-height: 1.55;
         text-align: center;
-        margin-bottom: 10px;
+        margin-bottom: 8px;
     }
 
     &__box {
         width: min(380px, 100%);
-        padding: 30px 32px;
+        padding: 32px;
         background: $brand-surface-raised;
         border: 1px solid $brand-border-subtle;
-        border-radius: 8px;
+        border-radius: 12px;
         box-shadow: $brand-shadow-soft;
         color: $brand-text-primary;
 
@@ -55,7 +71,7 @@
         }
 
         &_saml {
-            padding: 18px 0;
+            padding: 16px 0;
         }
 
         h3,
@@ -73,7 +89,7 @@
         }
 
         .argo-form-row {
-            margin-bottom: 12px;
+            margin-bottom: 16px;
         }
 
         .argo-field {
@@ -81,10 +97,19 @@
             background: transparent !important;
             color: $brand-text-primary !important;
             padding: 10px 0 8px !important;
+            transition: border-bottom-color 0.15s ease, box-shadow 0.15s ease;
 
-            &:focus {
+            &:focus,
+            &:focus-visible {
                 border-bottom-color: $brand-blue !important;
-                box-shadow: none !important;
+                box-shadow: 0 1px 0 0 $brand-blue !important;
+            }
+
+            // Invalid state: red underline so the field itself signals the error,
+            // not just the message below it.
+            &[aria-invalid='true'] {
+                border-bottom-color: $brand-status-error !important;
+                box-shadow: 0 1px 0 0 $brand-status-error !important;
             }
         }
 
@@ -92,7 +117,7 @@
         .argo-form-row label,
         label {
             color: $brand-text-muted !important;
-            font-size: 11px !important;
+            font-size: 12px !important;
         }
 
         .argo-field-container > .argo-field.argo-has-value + label.argo-label-placeholder,
@@ -102,7 +127,7 @@
         .argo-field-container > .argo-field:not(:placeholder-shown) + label.argo-label-placeholder {
             color: $brand-text-muted !important;
             transform: translateY(-25px) !important;
-            font-size: 11px !important;
+            font-size: 12px !important;
         }
 
         .argo-field-container > .argo-field:focus + label.argo-label-placeholder {
@@ -121,9 +146,10 @@
                 color: $brand-text-muted !important;
             }
 
+            // Keep autofill on-surface in both themes (was hardcoded white).
             &:-webkit-autofill {
                 -webkit-text-fill-color: $brand-text-primary !important;
-                -webkit-box-shadow: 0 0 0 1000px #ffffff inset !important;
+                -webkit-box-shadow: 0 0 0 1000px var(--ct-surface) inset !important;
                 transition: background-color 5000s ease-in-out 0s;
             }
         }
@@ -138,41 +164,70 @@
             font-weight: 600 !important;
             line-height: 1.4 !important;
             letter-spacing: 0;
+            transition: background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, transform 0.1s ease;
 
             &[disabled] {
                 opacity: 0.55;
                 background-color: $brand-blue !important;
                 color: #ffffff !important;
+                cursor: not-allowed;
             }
 
             &:not(.disabled):not([disabled]):hover {
                 background-color: $brand-blue-dark !important;
                 border-color: $brand-blue-dark !important;
+                box-shadow: 0 4px 12px rgb(var(--ct-accent-rgb) / 0.28);
+            }
+
+            &:not(.disabled):not([disabled]):active {
+                transform: translateY(0.5px);
+                box-shadow: none;
+            }
+
+            &:focus-visible {
+                outline: 2px solid $brand-blue;
+                outline-offset: 2px;
             }
         }
     }
 
     &__form-row {
-        padding: 12px 0 0;
+        padding: 16px 0 0;
     }
 
+    // Centered "or" divider built from flex + pseudo-rules (no fragile absolute
+    // positioning), so it sits correctly in both themes.
     &__saml-separator {
-        margin-top: 15px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin: 16px 0;
         color: $brand-text-muted;
-        border-bottom: 1px solid $brand-border-subtle;
-        text-align: center;
+        font-size: 12px;
+        border-bottom: 0;
+
+        &::before,
+        &::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: $brand-border-subtle;
+        }
 
         & > span {
-            position: relative;
-            top: 0.8em;
             display: inline-block;
-            padding: 0 6px;
-            background: #ffffff;
+            padding: 0;
+            background: transparent;
         }
     }
 
     .argo-form-row__error-msg {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin-top: 4px;
         color: $brand-status-error;
+        font-size: 12px;
     }
 
     ::after {

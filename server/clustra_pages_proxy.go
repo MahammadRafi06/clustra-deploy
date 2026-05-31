@@ -139,16 +139,17 @@ func isAIConfiguratorPolicyProxyPath(path string) bool {
 	}
 
 	for _, prefix := range []string{
-		"/api/v1/policies",
 		"/api/v1/feature-policies",
+		"/api/v1/overlays",
+		"/api/v1/policies",
 		"/api/v1/policy-types",
 		// Runtime-config admin surfaces are globally scoped (catalogs, role
 		// schemas, cross-engine concept browser, per-policy CRUD/migrate/
 		// audit). They don't belong to any single Argo CD application.
-		"/api/v1/runtime-config-policies",
-		"/api/v1/runtime-config-catalogs",
-		"/api/v1/runtime-config-catalog-items",
 		"/api/v1/runtime-config-catalog-concepts",
+		"/api/v1/runtime-config-catalog-items",
+		"/api/v1/runtime-config-catalogs",
+		"/api/v1/runtime-config-policies",
 		"/api/v1/runtime-config-role-schemas",
 		"/audit-events",
 	} {

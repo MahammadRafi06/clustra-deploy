@@ -5,20 +5,35 @@
 // Runtime Config v2 palette — aligned to the Clustra brand tokens.
 // Mirrors the variables defined in policy-management.scss so this page
 // renders with the same surfaces, typography, and contrast.
-$dm-bg: $brand-site-bg;
-$dm-panel: $brand-surface-raised;
-$dm-border: $brand-slate-200;
-$dm-border-strong: $brand-slate-300;
-$dm-text: $brand-slate-900;
-$dm-muted: $brand-slate-600;
-$dm-text-secondary: $brand-slate-700;
-$dm-accent: $brand-blue;
-$dm-accent-soft: rgba(37, 99, 235, 0.1);
-$dm-danger: #b32d2d;
-$dm-warning: #a16915;
-$dm-success: #157a5b;
-$dm-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
-$dm-shadow-md: 0 4px 12px rgba(15, 23, 42, 0.06);
+// Page tokens resolve to the shared semantic theme variables (defined in
+// shared/clustra-theme.scss) so the page is light/dark aware. Light values are
+// identical to the previous palette, so light mode is unchanged.
+$dm-bg: var(--ct-bg);
+$dm-panel: var(--ct-surface);
+$dm-border: var(--ct-border);
+$dm-border-strong: var(--ct-border-strong);
+$dm-border-hover: var(--ct-border-hover);
+$dm-text: var(--ct-text);
+$dm-muted: var(--ct-text-muted);
+$dm-text-secondary: var(--ct-text-secondary);
+$dm-accent: var(--ct-accent);
+$dm-accent-soft: var(--ct-accent-soft);
+$dm-danger: var(--ct-danger);
+$dm-warning: var(--ct-warning);
+$dm-success: var(--ct-success);
+$dm-shadow: var(--ct-shadow-sm);
+$dm-shadow-md: var(--ct-shadow-md);
+
+// Direct brand-token usages in this file that should also flip with the theme.
+// Re-point them at the semantic vars. None of these are used inside SCSS color
+// functions in this file, so plain var() substitution is safe.
+$brand-text-muted: var(--ct-text-muted);
+$brand-text-secondary: var(--ct-text-secondary);
+$brand-slate-50: var(--ct-surface-2);
+$brand-slate-100: var(--ct-bg-muted);
+$brand-border-subtle: var(--ct-border);
+$brand-blue-dark: var(--ct-accent-strong);
+$brand-bg-muted: var(--ct-bg-muted);
 
 .deploy-models {
     background: $dm-bg;
@@ -103,7 +118,7 @@ $dm-shadow-md: 0 4px 12px rgba(15, 23, 42, 0.06);
         background: $dm-panel;
         border: 1px solid $dm-border;
         border-radius: 12px;
-        padding: 22px 24px 26px;
+        padding: 24px;
         box-shadow: $dm-shadow;
     }
 
@@ -311,13 +326,13 @@ $dm-shadow-md: 0 4px 12px rgba(15, 23, 42, 0.06);
 
     &__field .argo-field::placeholder,
     &__textarea::placeholder {
-        color: rgba($dm-muted, 0.7);
+        color: var(--ct-text-faint);
     }
 
     &__field .argo-field:hover:not(:disabled),
     &__textarea:hover:not(:disabled),
     &__select .select__value:hover {
-        border-color: darken($dm-border-strong, 10%);
+        border-color: $dm-border-hover;
     }
 
     &__field .argo-field:focus,
@@ -332,7 +347,7 @@ $dm-shadow-md: 0 4px 12px rgba(15, 23, 42, 0.06);
 
     &__field .argo-field:disabled,
     &__textarea:disabled {
-        background: rgba($dm-text, 0.04);
+        background: var(--ct-overlay-weak);
         color: $dm-muted;
         cursor: not-allowed;
     }
@@ -420,7 +435,7 @@ $dm-shadow-md: 0 4px 12px rgba(15, 23, 42, 0.06);
     &__field-help:focus,
     &__field-help:focus-visible {
         outline: none;
-        box-shadow: 0 0 0 2px rgba($brand-blue, 0.2);
+        box-shadow: 0 0 0 2px rgb(var(--ct-accent-rgb) / 0.22);
     }
 
     &__field-help-text {
@@ -501,9 +516,9 @@ $dm-shadow-md: 0 4px 12px rgba(15, 23, 42, 0.06);
     .argo-button.argo-button--base-o.deploy-models__advanced-toggle {
         &:focus,
         &:focus-visible {
-            color: $brand-blue !important;
+            color: var(--ct-accent) !important;
             background-color: transparent !important;
-            box-shadow: inset 0 0 0 1px $brand-blue !important;
+            box-shadow: inset 0 0 0 1px var(--ct-accent) !important;
         }
     }
 
@@ -566,14 +581,14 @@ $dm-shadow-md: 0 4px 12px rgba(15, 23, 42, 0.06);
 
     &__notice--warning {
         color: $dm-warning;
-        border-color: rgba($dm-warning, 0.25);
-        background: rgba($dm-warning, 0.08);
+        border-color: rgb(var(--ct-warning-rgb) / 0.28);
+        background: rgb(var(--ct-warning-rgb) / 0.1);
     }
 
     &__notice--error {
         color: $dm-danger;
-        border-color: rgba($dm-danger, 0.25);
-        background: rgba($dm-danger, 0.08);
+        border-color: rgb(var(--ct-danger-rgb) / 0.28);
+        background: rgb(var(--ct-danger-rgb) / 0.1);
     }
 
     &__actions,
@@ -631,17 +646,17 @@ $dm-shadow-md: 0 4px 12px rgba(15, 23, 42, 0.06);
 
     &__status-pill--success {
         color: $dm-success;
-        background: rgba($dm-success, 0.12);
+        background: rgb(var(--ct-success-rgb) / 0.14);
     }
 
     &__status-pill--warning {
         color: $dm-warning;
-        background: rgba($dm-warning, 0.14);
+        background: rgb(var(--ct-warning-rgb) / 0.16);
     }
 
     &__status-pill--error {
         color: $dm-danger;
-        background: rgba($dm-danger, 0.12);
+        background: rgb(var(--ct-danger-rgb) / 0.14);
     }
 
     &__status-pill--info {
@@ -655,8 +670,112 @@ $dm-shadow-md: 0 4px 12px rgba(15, 23, 42, 0.06);
     }
 
     .argo-button.argo-button--base-o.deploy-models__danger-button {
-        color: $brand-status-error;
-        box-shadow: inset 0 0 0 1px $brand-status-error;
+        color: var(--ct-danger);
+        box-shadow: inset 0 0 0 1px rgb(var(--ct-danger-rgb) / 0.55);
+
+        // Override the base-o blue hover/focus so the destructive action keeps
+        // its error tone instead of flipping to the brand blue on interaction.
+        &:hover:not(:disabled),
+        &:focus,
+        &:focus-visible {
+            color: var(--ct-danger) !important;
+            background: rgb(var(--ct-danger-rgb) / 0.1) !important;
+            box-shadow: inset 0 0 0 1px var(--ct-danger) !important;
+        }
+
+        &:focus-visible {
+            outline: 2px solid rgb(var(--ct-danger-rgb) / 0.45);
+            outline-offset: 1px;
+        }
+
+        &:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+    }
+
+    &__deployments-actions {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+
+    &__deployments {
+        margin-top: 4px;
+        display: grid;
+        gap: 6px;
+    }
+
+    &__deployments-head,
+    &__deployments-row {
+        margin: 0;
+        padding: 10px 12px;
+        border-radius: 8px;
+
+        .columns {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            min-height: 24px;
+            min-width: 0;
+            overflow-wrap: anywhere;
+        }
+    }
+
+    &__deployments-head {
+        color: $brand-text-muted;
+        font-size: 0.75em;
+        font-weight: 600;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+
+        .columns {
+            flex-direction: row;
+            align-items: center;
+        }
+    }
+
+    &__deployments-row {
+        border: 1px solid $dm-border;
+        background: $dm-panel;
+        transition:
+            border-color 0.15s ease,
+            box-shadow 0.15s ease;
+    }
+
+    &__deployments-row:hover {
+        border-color: $dm-border-strong;
+        box-shadow: $dm-shadow;
+    }
+
+    &__deployments-primary {
+        font-weight: 600;
+        word-break: break-word;
+    }
+
+    &__deployments-actions-col {
+        align-items: flex-end !important;
+
+        .argo-button {
+            align-self: flex-end;
+        }
+    }
+
+    &__confirm {
+        display: grid;
+        gap: 12px;
+    }
+
+    &__confirm code {
+        word-break: break-all;
+    }
+
+    &__confirm-actions {
+        display: flex;
+        gap: 10px;
+        justify-content: flex-end;
+        margin-top: 4px;
     }
 
     &__result {
@@ -703,7 +822,7 @@ $dm-shadow-md: 0 4px 12px rgba(15, 23, 42, 0.06);
 
     &__result-error {
         margin: 10px 0 0;
-        color: $brand-status-error;
+        color: var(--ct-danger);
         white-space: pre-wrap;
     }
 
@@ -736,7 +855,7 @@ $dm-shadow-md: 0 4px 12px rgba(15, 23, 42, 0.06);
 
     &__run-card.is-selected {
         border-color: $dm-accent;
-        background: rgba($dm-accent, 0.05);
+        background: rgb(var(--ct-accent-rgb) / 0.08);
         box-shadow: 0 0 0 2px $dm-accent-soft;
     }
 
@@ -822,12 +941,30 @@ $dm-shadow-md: 0 4px 12px rgba(15, 23, 42, 0.06);
             border-color: $brand-blue-dark;
             background: $brand-blue-dark;
             color: #fff;
-            box-shadow: 0 2px 6px rgba($dm-accent, 0.25);
+            box-shadow: 0 2px 6px rgb(var(--ct-accent-rgb) / 0.3);
+        }
+
+        &:active:not(:disabled) {
+            transform: translateY(0.5px);
+            box-shadow: none;
+        }
+
+        &:disabled {
+            opacity: 0.55;
+            cursor: not-allowed;
+            box-shadow: none;
         }
     }
 
     .argo-button.argo-button--base-o {
         border-radius: 8px;
+
+        // Keyboard focus ring for every secondary/outline button on the page
+        // (Close, Refresh, New run, …) — outline survives overflow containers.
+        &:focus-visible {
+            outline: 2px solid var(--ct-accent);
+            outline-offset: 2px;
+        }
     }
 
     @media (max-width: 720px) {
@@ -863,6 +1000,38 @@ $dm-shadow-md: 0 4px 12px rgba(15, 23, 42, 0.06);
         &__advanced-body {
             padding: 14px;
             grid-template-columns: minmax(0, 1fr);
+        }
+
+        &__deployments-head {
+            display: none;
+        }
+
+        &__deployments-row {
+            // With the header row hidden on mobile, each stacked cell prints its
+            // column name (from data-label) so the value stays interpretable.
+            .columns {
+                width: 100%;
+                padding: 4px 0;
+                flex-direction: row;
+                align-items: baseline;
+                gap: 8px;
+            }
+
+            .columns[data-label]::before {
+                content: attr(data-label);
+                flex: 0 0 96px;
+                color: $brand-text-muted;
+                font-size: 0.75em;
+                font-weight: 600;
+                letter-spacing: 0.04em;
+                text-transform: uppercase;
+            }
+        }
+
+        &__deployments-actions-col {
+            .argo-button {
+                align-self: flex-start;
+            }
         }
     }
 }

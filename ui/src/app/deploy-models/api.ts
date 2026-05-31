@@ -14,11 +14,13 @@ import type {
     ApplicationListResponse,
     AuditTrailResponse,
     DefaultRequest,
+    DeploymentListResponse,
     JobAccepted,
     JobListResponse,
     JobResult,
     Project,
-    ProjectListResponse
+    ProjectListResponse,
+    UndeployResult
 } from './types';
 
 const BASE = '/api/ai-service';
@@ -166,4 +168,33 @@ export function listJobs(params: {status?: string; appName?: string; limit?: num
 
 export function getJobAudit(jobId: string): Promise<AuditTrailResponse> {
     return _request('GET', `/jobs/${jobId}/audit`);
+}
+
+// ---------------------------------------------------------------------------
+// Deployment management
+//
+// Listing is scoped server-side to the caller's own deployments and, when the
+// Argo CD proxy supplies an application, to that application. Deletion is
+// GitOps-only: it removes the manifests from Git and Argo CD prunes the live
+// resources — the service never calls the k8s API to delete. The DELETE runs
+// the git removal synchronously and can take up to ~2 minutes.
+// ---------------------------------------------------------------------------
+
+export function listDeployments(
+    params: {appName?: string; jobId?: string; status?: string; includeRemoved?: boolean; limit?: number; offset?: number} = {},
+    context?: ProxyContext
+): Promise<DeploymentListResponse> {
+    const qs = new URLSearchParams();
+    if (params.jobId) qs.set('job_id', params.jobId);
+    if (params.appName) qs.set('app_name', params.appName);
+    if (params.status) qs.set('status', params.status);
+    if (params.includeRemoved) qs.set('include_removed', 'true');
+    if (params.limit != null) qs.set('limit', String(params.limit));
+    if (params.offset != null) qs.set('offset', String(params.offset));
+    const query = qs.toString();
+    return _request('GET', `/api/v1/deployments${query ? `?${query}` : ''}`, undefined, context);
+}
+
+export function deleteDeployment(deploymentId: string, context?: ProxyContext): Promise<UndeployResult> {
+    return _request('DELETE', `/api/v1/deployments/${encodeURIComponent(deploymentId)}`, undefined, context);
 }
