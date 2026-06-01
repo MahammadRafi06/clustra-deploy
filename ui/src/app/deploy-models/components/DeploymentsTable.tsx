@@ -146,19 +146,7 @@ export function DeploymentsTable({reloadKey}: DeploymentsTableProps) {
     ];
 
     return (
-        <section className='deploy-models__panel' aria-label='Deployed Models'>
-            <header className='deploy-models__panel-header deploy-models__panel-header--split'>
-                <div>
-                    <h2 className='deploy-models__panel-title'>Deployed Models</h2>
-                    <p className='deploy-models__panel-description'>
-                        Every deployment you have created. Removing one deletes its manifests from Git; Argo CD then prunes the live resources.
-                    </p>
-                </div>
-                <button type='button' className='argo-button argo-button--base-o' onClick={() => void load()} disabled={loading}>
-                    {loading ? 'Refreshing…' : 'Refresh'}
-                </button>
-            </header>
-
+        <>
             {notice ? <NoticeAlert variant='info' message={notice} /> : null}
             {error ? <ErrorAlert error={error} prefix='Unable to load deployments' /> : null}
 
@@ -168,7 +156,7 @@ export function DeploymentsTable({reloadKey}: DeploymentsTableProps) {
                 rows={deployments}
                 loading={loading && deployments.length === 0}
                 rowKey={d => d.deployment_id}
-                empty='No deployments yet. Use “Deploy Model” to create one.'
+                empty='No deployments yet. Use “Deploy AI” to create one.'
             />
 
             {confirmTarget ? (
@@ -185,6 +173,6 @@ export function DeploymentsTable({reloadKey}: DeploymentsTableProps) {
                     onConfirm={handleConfirmDelete}
                 />
             ) : null}
-        </section>
+        </>
     );
 }

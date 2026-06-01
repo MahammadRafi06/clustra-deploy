@@ -41,7 +41,7 @@ export const POLICY_PAGE_CONFIGS: PolicyPageConfig[] = [
         description: 'Manage infrastructure selection and placement policies.'
     },
     {key: 'serving', family: 'request', requestType: 'serving', title: 'Serving Policies', description: 'Manage serving runtime and deployment policies.'},
-    {key: 'runtime-config', family: 'runtime', title: 'Runtime Config Policies', description: 'Manage role-scoped engine and frontend runtime configuration policies.'}
+    {key: 'runtime-config', family: 'runtime', title: 'Runtime Configuration Policies', description: 'Manage role-scoped engine and frontend runtime configuration policies.'}
 ];
 
 export function resolvePolicyPagePath(pathname: string): PolicyPageConfig {
@@ -302,7 +302,6 @@ export const PolicyManagementWorkspace: React.FC<PolicyManagementWorkspaceProps>
         <main className='policy-management' role='main' aria-label='AI Configurator Policies'>
             <section className='policy-management__panel'>
                 <PageHeader
-                    eyebrow='Policies'
                     title={
                         <>
                             {policyPage.title}

@@ -35,19 +35,27 @@ export function DeployModelsPage() {
         <AppContextProvider appName={selectedTarget?.appName} appNamespace={selectedTarget?.appNamespace} projectName={selectedTarget?.projectName}>
             <main className='deploy-models' role='main' aria-label='Model Deployments'>
                 <PageHeader
-                    eyebrow='Model deployment'
                     title='Model Deployments'
                     description='Every model you have deployed. Deploy a new one, or remove an existing deployment.'
                     actions={
-                        <button type='button' className='argo-button argo-button--base' onClick={() => setDeployFormOpen(true)}>
-                            <i className='fa fa-plus' /> Deploy Model
-                        </button>
+                        <>
+                            <button
+                                type='button'
+                                className='argo-button argo-button--base-o'
+                                onClick={() => setDeploymentsReloadKey(key => key + 1)}
+                                aria-label='Refresh deployments'>
+                                <i className='fa fa-sync' aria-hidden='true' /> Refresh
+                            </button>
+                            <button type='button' className='argo-button argo-button--base' onClick={() => setDeployFormOpen(true)}>
+                                <i className='fa fa-plus' /> Deploy AI
+                            </button>
+                        </>
                     }
                 />
 
                 <DeploymentsTable reloadKey={deploymentsReloadKey} />
 
-                <SlidingPanel isShown={deployFormOpen} onClose={() => setDeployFormOpen(false)} isMiddle={true} hasCloseButton={true} header={<strong>Deploy a Model</strong>}>
+                <SlidingPanel isShown={deployFormOpen} onClose={() => setDeployFormOpen(false)} isMiddle={true} hasCloseButton={true} header={<strong>Deploy an AI Model</strong>}>
                     {deployFormOpen ? (
                         <div className='deploy-models__drawer'>
                             <p className='deploy-models__panel-description'>

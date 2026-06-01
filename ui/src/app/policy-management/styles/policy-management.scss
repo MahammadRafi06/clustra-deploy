@@ -29,6 +29,7 @@ $brand-slate-700: var(--ct-text-secondary);
     gap: 16px;
     padding: 24px 32px 48px;
     color: $brand-text-primary;
+    font-family: $brand-font-sans;
     font-feature-settings: 'ss01';
 
     &--runtime-wizard {
@@ -2428,11 +2429,12 @@ $rcfg-v2-shadow-lg: var(--ct-shadow-lg);
     }
 
     &__main {
-        background: $rcfg-v2-panel;
-        border: 1px solid $rcfg-v2-border;
-        border-radius: 12px;
-        padding: 22px 24px 28px;
-        box-shadow: $rcfg-v2-shadow;
+        // Flat layout to match the other first-party pages (Model Inventory,
+        // Policies): no card chrome around the table — it sits directly on the
+        // page like the shared DataTable does elsewhere, so all pages read as
+        // one consistent design.
+        display: grid;
+        gap: 14px;
     }
     &__main-head {
         display: flex;

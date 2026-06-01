@@ -242,9 +242,8 @@ export const RuntimeConfigLibrary: React.FC<{
         (driftFilter !== 'all' ? 1 : 0);
 
     return (
-        <main className='policy-management rcfg-v2-library' role='main' aria-label='Runtime Config Policies'>
+        <main className='policy-management rcfg-v2-library' role='main' aria-label='Runtime Configuration Policies'>
             <PageHeader
-                eyebrow='Runtime configuration'
                 title={title}
                 description={description}
                 actions={

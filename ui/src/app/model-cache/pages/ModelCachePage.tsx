@@ -224,7 +224,6 @@ const ModelCacheWorkspace: React.FC = () => {
     return (
         <div className='model-cache__page'>
             <PageHeader
-                eyebrow='Model inventory'
                 title='Model Inventory'
                 description={`Search cached model artifacts and run cache operations. Selected: ${selectedIds.size} · Visible: ${modelsData?.total || 0}`}
                 actions={

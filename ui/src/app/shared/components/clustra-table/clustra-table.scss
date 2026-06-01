@@ -243,6 +243,7 @@
     gap: 16px;
     flex-wrap: wrap;
     margin-bottom: 4px;
+    font-family: $brand-font-sans;
 
     &__eyebrow {
         text-transform: uppercase;
@@ -253,7 +254,15 @@
     }
 
     &__title {
-        margin: 4px 0 0;
+        // Flex row so an inline count/badge (e.g. policy total) sits vertically
+        // centered with the title text and gets consistent spacing. margin:0
+        // keeps the title's top edge flush with the action buttons opposite it
+        // now that the eyebrow is gone.
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin: 0;
         font-size: 24px;
         font-weight: 600;
         line-height: 1.15;
@@ -303,20 +312,19 @@
     flex-wrap: wrap;
     align-items: center;
     gap: 10px;
-
-    &__search {
-        flex: 1 1 260px;
-        min-width: 200px;
-    }
+    font-family: $brand-font-sans;
 
     // Push trailing controls to the right edge.
     &__spacer {
         flex: 1 1 auto;
     }
 
-    input[type='text'],
-    input[type='search'],
-    input:not([type]) {
+    // Normalize ONLY the designated search field — scoped to the explicit class
+    // so it never leaks into descendant inputs such as argo-ui Select's internal
+    // typeahead input (which previously rendered as stray empty boxes).
+    &__search {
+        flex: 1 1 260px;
+        min-width: 200px;
         height: 34px;
         padding: 0 12px;
         font-size: 13px;

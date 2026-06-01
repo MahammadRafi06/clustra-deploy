@@ -36,7 +36,9 @@ $brand-blue-dark: var(--ct-accent-strong);
 $brand-bg-muted: var(--ct-bg-muted);
 
 .deploy-models {
-    background: $dm-bg;
+    // No literal page background: every first-party page shows the themed body
+    // background (set by Layout) so they all match. Previously $dm-bg made this
+    // page a different colour from Model Inventory / Policies / Runtime Config.
     display: flex;
     flex-direction: column;
     gap: 24px;

@@ -76,8 +76,8 @@ export const CLUSTRA_MODEL_CACHE_NAV_ITEM: NavItem = {
 };
 
 export const CLUSTRA_DEPLOY_MODELS_NAV_ITEM: NavItem = {
-    title: 'Model Deployments',
-    tooltip: 'Plan and run private model deployment workflows.',
+    title: 'Deploy AI',
+    tooltip: 'Model Deployments — plan and run private model deployment workflows.',
     path: '/deploy-models',
     iconClassName: 'fa fa-rocket'
 };
@@ -107,7 +107,7 @@ export const CLUSTRA_POLICY_MANAGEMENT_NAV_ITEMS: NavItem[] = [
     },
     {
         title: 'Runtime Config',
-        tooltip: 'Runtime Config Policies — manage role-scoped runtime args and env policies.',
+        tooltip: 'Runtime Configuration Policies — manage role-scoped runtime args and env policies.',
         path: '/policy-management/runtime-config',
         iconClassName: 'fa fa-cogs'
     }

@@ -17,6 +17,7 @@ $brand-blue-dark: var(--ct-accent-strong);
 .model-cache {
     padding: 24px 32px 48px;
     color: $brand-text-primary;
+    font-family: $brand-font-sans;
     font-feature-settings: 'ss01';
 
     &__page {
