@@ -35,7 +35,7 @@ export function DeployModelsPage() {
         <AppContextProvider appName={selectedTarget?.appName} appNamespace={selectedTarget?.appNamespace} projectName={selectedTarget?.projectName}>
             <main className='deploy-models' role='main' aria-label='Model Deployments'>
                 <PageHeader
-                    title='Model Deployments'
+                    title='AI Model Deployments'
                     description='Every model you have deployed. Deploy a new one, or remove an existing deployment.'
                     actions={
                         <>

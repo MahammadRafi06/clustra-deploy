@@ -204,7 +204,7 @@ $brand-bg-muted: var(--ct-bg-muted);
 
     &__context-badge--project {
         color: $dm-warning;
-        background: rgba(217, 142, 43, 0.16);
+        background: rgb(var(--ct-warning-rgb) / 0.16);
     }
 
     &__summary,

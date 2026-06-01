@@ -19,6 +19,9 @@
     --ct-surface: #{$brand-surface-raised};
     --ct-surface-2: #{$brand-slate-50};
     --ct-text: #{$brand-slate-900};
+    // Foreground channel for alpha tints (overlays/chips/borders) so they adapt
+    // to the theme instead of being frozen as a dark-slate literal.
+    --ct-text-rgb: 31 37 51;
     --ct-text-secondary: #{$brand-slate-700};
     --ct-text-muted: #{$brand-slate-600};
     --ct-text-faint: #{$brand-slate-400};
@@ -394,6 +397,7 @@
     --ct-surface: #11161f;
     --ct-surface-2: #0d131c;
     --ct-text: #e7edf5;
+    --ct-text-rgb: 231 237 245;
     --ct-text-secondary: #b3bdcc;
     --ct-text-muted: #8794a6;
     --ct-text-faint: #6b7686;
