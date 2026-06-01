@@ -1,18 +1,9 @@
 import * as React from 'react';
 import {useMemo, useState} from 'react';
 
-import {EmptyState} from '../shared/components';
+import {Column, DataTable, EmptyState, StatusPill} from '../shared/components';
 import {policyApiClient} from './api/client';
-import type {
-    ActiveFilter,
-    ManagedByFilter,
-    PolicyApiClient,
-    PolicyFamily,
-    PolicyPageKey,
-    PolicyRecord,
-    PolicyRow,
-    RequestPolicyType
-} from './api/types';
+import type {ActiveFilter, ManagedByFilter, PolicyApiClient, PolicyFamily, PolicyPageKey, PolicyRecord, PolicyRow, RequestPolicyType} from './api/types';
 import {PolicyConfirmDialog} from './components/PolicyConfirmDialog';
 import {PolicyDetailsDrawer} from './components/PolicyDetailsDrawer';
 import {PolicyError} from './components/PolicyError';
@@ -315,17 +306,14 @@ export const PolicyManagementWorkspace: React.FC<PolicyManagementWorkspaceProps>
                         <div className='rcfg-v2-library__eyebrow'>Policies</div>
                         <h1 className='policy-management__page-title'>
                             {policyPage.title}
-                            <span className='policy-management__count' aria-label={`${data.total} total`}>{data.total}</span>
+                            <span className='policy-management__count' aria-label={`${data.total} total`}>
+                                {data.total}
+                            </span>
                         </h1>
                         <p className='policy-management__section-description'>{policyPage.description}</p>
                     </div>
                     <div className='policy-management__hero-actions'>
-                        <button
-                            type='button'
-                            className='rcfg-v2-icon-btn'
-                            aria-label='Refresh policies'
-                            title='Refresh policies'
-                            onClick={() => refetch()}>
+                        <button type='button' className='rcfg-v2-icon-btn' aria-label='Refresh policies' title='Refresh policies' onClick={() => refetch()}>
                             <i className='fa fa-sync' aria-hidden='true' />
                         </button>
                         {selectedRow && (
@@ -442,14 +430,7 @@ export const PolicyManagementWorkspace: React.FC<PolicyManagementWorkspaceProps>
                     />
                 )}
 
-                <PolicyTable
-                    rows={data.rows}
-                    isLoading={isLoading}
-                    expandedRowId={expandedRowId}
-                    selectedRowId={selectedRowId}
-                    onView={handleView}
-                    onSelect={selectRow}
-                />
+                <PolicyTable rows={data.rows} isLoading={isLoading} expandedRowId={expandedRowId} selectedRowId={selectedRowId} onView={handleView} onSelect={selectRow} />
 
                 {expandedContent()}
 
@@ -532,106 +513,98 @@ const PolicyTable: React.FC<{
     onView: (row: PolicyRow) => void;
     onSelect: (row: PolicyRow) => void;
 }> = ({rows, isLoading, expandedRowId, selectedRowId, onView, onSelect}) => {
-    if (isLoading) {
-        return (
-            <div className='policy-management__table-scroll'>
-                <div className='argo-table-list policy-management__table'>
-                    <PolicyTableHeader />
-                    <div className='argo-table-list__row'>
-                        <div className='row'>
-                            <div className='columns small-12 policy-management__table-empty'>Loading...</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        );
-    }
-
-    if (rows.length === 0) {
-        return (
-            <div className='policy-management__empty-state'>
-                <EmptyState icon='fa fa-sliders-h'>
-                    <h4>No policies found</h4>
-                    <h5>Create a custom policy or adjust the filters.</h5>
-                </EmptyState>
-            </div>
-        );
-    }
+    const columns: Array<Column<PolicyRow>> = [
+        {
+            key: 'select',
+            width: '32px',
+            header: '',
+            render: row => (
+                <span onClick={e => e.stopPropagation()}>
+                    <input
+                        type='radio'
+                        name='policy-management-selected-policy'
+                        className='policy-management__row-radio'
+                        aria-label={rowAriaLabel('Select', row)}
+                        checked={selectedRowId === row.id}
+                        onChange={() => onSelect(row)}
+                    />
+                </span>
+            )
+        },
+        {
+            key: 'name',
+            header: 'Policy name',
+            width: 'minmax(0, 2fr)',
+            render: row => {
+                const document = row.record.document || {};
+                return (
+                    <button
+                        type='button'
+                        className='policy-management__link-button ctbl__primary'
+                        title={displayName(document) ? `${row.id} - ${displayName(document)}` : row.id}
+                        aria-label={rowAriaLabel('View details', row)}
+                        onClick={e => {
+                            if (e && e.stopPropagation) {
+                                e.stopPropagation();
+                            }
+                            onView(row);
+                        }}>
+                        {row.id}
+                    </button>
+                );
+            }
+        },
+        {
+            key: 'status',
+            header: 'Status',
+            width: 'minmax(0, 0.8fr)',
+            render: row => <StatusPill tone={row.record.active ? 'success' : 'neutral'}>{row.record.active ? 'active' : 'inactive'}</StatusPill>
+        },
+        {
+            key: 'owner',
+            header: 'Owner',
+            width: 'minmax(0, 0.9fr)',
+            render: row => <span className='ctbl__secondary'>{row.record.managed_by}</span>
+        },
+        {
+            key: 'description',
+            header: 'Description',
+            width: 'minmax(0, 2.2fr)',
+            render: row => {
+                const document = row.record.document || {};
+                const description = policyDescription(document) || displayName(document) || '—';
+                return (
+                    <span className='ctbl__secondary' title={description}>
+                        {description}
+                    </span>
+                );
+            }
+        },
+        {
+            key: 'updated',
+            header: 'Updated',
+            width: 'minmax(0, 0.9fr)',
+            render: row => <span className='ctbl__secondary'>{formatRelativeTime(row.record.updated_at)}</span>
+        }
+    ];
 
     return (
         <div className='policy-management__table-scroll'>
-            <div className='argo-table-list argo-table-list--clickable policy-management__table'>
-                <PolicyTableHeader />
-                {rows.map(row => {
-                    const document = row.record.document || {};
-                    const isExpanded = expandedRowId === row.id;
-                    const isSelected = selectedRowId === row.id;
-                    const description = policyDescription(document) || displayName(document) || '-';
-                    return (
-                        <div
-                            key={`${row.family}-${row.id}`}
-                            className={`argo-table-list__row policy-management__table-row ${isExpanded ? 'policy-management__table-row--expanded' : ''} ${
-                                isSelected ? 'policy-management__table-row--selected' : ''
-                            }`}>
-                            <div className='row'>
-                                <div className='columns small-1'>
-                                    <input
-                                        type='radio'
-                                        name='policy-management-selected-policy'
-                                        className='policy-management__row-radio'
-                                        aria-label={rowAriaLabel('Select', row)}
-                                        checked={isSelected}
-                                        onChange={() => onSelect(row)}
-                                    />
-                                </div>
-                                <div className='columns small-4'>
-                                    <div className='policy-management__policy-name-cell'>
-                                        <button
-                                            type='button'
-                                            className='policy-management__link-button policy-management__truncate'
-                                            title={displayName(document) ? `${row.id} - ${displayName(document)}` : row.id}
-                                            aria-label={rowAriaLabel(isExpanded ? 'Collapse details' : 'View details', row)}
-                                            onClick={() => onView(row)}>
-                                            {row.id}
-                                        </button>
-                                    </div>
-                                </div>
-                                <div className='columns small-1'>
-                                    <span className='policy-management__table-cell-text'>{row.record.active ? 'active' : 'inactive'}</span>
-                                </div>
-                                <div className='columns small-1'>
-                                    <span className='policy-management__table-cell-text'>{row.record.managed_by}</span>
-                                </div>
-                                <div className='columns small-4'>
-                                    <span
-                                        className='policy-management__truncate'
-                                        title={typeof document.feature === 'string' && document.feature ? `${description} - ${document.feature}` : description}>
-                                        {description}
-                                    </span>
-                                </div>
-                                <div className='columns small-1'>
-                                    <span className='policy-management__table-cell-text'>{formatRelativeTime(row.record.updated_at)}</span>
-                                </div>
-                            </div>
-                        </div>
-                    );
-                })}
-            </div>
+            <DataTable<PolicyRow>
+                ariaLabel='Policies'
+                columns={columns}
+                rows={isLoading ? [] : rows}
+                loading={isLoading}
+                rowKey={row => `${row.family}-${row.id}`}
+                onRowClick={onView}
+                isRowSelected={row => selectedRowId === row.id || expandedRowId === row.id}
+                empty={
+                    <EmptyState icon='fa fa-sliders-h'>
+                        <h4>No policies found</h4>
+                        <h5>Create a custom policy or adjust the filters.</h5>
+                    </EmptyState>
+                }
+            />
         </div>
     );
 };
-
-function PolicyTableHeader() {
-    return (
-        <div className='argo-table-list__head'>
-            <div className='row'>
-                <div className='columns small-1' />
-                <div className='columns small-4'>POLICY NAME</div>
-                <div className='columns small-1'>Status</div>
-                <div className='columns small-1'>Owner</div>
-                <div className='columns small-4'>DESCRIPTION</div>
-                <div className='columns small-1'>UPDATED</div>
-            </div>
-        </div>
-    );
-}
