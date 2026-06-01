@@ -12,21 +12,21 @@ export interface LayoutProps {
     pref: ViewPreferences;
 }
 
-// Value matches the website-aligned app background in brand-tokens.scss.
+// Body backgrounds behind the app canvas, per theme (the .theme-* wrappers
+// handle the in-app surfaces; this is the bleed/overscroll colour).
 const CLUSTRA_BODY_BG = '#eef2f7';
+const CLUSTRA_BODY_BG_DARK = '#0a0e16';
 
 export const ThemeWrapper = (props: {children: React.ReactNode; theme: string}) => {
-    // useTheme is a no-op shim that always returns 'light'; kept so the
-    // existing call-site shape doesn't have to change.
-    const [systemTheme] = useTheme({theme: props.theme});
-    return <div className={'theme-' + systemTheme}>{props.children}</div>;
+    const [theme] = useTheme({theme: props.theme});
+    return <div className={'theme-' + theme}>{props.children}</div>;
 };
 
 export const Layout = (props: LayoutProps) => {
     const [theme] = useTheme({theme: props.pref.theme});
     React.useEffect(() => {
-        document.body.style.background = CLUSTRA_BODY_BG;
-    }, []);
+        document.body.style.background = theme === 'dark' ? CLUSTRA_BODY_BG_DARK : CLUSTRA_BODY_BG;
+    }, [theme]);
 
     return (
         <div className={`theme-${theme}`}>

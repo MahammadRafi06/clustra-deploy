@@ -1,20 +1,11 @@
 @import 'node_modules/argo-ui/src/styles/config';
 @import '../../shared/brand-tokens';
 
-// Theme-aware: every theme-varying brand token is repointed at the semantic CSS
-// variables (shared/clustra-theme.scss). No SCSS color functions are used here,
-// so plain var() substitution is safe and the page follows the light/dark toggle.
-$brand-text-primary: var(--ct-text);
-$brand-text-secondary: var(--ct-text-secondary);
-$brand-text-muted: var(--ct-text-muted);
-$brand-surface-raised: var(--ct-surface);
-$brand-border-subtle: var(--ct-border);
-$brand-border-muted: var(--ct-border-strong);
-$brand-bg-soft: var(--ct-bg);
-$brand-blue: var(--ct-accent);
-$brand-blue-dark: var(--ct-accent-strong);
-$brand-status-error: var(--ct-danger);
-$brand-shadow-soft: var(--ct-shadow-lg);
+// NOTE: the login route renders with `noLayout`, i.e. OUTSIDE the
+// `.theme-light` / `.theme-dark` wrapper that defines the --ct-* CSS variables.
+// So this page must use the literal SCSS brand tokens (compile-time values),
+// never var(--ct-*) — those would be undefined here and collapse surfaces,
+// borders and the button to transparent. Login is pre-auth and light-only.
 
 .login {
     min-height: 100vh;
@@ -25,8 +16,8 @@ $brand-shadow-soft: var(--ct-shadow-lg);
     gap: 16px;
     padding: 40px 20px;
     background:
-        linear-gradient(rgb(var(--ct-accent-rgb) / 0.04) 1px, transparent 1px),
-        linear-gradient(90deg, rgb(var(--ct-accent-rgb) / 0.04) 1px, transparent 1px),
+        linear-gradient(rgba($brand-blue, 0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba($brand-blue, 0.04) 1px, transparent 1px),
         $brand-bg-soft;
     background-size: 40px 40px;
     color: $brand-text-primary;
@@ -105,8 +96,6 @@ $brand-shadow-soft: var(--ct-shadow-lg);
                 box-shadow: 0 1px 0 0 $brand-blue !important;
             }
 
-            // Invalid state: red underline so the field itself signals the error,
-            // not just the message below it.
             &[aria-invalid='true'] {
                 border-bottom-color: $brand-status-error !important;
                 box-shadow: 0 1px 0 0 $brand-status-error !important;
@@ -146,10 +135,9 @@ $brand-shadow-soft: var(--ct-shadow-lg);
                 color: $brand-text-muted !important;
             }
 
-            // Keep autofill on-surface in both themes (was hardcoded white).
             &:-webkit-autofill {
                 -webkit-text-fill-color: $brand-text-primary !important;
-                -webkit-box-shadow: 0 0 0 1000px var(--ct-surface) inset !important;
+                -webkit-box-shadow: 0 0 0 1000px #ffffff inset !important;
                 transition: background-color 5000s ease-in-out 0s;
             }
         }
@@ -176,7 +164,7 @@ $brand-shadow-soft: var(--ct-shadow-lg);
             &:not(.disabled):not([disabled]):hover {
                 background-color: $brand-blue-dark !important;
                 border-color: $brand-blue-dark !important;
-                box-shadow: 0 4px 12px rgb(var(--ct-accent-rgb) / 0.28);
+                box-shadow: 0 4px 12px rgba($brand-blue, 0.28);
             }
 
             &:not(.disabled):not([disabled]):active {
@@ -195,8 +183,6 @@ $brand-shadow-soft: var(--ct-shadow-lg);
         padding: 16px 0 0;
     }
 
-    // Centered "or" divider built from flex + pseudo-rules (no fragile absolute
-    // positioning), so it sits correctly in both themes.
     &__saml-separator {
         display: flex;
         align-items: center;

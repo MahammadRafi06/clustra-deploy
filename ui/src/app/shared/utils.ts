@@ -1,3 +1,4 @@
+import * as React from 'react';
 import type {CSSProperties} from 'react';
 import {Cluster} from './models';
 
@@ -112,12 +113,22 @@ export const useSystemTheme = (cb: (theme: string) => void) => {
     };
 };
 
-// Clustra Deploy uses the Clustra light theme. Keep this shim so any
-// remaining call sites retain their existing shape while preferences
-// cannot switch the app back to Argo dark mode.
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-export const useTheme = (_props: {theme: string}) => {
-    return ['light'];
+/**
+ * Resolve the active theme from a preference value ('light' | 'dark' | 'auto'),
+ * reacting to the preference and — for 'auto' — to the OS colour-scheme. The
+ * first element is the concrete theme ('light' | 'dark') applied as the
+ * `theme-*` wrapper class.
+ */
+export const useTheme = (props: {theme: string}): [string, (theme: string) => void] => {
+    const [theme, setTheme] = React.useState(getTheme(props.theme || 'light'));
+    React.useEffect(() => {
+        setTheme(getTheme(props.theme || 'light'));
+        if (props.theme === 'auto') {
+            return useSystemTheme(systemTheme => setTheme(systemTheme));
+        }
+        return undefined;
+    }, [props.theme]);
+    return [theme, setTheme];
 };
 
 export const formatClusterQueryParam = (cluster: Cluster) => {
