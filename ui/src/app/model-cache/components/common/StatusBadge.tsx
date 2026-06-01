@@ -1,5 +1,6 @@
 import React from 'react';
 
+import {StatusPill, type PillTone} from '../../../shared/components';
 import {MODEL_STATUS_LABELS} from '../../utils/constants';
 import {statusTone, type Tone} from '../../utils/formatters';
 
@@ -13,30 +14,31 @@ interface Props {
     children?: React.ReactNode;
 }
 
-export const StatusBadge: React.FC<Props> = ({status, tone, size = 'normal', iconClassName, title, onClick, children}) => {
-    const badgeTone = tone || statusTone(status || '');
+// Map the model-cache tone vocabulary onto the shared StatusPill tones so every
+// badge renders as the same tight, theme-aware pill (no more stretched blocks).
+const TONE_MAP: Record<Tone, PillTone> = {
+    success: 'success',
+    danger: 'danger',
+    warning: 'warning',
+    accent: 'accent',
+    violet: 'accent',
+    muted: 'neutral'
+};
+
+export const StatusBadge: React.FC<Props> = ({status, tone, iconClassName, title, onClick, children}) => {
+    const resolvedTone = (tone || statusTone(status || '')) as Tone;
+    const pillTone: PillTone = TONE_MAP[resolvedTone] || 'neutral';
     const label = children || (status ? MODEL_STATUS_LABELS[status] || status.replace(/_/g, ' ') : null);
 
     if (!label) {
         return null;
     }
 
-    const className = `model-cache__status-badge model-cache__status-badge--${badgeTone} model-cache__status-badge--${size}${onClick ? ' model-cache__status-badge--button' : ''}`;
     const ariaLabel = status ? `Status: ${MODEL_STATUS_LABELS[status] || status.replace(/_/g, ' ')}` : undefined;
 
-    if (onClick) {
-        return (
-            <button type='button' className={className} onClick={onClick} title={title} aria-label={title || ariaLabel}>
-                {iconClassName && <i className={iconClassName} />}
-                <span>{label}</span>
-            </button>
-        );
-    }
-
     return (
-        <span className={className} title={title} aria-label={ariaLabel}>
-            {iconClassName && <i className={iconClassName} />}
-            <span>{label}</span>
-        </span>
+        <StatusPill tone={pillTone} icon={iconClassName} title={title} ariaLabel={ariaLabel} onClick={onClick}>
+            {label}
+        </StatusPill>
     );
 };

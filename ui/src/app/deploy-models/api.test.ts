@@ -98,25 +98,19 @@ test('submitDefault omits blank values before posting', async () => {
     });
 });
 
-test('listDeployments requests scoped deployments with app context headers', async () => {
+test('listDeployments requests the global (owner-scoped) deployments path with no app headers', async () => {
     mockFetch.mockResolvedValue(jsonResponse({deployments: [], total: 0}));
 
-    await listDeployments(
-        {limit: 100},
-        {applicationName: 'modeldeploy', applicationNamespace: 'argocd', projectName: 'default'}
-    );
+    await listDeployments({limit: 100});
 
     expect(mockFetch).toHaveBeenCalledWith(
         '/api/ai-service/api/v1/deployments?limit=100',
-        expect.objectContaining({
-            method: 'GET',
-            credentials: 'same-origin',
-            headers: expect.objectContaining({
-                'Argocd-Application-Name': 'argocd:modeldeploy',
-                'Argocd-Project-Name': 'default'
-            })
-        })
+        expect.objectContaining({method: 'GET', credentials: 'same-origin'})
     );
+    // The deployments path is globally scoped by the proxy, so the client must
+    // NOT send an application context header.
+    const [, init] = mockFetch.mock.calls[0];
+    expect(init.headers).toBeUndefined();
 });
 
 test('listDeployments serializes optional filters into the query string', async () => {
@@ -128,7 +122,7 @@ test('listDeployments serializes optional filters into the query string', async 
     expect(url).toBe('/api/ai-service/api/v1/deployments?app_name=modeldeploy&status=active&include_removed=true&limit=25&offset=50');
 });
 
-test('deleteDeployment issues a DELETE to the deployment path with proxy headers', async () => {
+test('deleteDeployment issues a context-free DELETE to the deployment path', async () => {
     mockFetch.mockResolvedValue(
         jsonResponse({
             deployment_id: 'dep-1',
@@ -145,13 +139,6 @@ test('deleteDeployment issues a DELETE to the deployment path with proxy headers
 
     expect(mockFetch).toHaveBeenCalledWith(
         '/api/ai-service/api/v1/deployments/dep-1',
-        expect.objectContaining({
-            method: 'DELETE',
-            credentials: 'same-origin',
-            headers: expect.objectContaining({
-                'Argocd-Application-Name': 'argocd:modeldeploy',
-                'Argocd-Project-Name': 'default'
-            })
-        })
+        expect.objectContaining({method: 'DELETE', credentials: 'same-origin'})
     );
 });

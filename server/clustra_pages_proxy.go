@@ -139,6 +139,12 @@ func isAIConfiguratorPolicyProxyPath(path string) bool {
 	}
 
 	for _, prefix := range []string{
+		// Deployment records are owner-scoped (the service filters to the
+		// caller's own deployments), so the management list/get/delete do not
+		// belong to any single Argo CD application — surface them globally so
+		// the Model Deployments page can show every deployment without first
+		// pinning an application.
+		"/api/v1/deployments",
 		"/api/v1/feature-policies",
 		"/api/v1/overlays",
 		"/api/v1/policies",

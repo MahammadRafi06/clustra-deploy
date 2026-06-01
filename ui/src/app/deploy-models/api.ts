@@ -173,16 +173,27 @@ export function getJobAudit(jobId: string): Promise<AuditTrailResponse> {
 // ---------------------------------------------------------------------------
 // Deployment management
 //
-// Listing is scoped server-side to the caller's own deployments and, when the
-// Argo CD proxy supplies an application, to that application. Deletion is
-// GitOps-only: it removes the manifests from Git and Argo CD prunes the live
-// resources — the service never calls the k8s API to delete. The DELETE runs
-// the git removal synchronously and can take up to ~2 minutes.
+// The clustra pages proxy surfaces /api/v1/deployments as a GLOBAL (owner-
+// scoped) path, so these calls need no Argo CD application context — the proxy
+// injects the caller identity and the service filters to the user's own
+// deployments. That lets the Model Deployments page list every deployment
+// without first pinning an application. Deletion is GitOps-only: it removes the
+// manifests from Git and Argo CD prunes the live resources (no direct k8s
+// delete); the DELETE runs the git removal synchronously and can take ~2 min.
 // ---------------------------------------------------------------------------
 
+// Request helper for globally-scoped (no app context) endpoints. The session
+// cookie authenticates; the proxy adds the user identity.
+async function _globalRequest<T>(method: string, path: string): Promise<T> {
+    const resp = await fetch(`${BASE}${path}`, {method, credentials: 'same-origin'});
+    if (!resp.ok) {
+        throw await _buildApiError(resp);
+    }
+    return resp.json() as Promise<T>;
+}
+
 export function listDeployments(
-    params: {appName?: string; jobId?: string; status?: string; includeRemoved?: boolean; limit?: number; offset?: number} = {},
-    context?: ProxyContext
+    params: {appName?: string; jobId?: string; status?: string; includeRemoved?: boolean; limit?: number; offset?: number} = {}
 ): Promise<DeploymentListResponse> {
     const qs = new URLSearchParams();
     if (params.jobId) qs.set('job_id', params.jobId);
@@ -192,9 +203,9 @@ export function listDeployments(
     if (params.limit != null) qs.set('limit', String(params.limit));
     if (params.offset != null) qs.set('offset', String(params.offset));
     const query = qs.toString();
-    return _request('GET', `/api/v1/deployments${query ? `?${query}` : ''}`, undefined, context);
+    return _globalRequest('GET', `/api/v1/deployments${query ? `?${query}` : ''}`);
 }
 
-export function deleteDeployment(deploymentId: string, context?: ProxyContext): Promise<UndeployResult> {
-    return _request('DELETE', `/api/v1/deployments/${encodeURIComponent(deploymentId)}`, undefined, context);
+export function deleteDeployment(deploymentId: string): Promise<UndeployResult> {
+    return _globalRequest('DELETE', `/api/v1/deployments/${encodeURIComponent(deploymentId)}`);
 }
