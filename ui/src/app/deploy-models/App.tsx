@@ -1,13 +1,18 @@
 import {SlidingPanel} from 'argo-ui';
-import React, {useCallback, useLayoutEffect, useState} from 'react';
+import React, {useCallback, useEffect, useLayoutEffect, useState} from 'react';
 
 import {EmptyState, PageHeader} from '../shared/components';
 
-import {setArgoProxyContext} from './api';
+import {listDeployments, setArgoProxyContext} from './api';
 import {AppContextProvider} from './components/AppContext';
 import {ContextSelector, type SelectedAppTarget} from './components/ContextSelector';
 import {DeploymentsTable} from './components/DeploymentsTable';
+import {NoticeAlert} from './components/NoticeAlert';
 import {DefaultPage} from './pages/DefaultPage';
+
+// A deployment occupies its Application while non-terminal (1:1: one app = one
+// model). 'failed' does not occupy — it left no live DGD.
+const OCCUPYING_STATUSES = new Set(['committing', 'active', 'removing']);
 
 export function DeployModelsPage() {
     const [selectedTarget, setSelectedTarget] = useState<SelectedAppTarget | null>(null);
@@ -15,6 +20,40 @@ export function DeployModelsPage() {
     // "Deploy Model" reveals the deploy form, which DOES need a target context.
     const [deployFormOpen, setDeployFormOpen] = useState(false);
     const [deploymentsReloadKey, setDeploymentsReloadKey] = useState(0);
+    // app_names that already hold a non-terminal deployment. ai-service rejects
+    // deploying into an occupied app (1:1, delete-then-redeploy), so we gate the
+    // form here for a clean flow rather than letting the user hit the 4xx.
+    // Owner-scoped + best-effort; the backend guard is authoritative. Refreshed
+    // whenever the deploy panel opens, so a just-deleted app frees up.
+    const [occupiedApps, setOccupiedApps] = useState<ReadonlySet<string>>(new Set());
+
+    useEffect(() => {
+        if (!deployFormOpen) {
+            return;
+        }
+        let cancelled = false;
+        listDeployments({})
+            .then(resp => {
+                if (cancelled) {
+                    return;
+                }
+                setOccupiedApps(
+                    new Set(
+                        resp.deployments
+                            .filter(d => d.app_name && OCCUPYING_STATUSES.has(d.status))
+                            .map(d => d.app_name as string)
+                    )
+                );
+            })
+            .catch(() => {
+                // Best-effort gating only — the ai-service guard is authoritative.
+            });
+        return () => {
+            cancelled = true;
+        };
+    }, [deployFormOpen, deploymentsReloadKey]);
+
+    const targetOccupied = !!selectedTarget && occupiedApps.has(selectedTarget.appName);
 
     useLayoutEffect(() => {
         if (selectedTarget) {
@@ -62,9 +101,16 @@ export function DeployModelsPage() {
                                 Pick an Argo CD project and application, then run the planner. Successful runs commit generated manifests back to the selected source.
                             </p>
 
-                            <ContextSelector value={selectedTarget} onChange={setSelectedTarget} />
+                            <ContextSelector value={selectedTarget} onChange={setSelectedTarget} occupiedApps={occupiedApps} />
 
-                            {selectedTarget ? (
+                            {selectedTarget && targetOccupied ? (
+                                <div className='deploy-models__panel'>
+                                    <NoticeAlert
+                                        variant='warning'
+                                        message={`Application "${selectedTarget.appName}" already has a deployment. Each application serves one model — remove its deployment from the list first, then deploy a new one here.`}
+                                    />
+                                </div>
+                            ) : selectedTarget ? (
                                 <DefaultPage key={`${selectedTarget.appNamespace}/${selectedTarget.appName}`} onDeploySettled={handleDeploySettled} />
                             ) : (
                                 <div className='deploy-models__panel deploy-models__panel--empty'>

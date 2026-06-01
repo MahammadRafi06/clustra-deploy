@@ -36,7 +36,7 @@ func TestApplyProxySignatureHeadersSignsClustraPageRequests(t *testing.T) {
 	req.Header.Set(extension.HeaderArgoCDApplicationName, "clustra:modeldeploy")
 	req.Header.Set(extension.HeaderArgoCDProjectName, "default")
 
-	applyProxySignatureHeaders(req)
+	require.NoError(t, applyProxySignatureHeaders(req))
 
 	timestamp := req.Header.Get(extension.HeaderProxyTimestamp)
 	require.NotEmpty(t, timestamp)
@@ -53,6 +53,41 @@ func TestApplyProxySignatureHeadersSignsClustraPageRequests(t *testing.T) {
 		),
 		req.Header.Get(extension.HeaderProxySignature),
 	)
+}
+
+func TestApplyProxySignatureHeadersFailsClosedWhenRequiredWithoutSecret(t *testing.T) {
+	// No signing secret + signing required => refuse rather than forward
+	// unsigned (forgeable) identity headers.
+	t.Setenv(extension.EnvProxySignatureSecret, "")
+	t.Setenv(extension.EnvRequireProxySignature, "true")
+	req, err := http.NewRequest(http.MethodGet, "/api/ai-service/jobs", nil)
+	require.NoError(t, err)
+	req.Header.Set(extension.HeaderArgoCDUsername, "some-user")
+
+	require.Error(t, applyProxySignatureHeaders(req))
+	assert.Empty(t, req.Header.Get(extension.HeaderProxySignature))
+}
+
+func TestApplyProxySignatureHeadersNoOpWhenNotRequiredWithoutSecret(t *testing.T) {
+	// No secret and not required (dev) => no-op, no error, no signature.
+	t.Setenv(extension.EnvProxySignatureSecret, "")
+	t.Setenv(extension.EnvRequireProxySignature, "")
+	req, err := http.NewRequest(http.MethodGet, "/api/ai-service/jobs", nil)
+	require.NoError(t, err)
+	req.Header.Set(extension.HeaderArgoCDUsername, "some-user")
+
+	require.NoError(t, applyProxySignatureHeaders(req))
+	assert.Empty(t, req.Header.Get(extension.HeaderProxySignature))
+}
+
+func TestProxySignatureRequiredParsesEnv(t *testing.T) {
+	for _, tc := range []struct {
+		val  string
+		want bool
+	}{{"true", true}, {"TRUE", true}, {"1", true}, {"yes", true}, {"", false}, {"false", false}, {"0", false}} {
+		t.Setenv(extension.EnvRequireProxySignature, tc.val)
+		assert.Equalf(t, tc.want, extension.ProxySignatureRequired(), "value %q", tc.val)
+	}
 }
 
 func TestClearArgoProxyHeadersClearsStaleSignatureHeaders(t *testing.T) {

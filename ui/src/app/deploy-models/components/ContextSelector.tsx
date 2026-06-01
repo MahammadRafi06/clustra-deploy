@@ -13,9 +13,14 @@ export interface SelectedAppTarget {
     application: Application;
 }
 
+const EMPTY_OCCUPIED: ReadonlySet<string> = new Set();
+
 interface ContextSelectorProps {
     value: SelectedAppTarget | null;
     onChange: (target: SelectedAppTarget | null) => void;
+    // app_names that already have a non-terminal deployment (1:1: one app = one
+    // model). Marked in the picker; the deploy form is gated in the parent.
+    occupiedApps?: ReadonlySet<string>;
 }
 
 function applicationKey(application: Application): string {
@@ -35,7 +40,7 @@ function primarySource(application: Application): ApplicationSource | undefined 
     return application.spec.source || application.spec.sources?.[0];
 }
 
-export function ContextSelector({value, onChange}: ContextSelectorProps) {
+export function ContextSelector({value, onChange, occupiedApps = EMPTY_OCCUPIED}: ContextSelectorProps) {
     const [projects, setProjects] = useState<Project[]>([]);
     const [projectName, setProjectName] = useState(value?.projectName || '');
     const [applications, setApplications] = useState<Application[]>([]);
@@ -191,7 +196,9 @@ export function ContextSelector({value, onChange}: ContextSelectorProps) {
                                     value: ''
                                 },
                                 ...applications.map(application => ({
-                                    title: `${application.metadata.namespace || 'argocd'}/${application.metadata.name}`,
+                                    title: `${application.metadata.namespace || 'argocd'}/${application.metadata.name}${
+                                        occupiedApps.has(application.metadata.name) ? ' · already deployed' : ''
+                                    }`,
                                     value: applicationKey(application)
                                 }))
                             ]}

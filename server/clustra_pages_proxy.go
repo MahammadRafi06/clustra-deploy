@@ -116,7 +116,11 @@ func (server *ArgoCDServer) newClustraPageProxyHandler(proxyConfig clustraPagePr
 		if selectedApp != nil {
 			applyApplicationHeaders(r, selectedApp)
 		}
-		applyProxySignatureHeaders(r)
+		if err := applyProxySignatureHeaders(r); err != nil {
+			server.log.WithError(err).WithField("page", proxyConfig.pageName).Error("refusing unsigned clustra page proxy request")
+			http.Error(w, "Proxy is not configured for signed requests", http.StatusInternalServerError)
+			return
+		}
 
 		proxy.ServeHTTP(w, r)
 	})
@@ -244,10 +248,16 @@ func applyApplicationHeaders(r *http.Request, app *v1alpha1.Application) {
 	}
 }
 
-func applyProxySignatureHeaders(r *http.Request) {
+func applyProxySignatureHeaders(r *http.Request) error {
 	secret := os.Getenv(extension.EnvProxySignatureSecret)
 	if secret == "" {
-		return
+		// Fail closed: never forward unsigned (forgeable) identity headers when
+		// signing is required. Shares the require-decision with the extension
+		// proxy so both signing paths fail closed consistently.
+		if extension.ProxySignatureRequired() {
+			return fmt.Errorf("%s is required but not configured; refusing to forward unsigned identity headers", extension.EnvProxySignatureSecret)
+		}
+		return nil
 	}
 
 	timestamp := strconv.FormatInt(time.Now().Unix(), 10)
@@ -262,6 +272,7 @@ func applyProxySignatureHeaders(r *http.Request) {
 	)
 	r.Header.Set(extension.HeaderProxyTimestamp, timestamp)
 	r.Header.Set(extension.HeaderProxySignature, signature)
+	return nil
 }
 
 func buildClustraProxySignature(secret string, username string, userID string, groups string, application string, project string, timestamp string) string {

@@ -459,6 +459,18 @@ Explicit env values in global.env/server.env win to avoid duplicate names.
   {{- if and ($modelCache.enabled | default false) $modelCache.backendUrl (not (hasKey $envNames "ARGOCD_MODEL_CACHE_BACKEND_URL")) -}}
     {{- $env = append $env (dict "name" "ARGOCD_MODEL_CACHE_BACKEND_URL" "value" $modelCache.backendUrl) -}}
   {{- end -}}
+  {{/* HMAC secret used by BOTH signing paths (pages proxy + extension proxy)
+       to sign Argo CD identity headers so ai-service can trust them. The SAME
+       secret must be referenced by the ai-service Deployment. When
+       proxySignature.required=true the proxy fails CLOSED (refuses to forward
+       unsigned identity headers if the secret is missing). */}}
+  {{- $proxySig := $pages.proxySignature | default dict -}}
+  {{- if and ($proxySig.secretName | default "") (not (hasKey $envNames "AICONF_PROXY_SIGNATURE_SECRET")) -}}
+    {{- $env = append $env (dict "name" "AICONF_PROXY_SIGNATURE_SECRET" "valueFrom" (dict "secretKeyRef" (dict "name" $proxySig.secretName "key" ($proxySig.secretKey | default "secret")))) -}}
+    {{- if ($proxySig.required | default false) -}}
+      {{- $env = append $env (dict "name" "AICONF_REQUIRE_PROXY_SIGNATURE" "value" "true") -}}
+    {{- end -}}
+  {{- end -}}
 {{- end -}}
 {{ toYaml $env }}
 {{- end -}}

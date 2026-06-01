@@ -102,7 +102,26 @@ const (
 	// EnvProxySignatureSecret defines the env var read by the Argo CD
 	// API server to sign extension requests for downstream verification.
 	EnvProxySignatureSecret = "AICONF_PROXY_SIGNATURE_SECRET"
+
+	// EnvRequireProxySignature, when "true", makes the proxy FAIL-CLOSED: if no
+	// signing secret is configured, identity-bearing requests are refused rather
+	// than forwarded with unsigned (forgeable) headers. Default off so local/dev
+	// (no secret) keeps working; production sets the secret AND this flag.
+	EnvRequireProxySignature = "AICONF_REQUIRE_PROXY_SIGNATURE"
 )
+
+// ProxySignatureRequired reports whether the proxy must HMAC-sign Argo CD
+// identity headers before forwarding to a backend. Shared by both signing paths
+// (the extension proxy and the Clustra pages proxy) so they fail closed
+// consistently. When true and no secret is set, callers MUST refuse the request.
+func ProxySignatureRequired() bool {
+	switch strings.ToLower(strings.TrimSpace(os.Getenv(EnvRequireProxySignature))) {
+	case "true", "1", "yes":
+		return true
+	default:
+		return false
+	}
+}
 
 // RequestResources defines the authorization scope for
 // an incoming request to a given extension. This struct
@@ -813,7 +832,11 @@ func (m *Manager) CallExtension() func(http.ResponseWriter, *http.Request) {
 		userId := m.userGetter.GetUserId(r.Context())
 		username := m.userGetter.GetUsername(r.Context())
 		groups := m.userGetter.GetGroups(r.Context())
-		prepareRequest(r, m.namespace, extName, app, userId, username, groups)
+		if err := prepareRequest(r, m.namespace, extName, app, userId, username, groups); err != nil {
+			m.log.Errorf("prepareRequest error: %s", err)
+			http.Error(w, "Extension proxy is not configured for signed requests", http.StatusInternalServerError)
+			return
+		}
 		m.log.WithFields(log.Fields{
 			HeaderArgoCDUserId:          userId,
 			HeaderArgoCDUsername:        username,
@@ -862,7 +885,7 @@ func buildProxySignature(secret string, username string, userID string, groups s
 //   - Cluster destination name
 //   - Cluster destination server
 //   - Argo CD authenticated username
-func prepareRequest(r *http.Request, namespace string, extName string, app *v1alpha1.Application, userId string, username string, groups []string) {
+func prepareRequest(r *http.Request, namespace string, extName string, app *v1alpha1.Application, userId string, username string, groups []string) error {
 	r.URL.Path = strings.TrimPrefix(r.URL.Path, fmt.Sprintf("%s/%s", URLPrefix, extName))
 	r.Header.Set(HeaderArgoCDNamespace, namespace)
 	if app.Spec.Destination.Name != "" {
@@ -880,20 +903,28 @@ func prepareRequest(r *http.Request, namespace string, extName string, app *v1al
 	if len(groups) > 0 {
 		r.Header.Set(HeaderArgoCDGroups, strings.Join(groups, ","))
 	}
-	if secret := os.Getenv(EnvProxySignatureSecret); secret != "" {
-		timestamp := strconv.FormatInt(time.Now().Unix(), 10)
-		signature := buildProxySignature(
-			secret,
-			username,
-			userId,
-			strings.Join(groups, ","),
-			r.Header.Get(HeaderArgoCDApplicationName),
-			r.Header.Get(HeaderArgoCDProjectName),
-			timestamp,
-		)
-		r.Header.Set(HeaderProxyTimestamp, timestamp)
-		r.Header.Set(HeaderProxySignature, signature)
+	secret := os.Getenv(EnvProxySignatureSecret)
+	if secret == "" {
+		// Fail closed: never forward unsigned (forgeable) identity headers when
+		// signing is required.
+		if ProxySignatureRequired() {
+			return fmt.Errorf("%s is required but not configured; refusing to forward unsigned identity headers", EnvProxySignatureSecret)
+		}
+		return nil
 	}
+	timestamp := strconv.FormatInt(time.Now().Unix(), 10)
+	signature := buildProxySignature(
+		secret,
+		username,
+		userId,
+		strings.Join(groups, ","),
+		r.Header.Get(HeaderArgoCDApplicationName),
+		r.Header.Get(HeaderArgoCDProjectName),
+		timestamp,
+	)
+	r.Header.Set(HeaderProxyTimestamp, timestamp)
+	r.Header.Set(HeaderProxySignature, signature)
+	return nil
 }
 
 // AddMetricsRegistry will associate the given metricsReg in the Manager.

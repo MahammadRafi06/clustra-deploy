@@ -1,0 +1,87 @@
+{{- /*
+Per-tenant ApplicationSet — generates ONE ArgoCD Application per model directory
+in the GitOps repo, with the clean-delete sync policy baked in.
+
+THIS IS THE FIX for the orphaned-pods / stuck-delete root cause: the hand-made
+per-model Application (`newrelease`) had NO syncPolicy, so `prune` was off and a
+`git rm` of the DGD manifest never deleted the live DGD — which forced a manual
+`kubectl delete dgd` that wedged on Karpenter-stranded pods. By generating every
+per-model Application from one template, prune + the cascade finalizer are
+present BY CONSTRUCTION; you can never again hand-create a policy-less app.
+
+Lifecycle: ai-service commits a model's manifests into <models.path>/<model>/ ->
+the Application appears and syncs the DGD. Removing that directory (the delete) ->
+the Application is pruned and the DGD torn down — no manual kubectl, no wedge,
+because the delete fires promptly while the GPU node is still alive.
+
+Rendered only for tenants that set a `models:` block. Requires the
+applicationset-controller (shipped with this chart).
+*/ -}}
+{{- range $t := .Values.tenants | default list }}
+{{- with $t.models }}
+{{- $repo := .gitopsRepoURL | default $.Values.clustraGitopsRepoURL -}}
+{{- if not $repo }}{{ fail (printf "tenants[%s].models needs gitopsRepoURL or clustraGitopsRepoURL" $t.name) }}{{- end }}
+{{- $rev := .revision | default "HEAD" -}}
+{{- $glob := printf "%s/*" (.path | default $t.name) -}}
+---
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: {{ printf "%s-models" $t.name | quote }}
+  namespace: {{ $.Release.Namespace | quote }}
+  labels:
+    app.kubernetes.io/managed-by: {{ $.Release.Service | quote }}
+    clustra.ai/tenant: {{ $t.name | quote }}
+spec:
+  goTemplate: true
+  goTemplateOptions: ["missingkey=error"]
+  generators:
+    - git:
+        repoURL: {{ $repo | quote }}
+        revision: {{ $rev | quote }}
+        directories:
+          - path: {{ $glob | quote }}
+  template:
+    metadata:
+      # One Application per model directory, named after it (RFC1123-normalized).
+      name: '{{ "{{.path.basenameNormalized}}" }}'
+      namespace: {{ $.Release.Namespace | quote }}
+      # Deleting the Application (i.e. the model directory disappears from git)
+      # cascades to prune its live resources instead of orphaning them.
+      finalizers:
+        - resources-finalizer.argocd.argoproj.io
+    spec:
+      project: {{ $t.name | quote }}
+      source:
+        repoURL: {{ $repo | quote }}
+        targetRevision: {{ $rev | quote }}
+        path: '{{ "{{.path.path}}" }}'
+      destination:
+        server: {{ .destinationServer | default "https://kubernetes.default.svc" | quote }}
+        # Default: a per-model namespace (matches 1:1 app=model). Override with a
+        # fixed tenant namespace if you co-locate. Must fall within the tenant
+        # AppProject's allowed destinations.
+        namespace: {{ .destinationNamespace | default "{{.path.basenameNormalized}}" | quote }}
+      syncPolicy:
+        automated:
+          # prune: the whole point — a git-delete removes the live DGD.
+          prune: true
+          selfHeal: true
+          # one DGD per app dir; allow pruning the last resource on delete.
+          allowEmpty: true
+        syncOptions:
+          # BACKGROUND (not foreground): delete the DGD immediately and let
+          # native ownerReference GC reap DCD->Deployment->RS->pods. Foreground
+          # places blocking finalizers down the whole tree and is what wedged on
+          # the Karpenter-stranded pods during the manual delete.
+          - PrunePropagationPolicy=background
+          - PruneLast=true
+          - CreateNamespace=false
+        retry:
+          limit: 5
+          backoff:
+            duration: 15s
+            factor: 2
+            maxDuration: 5m
+{{- end }}
+{{- end }}

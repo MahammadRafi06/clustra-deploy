@@ -1,0 +1,85 @@
+{{- /*
+Per-tenant ArgoCD AppProjects — the durable tenant-isolation boundary.
+
+With Clustra deferring tenant authorization to ArgoCD RBAC (rather than a parallel
+engine in ai-service), each tenant gets one AppProject that:
+  * restricts which git repos its Applications may use (sourceRepos),
+  * restricts which clusters + namespaces they may deploy to (destinations),
+  * whitelists ONLY the resource kinds ai-service emits (DGD + cache PV/PVC/NS),
+  * binds the tenant's OIDC groups / Entra App Roles to project-scoped roles.
+
+The proxy already enforces `applications, get` on the target Application before
+forwarding to ai-service, so these project roles + destinations are what actually
+confine a tenant. Rendered from `.Values.tenants` (empty by default => no-op).
+*/ -}}
+{{- range $t := .Values.tenants | default list }}
+{{- if not $t.name }}{{ fail "tenants[].name is required" }}{{- end }}
+---
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: {{ $t.name | quote }}
+  namespace: {{ $.Release.Namespace | quote }}
+  labels:
+    app.kubernetes.io/managed-by: {{ $.Release.Service | quote }}
+    clustra.ai/tenant: {{ $t.name | quote }}
+  {{- with $t.finalizers }}
+  finalizers:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  description: {{ printf "Clustra tenant %s" $t.name | quote }}
+  sourceRepos:
+    {{- range ($t.sourceRepos | default (list $.Values.clustraGitopsRepoURL) ) }}
+    {{- if . }}
+    - {{ . | quote }}
+    {{- end }}
+    {{- end }}
+  destinations:
+    {{- range ($t.destinations | default list) }}
+    - server: {{ .server | default "https://kubernetes.default.svc" | quote }}
+      {{- with .name }}
+      name: {{ . | quote }}
+      {{- end }}
+      namespace: {{ required "tenants[].destinations[].namespace is required (use a tenant-scoped pattern, e.g. acme-*)" .namespace | quote }}
+    {{- end }}
+  # ai-service deploys create a per-model Namespace + PV (cluster-scoped) and a
+  # DGD + PVC (namespaced). Whitelist exactly those; everything else is denied.
+  clusterResourceWhitelist:
+    - group: ""
+      kind: Namespace
+    - group: ""
+      kind: PersistentVolume
+    {{- range ($t.extraClusterResources | default list) }}
+    - {{ toYaml . | nindent 6 | trim }}
+    {{- end }}
+  namespaceResourceWhitelist:
+    - group: nvidia.com
+      kind: DynamoGraphDeployment
+    - group: ""
+      kind: PersistentVolumeClaim
+    {{- range ($t.extraNamespaceResources | default list) }}
+    - {{ toYaml . | nindent 6 | trim }}
+    {{- end }}
+  roles:
+    - name: deployer
+      description: {{ printf "Deploy and manage applications in tenant %s" $t.name | quote }}
+      policies:
+        - p, proj:{{ $t.name }}:deployer, applications, get, {{ $t.name }}/*, allow
+        - p, proj:{{ $t.name }}:deployer, applications, create, {{ $t.name }}/*, allow
+        - p, proj:{{ $t.name }}:deployer, applications, update, {{ $t.name }}/*, allow
+        - p, proj:{{ $t.name }}:deployer, applications, sync, {{ $t.name }}/*, allow
+        - p, proj:{{ $t.name }}:deployer, applications, delete, {{ $t.name }}/*, allow
+      groups:
+        {{- range ($t.deployerGroups | default list) }}
+        - {{ . | quote }}
+        {{- end }}
+    - name: viewer
+      description: {{ printf "Read-only access to applications in tenant %s" $t.name | quote }}
+      policies:
+        - p, proj:{{ $t.name }}:viewer, applications, get, {{ $t.name }}/*, allow
+      groups:
+        {{- range ($t.viewerGroups | default list) }}
+        - {{ . | quote }}
+        {{- end }}
+{{- end }}

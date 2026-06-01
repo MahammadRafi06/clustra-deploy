@@ -848,6 +848,46 @@ clustraPages:
     rbacPolicy:
       - "p, role:admin, clustra-pages, *, model-cache, allow"
 
+  # -- HMAC secret used to sign Argo CD identity headers (Argocd-Username/-Groups/
+  # -- -Project/...) so the ai-service backend can trust them instead of accepting
+  # -- forgeable raw headers. The SAME secret (same Secret/key) MUST also be wired
+  # -- into the ai-service Deployment. Leave secretName empty to disable signing
+  # -- (dev). Roll out signer-first: enable here, confirm signatures flow, THEN set
+  # -- the secret on ai-service so it starts verifying — avoids a lockout window.
+  proxySignature:
+    # -- Name of an existing Secret holding the shared HMAC signing secret.
+    secretName: ""
+    # -- Key within that Secret (defaults to "secret").
+    secretKey: secret
+    # -- Fail CLOSED: refuse to forward unsigned identity headers if the secret is
+    # -- missing (sets AICONF_REQUIRE_PROXY_SIGNATURE=true). Only enable once the
+    # -- secret is reliably provisioned, or the proxy returns 500.
+    required: false
+
+# -- Default git repo Clustra commits model manifests to. Used as the AppProject
+# sourceRepos default when a tenant doesn't override it.
+clustraGitopsRepoURL: ""
+
+# -- Per-tenant ArgoCD AppProjects (the tenant-isolation boundary). Empty = none.
+# Each renders an AppProject scoping repos/clusters/namespaces + binding the
+# tenant's OIDC groups / Entra App Roles to project-scoped deployer/viewer roles.
+# Example:
+#   tenants:
+#     - name: acme
+#       sourceRepos: [ "https://git.example.com/clustra-gitops.git" ]
+#       destinations:
+#         - { server: https://kubernetes.default.svc, namespace: "acme-*" }
+#       deployerGroups: [ "tenant.acme.deployer" ]   # Entra App Role value / group ID
+#       viewerGroups:   [ "tenant.acme.viewer" ]
+#       # Optional: auto-generate one Application per model directory with the
+#       # clean-delete sync policy (prune + finalizer) baked in — the fix for the
+#       # stuck-delete / orphaned-pods root cause. Omit to manage apps yourself.
+#       models:
+#         path: "tenants/acme"          # generator globs <path>/* (one dir per model)
+#         revision: HEAD
+#         destinationNamespace: ""      # default: per-model namespace ({{.path.basenameNormalized}})
+tenants: []
+
 targetGroupBindings:
   # -- Create AWS Load Balancer Controller TargetGroupBinding resources for
   # -- target groups provisioned by the infra repository.
