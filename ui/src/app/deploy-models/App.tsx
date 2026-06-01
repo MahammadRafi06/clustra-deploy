@@ -1,3 +1,4 @@
+import {SlidingPanel} from 'argo-ui';
 import React, {useCallback, useLayoutEffect, useState} from 'react';
 
 import {EmptyState, PageHeader} from '../shared/components';
@@ -38,7 +39,7 @@ export function DeployModelsPage() {
                     title='Model Deployments'
                     description='Every model you have deployed. Deploy a new one, or remove an existing deployment.'
                     actions={
-                        <button type='button' className='argo-button argo-button--base' onClick={() => setDeployFormOpen(open => !open)}>
+                        <button type='button' className='argo-button argo-button--base' onClick={() => setDeployFormOpen(true)}>
                             <i className='fa fa-plus' /> Deploy Model
                         </button>
                     }
@@ -46,34 +47,28 @@ export function DeployModelsPage() {
 
                 <DeploymentsTable reloadKey={deploymentsReloadKey} />
 
-                {deployFormOpen ? (
-                    <section className='deploy-models__panel'>
-                        <header className='deploy-models__panel-header deploy-models__panel-header--split'>
-                            <div>
-                                <h2 className='deploy-models__panel-title'>Deploy a Model</h2>
-                                <p className='deploy-models__panel-description'>
-                                    Pick an Argo CD project and application, then run the planner. Successful runs commit generated manifests back to the selected source.
-                                </p>
-                            </div>
-                            <button type='button' className='argo-button argo-button--base-o' onClick={() => setDeployFormOpen(false)}>
-                                Close
-                            </button>
-                        </header>
+                <SlidingPanel isShown={deployFormOpen} onClose={() => setDeployFormOpen(false)} isMiddle={true} hasCloseButton={true} header={<strong>Deploy a Model</strong>}>
+                    {deployFormOpen ? (
+                        <div className='deploy-models__drawer'>
+                            <p className='deploy-models__panel-description'>
+                                Pick an Argo CD project and application, then run the planner. Successful runs commit generated manifests back to the selected source.
+                            </p>
 
-                        <ContextSelector value={selectedTarget} onChange={setSelectedTarget} />
+                            <ContextSelector value={selectedTarget} onChange={setSelectedTarget} />
 
-                        {selectedTarget ? (
-                            <DefaultPage key={`${selectedTarget.appNamespace}/${selectedTarget.appName}`} onDeploySettled={handleDeploySettled} />
-                        ) : (
-                            <div className='deploy-models__panel deploy-models__panel--empty'>
-                                <EmptyState icon='fa fa-project-diagram'>
-                                    <h4>Choose a target to continue</h4>
-                                    <h5>The deploy form activates after you pick an Argo CD project and application.</h5>
-                                </EmptyState>
-                            </div>
-                        )}
-                    </section>
-                ) : null}
+                            {selectedTarget ? (
+                                <DefaultPage key={`${selectedTarget.appNamespace}/${selectedTarget.appName}`} onDeploySettled={handleDeploySettled} />
+                            ) : (
+                                <div className='deploy-models__panel deploy-models__panel--empty'>
+                                    <EmptyState icon='fa fa-project-diagram'>
+                                        <h4>Choose a target to continue</h4>
+                                        <h5>The deploy form activates after you pick an Argo CD project and application.</h5>
+                                    </EmptyState>
+                                </div>
+                            )}
+                        </div>
+                    ) : null}
+                </SlidingPanel>
             </main>
         </AppContextProvider>
     );

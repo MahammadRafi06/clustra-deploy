@@ -1,10 +1,21 @@
 import * as React from 'react';
 import {useCallback, useEffect, useMemo, useState} from 'react';
 
+import {DataTable, PageHeader, StatusPill} from '../../../shared/components';
 import type {ActiveFilter, DeploymentType, PolicyApiClient, RuntimeConfigCatalogRecord, RuntimeConfigPolicyRecord, RuntimeConfigRoleSchemaRecord} from '../../api/types';
 import {PolicyConfirmDialog} from '../../components/PolicyConfirmDialog';
 import {PolicyError} from '../../components/PolicyError';
-import {activeParam, cloneDocument, defaultRuntimeDocument, RUNTIME_POLICY_FETCH_LIMIT, runtimeDescription, runtimeEngineLabel, unique} from '../runtimeConfigUtils';
+import {formatRelativeTime} from '../../formatters';
+import {
+    activeParam,
+    cloneDocument,
+    defaultRuntimeDocument,
+    RUNTIME_POLICY_FETCH_LIMIT,
+    runtimeDeploymentLabel,
+    runtimeDescription,
+    runtimeEngineLabel,
+    unique
+} from '../runtimeConfigUtils';
 import type {RuntimeDocument} from '../runtimeConfigTypes';
 import {AuditDrawer} from './components/AuditDrawer';
 import {CompareDialog} from './components/CompareDialog';
@@ -90,10 +101,7 @@ export const RuntimeConfigLibrary: React.FC<{
     const templates = useMemo(() => policies.filter(record => record.managed_by === 'system'), [policies]);
     const myPolicies = useMemo(() => policies.filter(record => record.managed_by !== 'system'), [policies]);
 
-    const driftCount = useMemo(
-        () => myPolicies.reduce((acc, record) => acc + (record.drift_count && record.drift_count > 0 ? 1 : 0), 0),
-        [myPolicies]
-    );
+    const driftCount = useMemo(() => myPolicies.reduce((acc, record) => acc + (record.drift_count && record.drift_count > 0 ? 1 : 0), 0), [myPolicies]);
 
     const filtered = useMemo(() => {
         const query = search.trim().toLowerCase();
@@ -191,7 +199,15 @@ export const RuntimeConfigLibrary: React.FC<{
     }
 
     if (adminOpen) {
-        return <RuntimeAdminView client={client} onBack={() => { setAdminOpen(false); load(); }} />;
+        return (
+            <RuntimeAdminView
+                client={client}
+                onBack={() => {
+                    setAdminOpen(false);
+                    load();
+                }}
+            />
+        );
     }
 
     if (editing) {
@@ -212,37 +228,9 @@ export const RuntimeConfigLibrary: React.FC<{
             }
         };
         if (editing.ui === 'wizard') {
-            return (
-                <RuntimeConfigWizard
-                    {...sharedProps}
-                    onSwitchToEditor={() => setEditing({...editing, ui: 'editor'})}
-                />
-            );
+            return <RuntimeConfigWizard {...sharedProps} onSwitchToEditor={() => setEditing({...editing, ui: 'editor'})} />;
         }
-        return (
-            <RuntimeConfigEditor
-                {...sharedProps}
-                onSwitchToWizard={() => setEditing({...editing, ui: 'wizard'})}
-            />
-        );
-    }
-
-    const intentCardCounts: Record<TuningIntent, number> = {
-        latency: templates.filter(record => readPolicyTags(record).intent === 'latency').length,
-        throughput: templates.filter(record => readPolicyTags(record).intent === 'throughput').length,
-        balanced: templates.filter(record => readPolicyTags(record).intent === 'balanced').length,
-        cost: templates.filter(record => readPolicyTags(record).intent === 'cost').length,
-        debug: templates.filter(record => readPolicyTags(record).intent === 'debug').length
-    };
-
-    function pickIntent(target: TuningIntent) {
-        setIntent(target);
-        if (typeof window !== 'undefined') {
-            const node = window.document.querySelector('.rcfg-v2-library__main');
-            if (node instanceof HTMLElement) {
-                node.scrollIntoView({behavior: 'smooth', block: 'start'});
-            }
-        }
+        return <RuntimeConfigEditor {...sharedProps} onSwitchToWizard={() => setEditing({...editing, ui: 'wizard'})} />;
     }
 
     const activeFilterCount =
@@ -255,68 +243,28 @@ export const RuntimeConfigLibrary: React.FC<{
 
     return (
         <main className='policy-management rcfg-v2-library' role='main' aria-label='Runtime Config Policies'>
-            <section className='rcfg-v2-library__hero'>
-                <div className='rcfg-v2-library__hero-titles'>
-                    <div className='rcfg-v2-library__eyebrow'>Runtime configuration</div>
-                    <h1>{title}</h1>
-                    <p>{description}</p>
-                </div>
-                <div className='rcfg-v2-library__hero-actions'>
-                    <button
-                        type='button'
-                        className='rcfg-v2-icon-btn'
-                        onClick={() => load()}
-                        aria-label='Refresh policy list'
-                        title='Refresh'>
-                        <i className='fa fa-sync' aria-hidden='true' />
-                    </button>
-                    <button
-                        type='button'
-                        className='rcfg-v2-icon-btn'
-                        onClick={() => setAdminOpen(true)}
-                        aria-label='Open runtime config admin'
-                        title='Admin'>
-                        <i className='fa fa-cog' aria-hidden='true' />
-                    </button>
-                    <span className='rcfg-v2-icon-btn__separator' aria-hidden='true' />
-                    <button type='button' className='argo-button argo-button--base-o policy-management__button' onClick={openCreate}>
-                        Start blank
-                    </button>
-                </div>
-            </section>
-
-            <section className='rcfg-v2-library__intents' aria-label='Start from a tuning intent'>
-                <header>
-                    <h2>Start from intent</h2>
-                    <p>Clone a curated template tuned for the goal your deployment cares about most.</p>
-                </header>
-                <div className='rcfg-v2-intent-cards'>
-                    <IntentCard
-                        intent='latency'
-                        title='Latency'
-                        description='Optimized for fast first-token and response time.'
-                        templateCount={intentCardCounts.latency}
-                        accent='rcfg-v2-intent--latency'
-                        onClick={() => pickIntent('latency')}
-                    />
-                    <IntentCard
-                        intent='throughput'
-                        title='Throughput'
-                        description='Maximize tokens / sec across concurrent requests.'
-                        templateCount={intentCardCounts.throughput}
-                        accent='rcfg-v2-intent--throughput'
-                        onClick={() => pickIntent('throughput')}
-                    />
-                    <IntentCard
-                        intent='balanced'
-                        title='Balanced'
-                        description='Sensible defaults across latency, throughput, and memory.'
-                        templateCount={intentCardCounts.balanced}
-                        accent='rcfg-v2-intent--balanced'
-                        onClick={() => pickIntent('balanced')}
-                    />
-                </div>
-            </section>
+            <PageHeader
+                eyebrow='Runtime configuration'
+                title={title}
+                description={description}
+                actions={
+                    <>
+                        <button type='button' className='rcfg-v2-icon-btn' onClick={() => load()} aria-label='Refresh policy list' title='Refresh'>
+                            <i className='fa fa-sync' aria-hidden='true' />
+                        </button>
+                        <button type='button' className='rcfg-v2-icon-btn' onClick={() => setAdminOpen(true)} aria-label='Open runtime config admin' title='Admin'>
+                            <i className='fa fa-cog' aria-hidden='true' />
+                        </button>
+                        <span className='rcfg-v2-icon-btn__separator' aria-hidden='true' />
+                        <button type='button' className='argo-button argo-button--base-o policy-management__button' onClick={openCreate}>
+                            Start blank
+                        </button>
+                        <button type='button' className='argo-button argo-button--base policy-management__create-button' onClick={openCreate}>
+                            <i className='fa fa-plus' aria-hidden='true' /> New policy
+                        </button>
+                    </>
+                }
+            />
 
             {toast && <div className='policy-management__toast'>{toast}</div>}
             {error && <PolicyError error={error} prefix='Failed to load runtime config policies' />}
@@ -368,12 +316,6 @@ export const RuntimeConfigLibrary: React.FC<{
                                 <i className='fa fa-exclamation-triangle' aria-hidden='true' /> {driftCount} need{driftCount === 1 ? 's' : ''} migration
                             </button>
                         )}
-                        <button
-                            type='button'
-                            className='argo-button argo-button--base policy-management__create-button'
-                            onClick={openCreate}>
-                            <i className='fa fa-plus' aria-hidden='true' /> New policy
-                        </button>
                     </div>
                 </header>
 
@@ -513,21 +455,85 @@ export const RuntimeConfigLibrary: React.FC<{
                         </div>
                     )
                 ) : (
-                    <div className='rcfg-v2-library__cards'>
-                        {filtered.map(record => (
-                            <PolicyCard
-                                key={record.policy_id}
-                                record={record}
-                                selected={selectedId === record.policy_id}
-                                onSelect={() => setSelectedId(record.policy_id)}
-                                onEdit={openEdit}
-                                onClone={openClone}
-                                onCompare={setCompareTarget}
-                                onDetails={setDetailsTarget}
-                                onMigrate={setMigrateTarget}
-                            />
-                        ))}
-                    </div>
+                    <DataTable<RuntimeConfigPolicyRecord>
+                        ariaLabel='Runtime config policies'
+                        columns={[
+                            {
+                                key: 'select',
+                                width: '32px',
+                                header: '',
+                                render: record => (
+                                    <span onClick={e => e.stopPropagation()}>
+                                        <input
+                                            type='radio'
+                                            name='rcfg-selected-policy'
+                                            className='policy-management__row-radio'
+                                            aria-label={`Select ${runtimeDescription(record)}`}
+                                            checked={selectedId === record.policy_id}
+                                            onChange={() => setSelectedId(record.policy_id)}
+                                        />
+                                    </span>
+                                )
+                            },
+                            {
+                                key: 'policy',
+                                header: 'Policy',
+                                width: 'minmax(0, 2fr)',
+                                render: record => (
+                                    <div className='ctbl__stack'>
+                                        <span className='ctbl__primary'>{runtimeDescription(record)}</span>
+                                        <span className='ctbl__secondary'>{record.policy_id}</span>
+                                    </div>
+                                )
+                            },
+                            {
+                                key: 'engine',
+                                header: 'Engine',
+                                width: 'minmax(0, 1fr)',
+                                render: record => (
+                                    <div className='ctbl__stack'>
+                                        <span>{runtimeEngineLabel(record.engine)}</span>
+                                        <span className='ctbl__secondary'>{record.engine_version}</span>
+                                    </div>
+                                )
+                            },
+                            {
+                                key: 'deployment',
+                                header: 'Deployment',
+                                width: 'minmax(0, 0.9fr)',
+                                render: record => <span className='ctbl__secondary'>{runtimeDeploymentLabel(record.deployment_type)}</span>
+                            },
+                            {
+                                key: 'status',
+                                header: 'Status',
+                                width: 'minmax(0, 1.1fr)',
+                                render: record => (
+                                    <span className='ctbl__line'>
+                                        <StatusPill tone={record.active ? 'success' : 'neutral'}>{record.active ? 'active' : 'archived'}</StatusPill>
+                                        {typeof record.drift_count === 'number' && record.drift_count > 0 && (
+                                            <StatusPill
+                                                tone='warning'
+                                                icon='fa fa-exclamation-triangle'
+                                                title='Authored against a catalog version that has been replaced — click to migrate'
+                                                onClick={() => setMigrateTarget(record)}>
+                                                drift
+                                            </StatusPill>
+                                        )}
+                                    </span>
+                                )
+                            },
+                            {
+                                key: 'updated',
+                                header: 'Updated',
+                                width: 'minmax(0, 0.9fr)',
+                                render: record => <span className='ctbl__secondary'>{formatRelativeTime(record.updated_at)}</span>
+                            }
+                        ]}
+                        rows={filtered}
+                        rowKey={record => record.policy_id}
+                        onRowClick={setDetailsTarget}
+                        isRowSelected={record => selectedId === record.policy_id}
+                    />
                 )}
 
                 {selectedId && filtered.find(record => record.policy_id === selectedId) && (
@@ -598,12 +604,7 @@ export const RuntimeConfigLibrary: React.FC<{
                 }}
             />
 
-            <AuditDrawer
-                open={!!auditTarget}
-                target={auditTarget}
-                client={client}
-                onClose={() => setAuditTarget(null)}
-            />
+            <AuditDrawer open={!!auditTarget} target={auditTarget} client={client} onClose={() => setAuditTarget(null)} />
 
             {deleteTarget && (
                 <PolicyConfirmDialog
@@ -631,45 +632,3 @@ const Select: React.FC<{label: string; value: string; onChange: (value: string) 
         </select>
     </label>
 );
-
-const IntentCard: React.FC<{
-    intent: TuningIntent;
-    title: string;
-    description: string;
-    templateCount: number;
-    accent: string;
-    onClick: () => void;
-}> = ({intent, title, description, templateCount, accent, onClick}) => (
-    <button
-        type='button'
-        className={`rcfg-v2-intent-card ${accent}`}
-        onClick={onClick}
-        aria-label={`Browse ${title.toLowerCase()} templates (${templateCount} available)`}>
-        <div className='rcfg-v2-intent-card__icon' aria-hidden='true'>
-            <i className={`fa ${intentIcon(intent)}`} />
-        </div>
-        <div className='rcfg-v2-intent-card__body'>
-            <strong>{title}</strong>
-            <p>{description}</p>
-            <small>
-                {templateCount} template{templateCount === 1 ? '' : 's'}
-            </small>
-        </div>
-        <i className='fa fa-arrow-right rcfg-v2-intent-card__arrow' aria-hidden='true' />
-    </button>
-);
-
-function intentIcon(intent: TuningIntent): string {
-    switch (intent) {
-        case 'latency':
-            return 'fa-bolt';
-        case 'throughput':
-            return 'fa-tachometer-alt';
-        case 'balanced':
-            return 'fa-balance-scale';
-        case 'cost':
-            return 'fa-dollar';
-        case 'debug':
-            return 'fa-bug';
-    }
-}

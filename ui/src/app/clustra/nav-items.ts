@@ -82,28 +82,32 @@ export const CLUSTRA_DEPLOY_MODELS_NAV_ITEM: NavItem = {
     iconClassName: 'fa fa-rocket'
 };
 
+// Leaf labels are intentionally short: they render under the "Policies" group
+// header in the sidebar, so repeating "Policies" in every leaf is redundant and
+// caused the labels to truncate. The full descriptive name stays in `tooltip`
+// (shown on hover) and in each page's H1 hero title.
 export const CLUSTRA_POLICY_MANAGEMENT_NAV_ITEMS: NavItem[] = [
     {
-        title: 'Workload Policies',
-        tooltip: 'Manage workload-level AI Configurator request policies.',
+        title: 'Workload',
+        tooltip: 'Workload Policies — manage workload-level AI Configurator request policies.',
         path: '/policy-management/workload',
         iconClassName: 'fa fa-briefcase'
     },
     {
-        title: 'Infrastructure Policies',
-        tooltip: 'Manage infrastructure selection and placement policies.',
+        title: 'Infrastructure',
+        tooltip: 'Infrastructure Policies — manage infrastructure selection and placement policies.',
         path: '/policy-management/infrastructure',
         iconClassName: 'fa fa-server'
     },
     {
-        title: 'Serving Policies',
-        tooltip: 'Manage serving runtime and deployment policies.',
+        title: 'Serving',
+        tooltip: 'Serving Policies — manage serving runtime and deployment policies.',
         path: '/policy-management/serving',
         iconClassName: 'fa fa-network-wired'
     },
     {
-        title: 'Runtime Config Policies',
-        tooltip: 'Manage role-scoped runtime args and env policies.',
+        title: 'Runtime Config',
+        tooltip: 'Runtime Config Policies — manage role-scoped runtime args and env policies.',
         path: '/policy-management/runtime-config',
         iconClassName: 'fa fa-cogs'
     }

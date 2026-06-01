@@ -6,13 +6,13 @@ import {services} from '../../shared/services';
 import {BulkActionBar} from '../components/BulkActionBar';
 import {DownloadModelModal} from '../components/DownloadModelModal';
 import {FilterToolbar} from '../components/FilterToolbar';
-import {HealthSummaryCards} from '../components/HealthSummaryCards';
 import {JobsPanel} from '../components/JobsPanel';
 import {ModelCatalogTable} from '../components/ModelCatalogTable';
 import {ModelDetailDrawer} from '../components/ModelDetailDrawer';
 import {PresetsPanel} from '../components/PresetsPanel';
 import {StoragePressureBanner} from '../components/StoragePressureBanner';
 import {StatusBadge} from '../components/common/StatusBadge';
+import {PageHeader} from '../../shared/components';
 import {ConfirmDialog} from '../components/common/ConfirmDialog';
 import {ErrorBanner} from '../components/common/ErrorBanner';
 import {useHealth} from '../hooks/useHealth';
@@ -196,19 +196,44 @@ const ModelCacheWorkspace: React.FC = () => {
         runBulkAction('soft_delete', ids);
     }, [bulkSoftDeleteTarget, runBulkAction]);
 
+    async function handleRefresh() {
+        setRefreshing(true);
+        try {
+            await refetch();
+            showToast('Catalog refreshed');
+        } catch (refreshError) {
+            showToast(`Refresh failed: ${refreshError}`);
+        } finally {
+            setRefreshing(false);
+        }
+    }
+
+    async function handleRescan() {
+        setRescanning(true);
+        try {
+            const result = await api.rescanAll();
+            const failureCopy = result.failed.length > 0 ? `, ${result.failed.length} failed` : '';
+            showToast(`Rescan triggered on ${result.triggered.length} agent(s)${failureCopy}`);
+        } catch (refreshError) {
+            showToast(`Rescan failed: ${refreshError}`);
+        } finally {
+            setRescanning(false);
+        }
+    }
+
     return (
         <div className='model-cache__page'>
-            <section className='white-box model-cache__panel'>
-                <div className='model-cache__toolbar'>
-                    <div className='model-cache__toolbar-meta'>
-                        <StatusBadge tone='muted'>Global workspace</StatusBadge>
+            <PageHeader
+                eyebrow='Model inventory'
+                title='Model Inventory'
+                description={`Search cached model artifacts and run cache operations. Selected: ${selectedIds.size} · Visible: ${modelsData?.total || 0}`}
+                actions={
+                    <>
                         {healthData?.airgapped && (
                             <StatusBadge tone='warning' iconClassName='fa fa-plane fa-rotate-180'>
                                 Air-gapped
                             </StatusBadge>
                         )}
-                    </div>
-                    <div className='model-cache__toolbar-actions'>
                         {!healthData?.airgapped && (
                             <button
                                 type='button'
@@ -225,94 +250,75 @@ const ModelCacheWorkspace: React.FC = () => {
                             aria-label='Open model inventory jobs'>
                             <i className='fa fa-tasks' aria-hidden='true' /> Jobs
                         </button>
-                    </div>
+                        <button
+                            type='button'
+                            className='argo-button argo-button--base-o model-cache__button'
+                            onClick={handleRefresh}
+                            disabled={refreshing}
+                            aria-label='Refresh model catalog'>
+                            <i className={`fa fa-refresh${refreshing ? ' fa-spin' : ''}`} aria-hidden='true' /> Refresh
+                        </button>
+                        <button
+                            type='button'
+                            className='argo-button argo-button--base-o model-cache__button'
+                            onClick={handleRescan}
+                            disabled={rescanning}
+                            aria-label='Rescan agents'>
+                            <i className={`fa fa-hdd-o${rescanning ? ' fa-spin' : ''}`} aria-hidden='true' /> {rescanning ? 'Rescanning…' : 'Rescan'}
+                        </button>
+                        {!healthData?.airgapped && (
+                            <button type='button' className='argo-button argo-button--base model-cache__button' onClick={() => setShowDownload(true)} aria-label='Download model'>
+                                <i className='fa fa-download' aria-hidden='true' /> Download Model
+                            </button>
+                        )}
+                    </>
+                }
+            />
+
+            {toast && (
+                <div className='model-cache__toast' role='status' aria-live='polite'>
+                    {toast}
                 </div>
+            )}
+            {error && <ErrorBanner message={`Failed to load model catalog${isPollingPaused ? '; polling paused' : ''}: ${error.message}`} onRetry={() => refetch()} />}
+            {healthError && (
+                <ErrorBanner message={`Failed to load health status${healthPollingPaused ? '; polling paused' : ''}: ${healthError.message}`} onRetry={() => refetchHealth()} />
+            )}
+            {detailError && <ErrorBanner message={`Failed to load model details: ${detailError.message}`} />}
+            {bulkAction.error && <ErrorBanner message={`Bulk action failed: ${bulkAction.error.message}`} />}
+            {healthData && <StoragePressureBanner health={healthData} />}
 
-                {toast && (
-                    <div className='model-cache__toast' role='status' aria-live='polite'>
-                        {toast}
-                    </div>
-                )}
-                {error && <ErrorBanner message={`Failed to load model catalog${isPollingPaused ? '; polling paused' : ''}: ${error.message}`} onRetry={() => refetch()} />}
-                {healthError && (
-                    <ErrorBanner message={`Failed to load health status${healthPollingPaused ? '; polling paused' : ''}: ${healthError.message}`} onRetry={() => refetchHealth()} />
-                )}
-                {detailError && <ErrorBanner message={`Failed to load model details: ${detailError.message}`} />}
-                {bulkAction.error && <ErrorBanner message={`Bulk action failed: ${bulkAction.error.message}`} />}
-                {healthData && <StoragePressureBanner health={healthData} />}
-                <HealthSummaryCards health={healthData || null} />
-            </section>
+            <FilterToolbar
+                airgapped={healthData?.airgapped}
+                filters={filters}
+                onChange={nextFilters => {
+                    setFilters(nextFilters);
+                    setPage(0);
+                }}
+            />
 
-            <section className='white-box model-cache__panel'>
-                <div className='model-cache__section-header'>
-                    <div>
-                        <div className='model-cache__section-title'>Model Catalog</div>
-                        <div className='model-cache__section-description'>Search cached artifacts and run cache operations.</div>
-                    </div>
-                    <div className='model-cache__section-stats'>
-                        <span>Selected: {selectedIds.size}</span>
-                        <span>Visible: {modelsData?.total || 0}</span>
-                    </div>
-                </div>
+            <BulkActionBar
+                selectedCount={selectedIds.size}
+                onSoftDelete={() => {
+                    const ids = Array.from(selectedIds);
+                    setBulkSoftDeleteTarget({ids, count: ids.length});
+                }}
+                onPin={() => runBulkAction('pin')}
+                onUnpin={() => runBulkAction('unpin')}
+                onClear={() => setSelectedIds(new Set())}
+            />
 
-                <FilterToolbar
-                    airgapped={healthData?.airgapped}
-                    filters={filters}
-                    onChange={nextFilters => {
-                        setFilters(nextFilters);
-                        setPage(0);
-                    }}
-                    onRefresh={async () => {
-                        setRefreshing(true);
-                        try {
-                            await refetch();
-                            showToast('Catalog refreshed');
-                        } catch (refreshError) {
-                            showToast(`Refresh failed: ${refreshError}`);
-                        } finally {
-                            setRefreshing(false);
-                        }
-                    }}
-                    onRescan={async () => {
-                        setRescanning(true);
-                        try {
-                            const result = await api.rescanAll();
-                            const failureCopy = result.failed.length > 0 ? `, ${result.failed.length} failed` : '';
-                            showToast(`Rescan triggered on ${result.triggered.length} agent(s)${failureCopy}`);
-                        } catch (refreshError) {
-                            showToast(`Rescan failed: ${refreshError}`);
-                        } finally {
-                            setRescanning(false);
-                        }
-                    }}
-                    onDownload={() => setShowDownload(true)}
-                    refreshing={refreshing}
-                    rescanning={rescanning}
-                />
-
-                <BulkActionBar
-                    selectedCount={selectedIds.size}
-                    onSoftDelete={() => {
-                        const ids = Array.from(selectedIds);
-                        setBulkSoftDeleteTarget({ids, count: ids.length});
-                    }}
-                    onPin={() => runBulkAction('pin')}
-                    onUnpin={() => runBulkAction('unpin')}
-                    onClear={() => setSelectedIds(new Set())}
-                />
-
-                <ModelCatalogTable
-                    isLoading={isLoading}
-                    models={modelsData?.items || []}
-                    onPageChange={setPage}
-                    onRowClick={setDetailId}
-                    onSelect={handleSelect}
-                    onSelectAll={handleSelectAll}
-                    page={page}
-                    selectedIds={selectedIds}
-                    total={modelsData?.total || 0}
-                />
-            </section>
+            <ModelCatalogTable
+                isLoading={isLoading}
+                models={modelsData?.items || []}
+                onPageChange={setPage}
+                onRowClick={setDetailId}
+                onSelect={handleSelect}
+                onSelectAll={handleSelectAll}
+                page={page}
+                selectedIds={selectedIds}
+                total={modelsData?.total || 0}
+            />
 
             {detailId && (
                 <ModelDetailDrawer

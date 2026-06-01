@@ -275,3 +275,66 @@
         flex-wrap: wrap;
     }
 }
+
+// ---- Page scaffold ----------------------------------------------------------
+// Every first-party page shares the same vertical rhythm and ordering:
+//   PageHeader (title + actions)  →  ctbl-toolbar (filters/search)  →  DataTable
+// Pages keep their own root class alongside `.ctbl-page` for page-specific bits.
+.ctbl-page {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    width: 100%;
+    max-width: 1440px;
+    margin: 0 auto;
+    padding: 24px 28px 40px;
+
+    @media (max-width: 720px) {
+        padding: 16px 14px 32px;
+    }
+}
+
+// ---- Toolbar (filter / search row) -----------------------------------------
+// One horizontal row: a growing search on the left, then selects/toggle pills.
+// Wraps gracefully on narrow viewports. Fields placed inside are normalized to
+// a single 34px height so the row reads as one control strip on every page.
+.ctbl-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+
+    &__search {
+        flex: 1 1 260px;
+        min-width: 200px;
+    }
+
+    // Push trailing controls to the right edge.
+    &__spacer {
+        flex: 1 1 auto;
+    }
+
+    input[type='text'],
+    input[type='search'],
+    input:not([type]) {
+        height: 34px;
+        padding: 0 12px;
+        font-size: 13px;
+        color: var(--ct-text);
+        background: var(--ct-surface);
+        border: 1px solid var(--ct-border);
+        border-radius: 7px;
+        transition: border-color 0.12s ease, box-shadow 0.12s ease;
+
+        &::placeholder {
+            color: var(--ct-text-muted);
+        }
+
+        &:focus,
+        &:focus-visible {
+            outline: none;
+            border-color: var(--ct-accent);
+            box-shadow: 0 0 0 3px rgb(var(--ct-accent-rgb) / 0.16);
+        }
+    }
+}

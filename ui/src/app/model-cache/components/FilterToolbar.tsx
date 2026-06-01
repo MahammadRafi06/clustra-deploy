@@ -16,22 +16,19 @@ interface Filters {
 interface Props {
     filters: Filters;
     onChange: (filters: Filters) => void;
-    onRefresh: () => void;
-    onRescan: () => void;
-    onDownload: () => void;
-    refreshing?: boolean;
-    rescanning?: boolean;
+    // Refresh / Rescan / Download now live in the page header (action bar);
+    // this component is filters-only.
     airgapped?: boolean;
 }
 
-export const FilterToolbar: React.FC<Props> = ({filters, onChange, onRefresh, onRescan, onDownload, refreshing, rescanning, airgapped}) => {
+export const FilterToolbar: React.FC<Props> = ({filters, onChange}) => {
     const update = (partial: Partial<Filters>) => onChange({...filters, ...partial});
 
     return (
-        <div className='model-cache__filters' role='search' aria-label='Model catalog filters'>
+        <div className='ctbl-toolbar model-cache__filters' role='search' aria-label='Model catalog filters'>
             <input
                 type='text'
-                className='argo-field model-cache__search'
+                className='argo-field model-cache__search ctbl-toolbar__search'
                 placeholder='Search models'
                 value={filters.search}
                 onChange={e => update({search: e.target.value})}
@@ -96,34 +93,6 @@ export const FilterToolbar: React.FC<Props> = ({filters, onChange, onRefresh, on
                     onChange={option => update({stale_days: option.value ? Number(option.value) : undefined})}
                 />
             </div>
-
-            <div className='model-cache__filters-spacer' />
-
-            <button
-                type='button'
-                className='argo-button argo-button--base-o model-cache__button'
-                onClick={onRefresh}
-                disabled={refreshing}
-                title='Refresh data'
-                aria-label='Refresh model catalog'>
-                <i className={`fa fa-refresh${refreshing ? ' fa-spin' : ''}`} aria-hidden='true' /> Refresh
-            </button>
-
-            <button
-                type='button'
-                className='argo-button argo-button--base-o model-cache__button'
-                onClick={onRescan}
-                disabled={rescanning}
-                title='Force agent rescan of disk'
-                aria-label='Force agent rescan of disk'>
-                <i className={`fa fa-hdd-o${rescanning ? ' fa-spin' : ''}`} aria-hidden='true' /> {rescanning ? 'Rescanning…' : 'Rescan'}
-            </button>
-
-            {!airgapped && (
-                <button type='button' className='argo-button argo-button--base model-cache__button' onClick={onDownload} aria-label='Download model'>
-                    <i className='fa fa-download' aria-hidden='true' /> Download Model
-                </button>
-            )}
         </div>
     );
 };

@@ -1,7 +1,7 @@
 import * as React from 'react';
 import {useMemo, useState} from 'react';
 
-import {Column, DataTable, EmptyState, StatusPill} from '../shared/components';
+import {Column, DataTable, EmptyState, PageHeader, StatusPill} from '../shared/components';
 import {policyApiClient} from './api/client';
 import type {ActiveFilter, ManagedByFilter, PolicyApiClient, PolicyFamily, PolicyPageKey, PolicyRecord, PolicyRow, RequestPolicyType} from './api/types';
 import {PolicyConfirmDialog} from './components/PolicyConfirmDialog';
@@ -301,67 +301,69 @@ export const PolicyManagementWorkspace: React.FC<PolicyManagementWorkspaceProps>
     return (
         <main className='policy-management' role='main' aria-label='AI Configurator Policies'>
             <section className='policy-management__panel'>
-                <header className='policy-management__hero'>
-                    <div className='policy-management__hero-titles'>
-                        <div className='rcfg-v2-library__eyebrow'>Policies</div>
-                        <h1 className='policy-management__page-title'>
+                <PageHeader
+                    eyebrow='Policies'
+                    title={
+                        <>
                             {policyPage.title}
                             <span className='policy-management__count' aria-label={`${data.total} total`}>
                                 {data.total}
                             </span>
-                        </h1>
-                        <p className='policy-management__section-description'>{policyPage.description}</p>
-                    </div>
-                    <div className='policy-management__hero-actions'>
-                        <button type='button' className='rcfg-v2-icon-btn' aria-label='Refresh policies' title='Refresh policies' onClick={() => refetch()}>
-                            <i className='fa fa-sync' aria-hidden='true' />
-                        </button>
-                        {selectedRow && (
-                            <span className='policy-management__selected-target'>
-                                Selected: <code>{selectedRow.id}</code>
-                            </span>
-                        )}
-                        <div className='policy-management__action-menu'>
+                        </>
+                    }
+                    description={policyPage.description}
+                    actions={
+                        <>
+                            <button type='button' className='rcfg-v2-icon-btn' aria-label='Refresh policies' title='Refresh policies' onClick={() => refetch()}>
+                                <i className='fa fa-sync' aria-hidden='true' />
+                            </button>
+                            {selectedRow && (
+                                <span className='policy-management__selected-target'>
+                                    Selected: <code>{selectedRow.id}</code>
+                                </span>
+                            )}
+                            <div className='policy-management__action-menu'>
+                                <button
+                                    type='button'
+                                    className='argo-button argo-button--base-o policy-management__button'
+                                    disabled={!selectedRow}
+                                    aria-expanded={actionsOpen}
+                                    onClick={() => setActionsOpen(open => !open)}>
+                                    Actions <i className='fa fa-caret-down' aria-hidden='true' />
+                                </button>
+                                {actionsOpen && selectedRow && (
+                                    <div className='policy-management__action-menu-panel' role='menu'>
+                                        <button
+                                            type='button'
+                                            className='policy-management__action-menu-item'
+                                            role='menuitem'
+                                            disabled={selectedIsSystem}
+                                            onClick={() => handleSelectedAction('edit')}>
+                                            Edit
+                                        </button>
+                                        <button type='button' className='policy-management__action-menu-item' role='menuitem' onClick={() => handleSelectedAction('duplicate')}>
+                                            Duplicate as custom
+                                        </button>
+                                        <button type='button' className='policy-management__action-menu-item' role='menuitem' onClick={() => handleSelectedAction('copy')}>
+                                            Copy usage
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
                             <button
                                 type='button'
-                                className='argo-button argo-button--base-o policy-management__button'
-                                disabled={!selectedRow}
-                                aria-expanded={actionsOpen}
-                                onClick={() => setActionsOpen(open => !open)}>
-                                Actions <i className='fa fa-caret-down' aria-hidden='true' />
+                                className='argo-button argo-button--base-o policy-management__button policy-management__button--danger-outline'
+                                disabled={!selectedRow || selectedIsSystem}
+                                title={selectedIsSystem ? 'System-managed policies are read-only' : 'Delete selected policy'}
+                                onClick={handleSelectedDelete}>
+                                Delete
                             </button>
-                            {actionsOpen && selectedRow && (
-                                <div className='policy-management__action-menu-panel' role='menu'>
-                                    <button
-                                        type='button'
-                                        className='policy-management__action-menu-item'
-                                        role='menuitem'
-                                        disabled={selectedIsSystem}
-                                        onClick={() => handleSelectedAction('edit')}>
-                                        Edit
-                                    </button>
-                                    <button type='button' className='policy-management__action-menu-item' role='menuitem' onClick={() => handleSelectedAction('duplicate')}>
-                                        Duplicate as custom
-                                    </button>
-                                    <button type='button' className='policy-management__action-menu-item' role='menuitem' onClick={() => handleSelectedAction('copy')}>
-                                        Copy usage
-                                    </button>
-                                </div>
-                            )}
-                        </div>
-                        <button
-                            type='button'
-                            className='argo-button argo-button--base-o policy-management__button policy-management__button--danger-outline'
-                            disabled={!selectedRow || selectedIsSystem}
-                            title={selectedIsSystem ? 'System-managed policies are read-only' : 'Delete selected policy'}
-                            onClick={handleSelectedDelete}>
-                            Delete
-                        </button>
-                        <button type='button' className='argo-button argo-button--base policy-management__create-button' onClick={handleCreate}>
-                            <i className='fa fa-plus' aria-hidden='true' /> Create policy
-                        </button>
-                    </div>
-                </header>
+                            <button type='button' className='argo-button argo-button--base policy-management__create-button' onClick={handleCreate}>
+                                <i className='fa fa-plus' aria-hidden='true' /> Create policy
+                            </button>
+                        </>
+                    }
+                />
 
                 <div className='policy-management__filters' role='search' aria-label='Policy filters'>
                     <label className='policy-management__filter-field policy-management__filter-field--search'>

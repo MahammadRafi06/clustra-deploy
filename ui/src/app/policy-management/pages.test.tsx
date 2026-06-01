@@ -202,20 +202,20 @@ test('runtime config library renders a policy card; name opens details, Edit ope
     });
     const tree = await renderWorkspace(client, runtimePage);
 
-    // The library renders cards (no table). The card title is the display name, with
-    // the policy_id rendered as a <code> tag. Both should be visible.
+    // The library renders the shared DataTable (one row per policy). The display
+    // name and the policy_id are both visible in the row.
     const text = textContent(tree.root);
     expect(text).toContain('Runtime smoke');
     expect(text).toContain('runtime-smoke');
 
-    // Click the display-name button to open the read-only details drawer.
-    const titleButton = tree.root.find(node =>
-        node.type === 'button' &&
+    // Clicking the row opens the read-only details drawer (DataTable onRowClick).
+    const policyRow = tree.root.find(node =>
+        node.props?.role === 'row' &&
         typeof node.props.className === 'string' &&
-        node.props.className.includes('rcfg-v2-card__name')
+        node.props.className.includes('ctbl__row--clickable')
     );
     act(() => {
-        titleButton.props.onClick();
+        policyRow.props.onClick();
     });
     await flush(2);
 
