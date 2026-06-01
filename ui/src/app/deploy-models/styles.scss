@@ -179,6 +179,11 @@ $brand-bg-muted: var(--ct-bg-muted);
         flex-wrap: wrap;
     }
 
+    // Deployment filter row dropdowns (argo Select needs an explicit width).
+    &__filter-select {
+        min-width: 160px;
+    }
+
     &__context-badge,
     &__context-summary-item,
     &__summary-item {

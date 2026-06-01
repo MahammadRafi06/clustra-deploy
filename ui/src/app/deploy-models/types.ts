@@ -147,6 +147,8 @@ export interface DeploymentSummary {
     deployment_id: string;
     job_id: string | null;
     app_name: string | null;
+    project: string | null;
+    cluster: string | null;
     deploy_mode: string;
     repo_url: string;
     branch: string;

@@ -2037,7 +2037,8 @@ $rcfg-v2-shadow-lg: var(--ct-shadow-lg);
 .rcfg-v2-wizard,
 .rcfg-v2-editor,
 .rcfg-v2-admin,
-.rcfg-v2-drawer {
+.rcfg-v2-drawer,
+.rcfg-v2-dialog {
     font-family: $brand-font-sans;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
