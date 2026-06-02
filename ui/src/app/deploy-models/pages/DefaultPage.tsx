@@ -53,27 +53,21 @@ const DEPLOYMENT_NAME_MAX_LENGTH = 50;
 // live DGD and do not occupy.
 const OCCUPYING_STATUSES: ReadonlySet<DeploymentStatus> = new Set<DeploymentStatus>(['committing', 'active', 'removing']);
 
-// Mirror of ai-service gitops.committer.namespace_app_name(namespace, name) — keep
-// byte-identical so the client-side availability check queries the SAME app_name
-// the backend guard will compute. Python:
-//   slug = re.sub(r'[^a-z0-9-]+', '-', f'{namespace}-{name}'.lower())
-//   slug = re.sub(r'-+', '-', slug).strip('-')
-//   return slug[:63].rstrip('-') or namespace
-// normalizeNamespaceSlug is the UN-truncated slug. ai-service truncates to 63, but
-// the SCM-matrix ApplicationSet builds the live Application name from the full
-// path-derived name — so if this exceeds 63 the recorded app_name and the live
-// Application would diverge. We use the raw length to reject such names.
-function normalizeNamespaceSlug(namespace: string, name: string): string {
-    return `${namespace}-${name}`
-        .toLowerCase()
-        .replace(/[^a-z0-9-]+/g, '-')
-        .replace(/-+/g, '-')
-        .replace(/^-+|-+$/g, '');
+// Byte-for-byte replica of Argo CD applicationset utils.SanitizeName — the
+// {{ .path.basenameNormalized }} the SCM-matrix ApplicationSet stamps onto the app
+// name. Go: lowercase; replace `[^-a-z0-9.]` with '-' (dots KEPT, dashes NOT
+// collapsed); truncate 253; trim leading/trailing '-' and '.'. Must stay identical
+// to ai-service committer.argo_sanitize_name so the availability check queries the
+// SAME app_name the live ApplicationSet (and the backend 1:1 guard) compute.
+function argoSanitizeName(name: string): string {
+    const sanitized = name.toLowerCase().replace(/[^-a-z0-9.]/g, '-');
+    return sanitized.slice(0, 253).replace(/^[-.]+|[-.]+$/g, '');
 }
 
+// app_name = <raw-namespace>-<SanitizeName(deployment)>, identical to ai-service
+// committer.namespace_app_name and the generated Application.
 export function predictNamespaceAppName(namespace: string, name: string): string {
-    const slug = normalizeNamespaceSlug(namespace, name).slice(0, 63).replace(/-+$/g, '');
-    return slug || namespace;
+    return `${namespace}-${argoSanitizeName(name)}`;
 }
 
 type RequestPolicyOptions = Record<RequestPolicyType, SelectOption[]>;
@@ -340,9 +334,9 @@ export function DefaultPage({onDeploySettled, namespace}: DefaultPageProps = {})
             setError('public_model_name', 'Use lowercase letters, numbers and hyphens only; must start and end with a letter or number, with no double hyphens.');
             return;
         }
-        if (namespace && normalizeNamespaceSlug(namespace, deploymentName).length > 63) {
-            // Over 63 the backend would truncate the app_name while the live Argo
-            // Application keeps the full name — keep them identical by rejecting.
+        if (namespace && predictNamespaceAppName(namespace, deploymentName).length > 63) {
+            // The generated application name <namespace>-<deployment> must stay <=63
+            // (the k8s instance-label limit); the backend rejects over-63 too.
             setError('public_model_name', 'Too long for this namespace — the generated application name would exceed 63 characters. Use a shorter deployment name.');
             return;
         }
