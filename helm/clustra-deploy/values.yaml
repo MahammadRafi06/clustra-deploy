@@ -865,17 +865,46 @@ clustraPages:
     required: false
 
 # === Repo-per-team model deploy (ONE global SCM-matrix ApplicationSet) =========
-# -- GitHub org that holds the per-team repos. Each repo named `team-<name>`
-# becomes one Clustra project. Empty = the global ApplicationSet is not rendered.
+# -- (LEGACY / github shortcut) GitHub org that holds the per-team repos. Each
+# repo named `team-<name>` becomes one Clustra project. Empty = no ApplicationSet
+# unless clustraScm.provider is set. Equivalent to clustraScm.provider=github +
+# clustraScm.owner=<this>. Kept for back-compat; new configs use clustraScm.
 clustraGithubOrg: ""
-# -- Credential the applicationset-controller uses to DISCOVER + read team-* repos
-# org-wide (HTTPS). Prefer a GitHub App (read-only contents); secrets live in the
-# controller's release namespace. This is the READ identity — keep it separate
-# from ai-service's WRITE identity (per-repo GitHub App install tokens).
+# -- (LEGACY) github read credential paired with clustraGithubOrg.
 clustraScmSecret:
   appSecretName: ""   # GitHub App repo-creds secret (recommended)
   secretName: ""      # OR a PAT secret
   key: token
+
+# -- Generic SCM provider for the global team-* ApplicationSet. Set `provider` to
+# use a non-GitHub host; the deploy flow (repo derivation, AppProjects, ai-service
+# HTTPS commit auth) is otherwise identical across hosts. If `provider` is empty
+# and clustraGithubOrg is set, it falls back to the legacy github behavior above.
+# The applicationset-controller reads these credentials from its OWN namespace.
+clustraScm:
+  # github | gitlab | gitea | bitbucket | bitbucketServer | azureDevOps
+  provider: ""
+  # discovery scope: GitHub/Gitea org, GitLab group, Bitbucket(Cloud) workspace,
+  # Bitbucket Server projectKey, Azure DevOps organization.
+  owner: ""
+  # API base URL — REQUIRED for gitea + bitbucketServer; optional for GitHub
+  # Enterprise / self-managed GitLab / Azure DevOps. Empty = the SaaS default.
+  api: ""
+  teamProject: ""          # azureDevOps only
+  user: ""                 # bitbucket cloud only (paired with the app password)
+  username: ""             # bitbucketServer basicAuth (omit => bearerToken via tokenRef)
+  includeSubgroups: true   # gitlab only
+  insecure: false          # gitea only (self-signed)
+  allBranches: false
+  cloneProtocol: https     # keep https — must match AppProject sourceRepos + creds
+  repoFilter: "^team-.+"
+  appSecretName: ""        # github App repo-creds secret (github only)
+  tokenRef:                # token cred: github PAT / gitlab / gitea / azureDevOps / bbServer bearer
+    secretName: ""
+    key: token
+  passwordRef:             # password cred: bitbucket cloud app-password / bbServer basicAuth
+    secretName: ""
+    key: password
 # -- SCM org rescan interval (s). A GitHub webhook to the appset-controller makes
 # new repos/dirs appear in seconds; this is the safety-net poll.
 clustraScmRequeueSeconds: 1800

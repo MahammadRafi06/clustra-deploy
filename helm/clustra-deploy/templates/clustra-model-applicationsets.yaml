@@ -3,7 +3,7 @@ ONE global ApplicationSet for the whole platform — generates one Application p
 model directory across every team's repo, with the clean-delete sync policy
 baked in. Replaces the old per-tenant ApplicationSets.
 
-Generator = matrix( SCM-provider(github, org, repos matching ^team-.+ ) x
+Generator = matrix( SCM-provider(<provider>, owner, repos matching ^team-.+ ) x
 git-directories('*') ). For each team-* repo it discovers, it lists the model
 directories and stamps an Application:
   * name      = <repo>-<dir>            (globally unique across teams)
@@ -12,10 +12,17 @@ directories and stamps an Application:
   * namespace = the team (one shared namespace per team)
   * syncPolicy = prune + background + resources-finalizer  (the orphaned-pods fix)
 
+PROVIDER-AGNOSTIC: the gen-0 SCM provider is selected by `clustraScm.provider`
+(github | gitlab | gitea | bitbucket | bitbucketServer | azureDevOps). Only the
+gen-0 block differs per platform; everything downstream (the git generator, the
+Application template, the AppProjects, and ai-service's HTTPS commit auth) is
+identical across hosts. Legacy back-compat: if `clustraScm.provider` is unset but
+`clustraGithubOrg` is set, it renders exactly the previous github-only behavior.
+
 HARD REQUIREMENTS baked in to avoid the verified failure modes:
   - cloneProtocol: https  -> the discovered repoURL is HTTPS, matching the
-    AppProject sourceRepos + the GitHub App creds (SSH default would black-hole
-    every app at IsSourcePermitted).
+    AppProject sourceRepos + the repo creds (SSH default would black-hole every
+    app at IsSourcePermitted).
   - project lowercased     -> matches the (lowercase) AppProject name; ArgoCD's
     URL binding is case-insensitive but the project NAME lookup is literal.
   - filters ^team-.+       -> a bare "team-" (empty suffix) is never discovered.
@@ -25,11 +32,22 @@ AppProject's sourceRepos + IsDestinationPermitted against its destinations), so
 each team's AppProject MUST pin sourceRepos to the exact team repo URL (never the
 "*" wildcard) and allow the team namespace in destinations.
 
-Rendered only when an org is configured. The applicationset-controller reads the
-SCM token from its OWN release namespace.
+Rendered only when a provider/org is configured. The applicationset-controller
+reads the SCM credential from its OWN release namespace.
 */ -}}
-{{- if .Values.clustraGithubOrg }}
-{{- $scm := .Values.clustraScmSecret | default dict }}
+{{- $scm := .Values.clustraScm | default dict -}}
+{{- $legacyOrg := .Values.clustraGithubOrg | default "" -}}
+{{- $legacySecret := .Values.clustraScmSecret | default dict -}}
+{{- /* provider precedence: explicit clustraScm.provider, else legacy clustraGithubOrg => github */ -}}
+{{- $provider := $scm.provider | default (ternary "github" "" (ne $legacyOrg "")) -}}
+{{- if $provider -}}
+{{- /* owner: GitHub/Gitea org, GitLab group, Bitbucket workspace, Bitbucket Server projectKey, Azure DevOps org */ -}}
+{{- $owner := $scm.owner | default $legacyOrg -}}
+{{- if not $owner }}{{ fail "clustra SCM enabled but no owner set — set clustraScm.owner (or clustraGithubOrg for github)" }}{{- end -}}
+{{- $tokenRef := $scm.tokenRef | default dict -}}
+{{- $passwordRef := $scm.passwordRef | default dict -}}
+{{- $cloneProtocol := $scm.cloneProtocol | default "https" -}}
+{{- $repoFilter := $scm.repoFilter | default "^team-.+" -}}
 apiVersion: argoproj.io/v1alpha1
 kind: ApplicationSet
 metadata:
@@ -43,20 +61,98 @@ spec:
   generators:
     - matrix:
         generators:
-          # gen-0: discover every team-* repo in the org (HTTPS clone URLs).
+          # gen-0: discover every team-* repo for the owner (HTTPS clone URLs).
           - scmProvider:
-              cloneProtocol: https
+              cloneProtocol: {{ $cloneProtocol | quote }}
+              {{- if eq $provider "github" }}
               github:
-                organization: {{ .Values.clustraGithubOrg | quote }}
-                {{- if $scm.appSecretName }}
-                appSecretName: {{ $scm.appSecretName | quote }}
-                {{- else if $scm.secretName }}
-                tokenRef:
-                  secretName: {{ $scm.secretName | quote }}
-                  key: {{ $scm.key | default "token" | quote }}
+                organization: {{ $owner | quote }}
+                {{- with $scm.api }}
+                api: {{ . | quote }}
                 {{- end }}
+                {{- if $scm.allBranches }}
+                allBranches: true
+                {{- end }}
+                {{- if or $scm.appSecretName $legacySecret.appSecretName }}
+                appSecretName: {{ (coalesce $scm.appSecretName $legacySecret.appSecretName) | quote }}
+                {{- else if or $tokenRef.secretName $legacySecret.secretName }}
+                tokenRef:
+                  secretName: {{ (coalesce $tokenRef.secretName $legacySecret.secretName) | quote }}
+                  key: {{ (coalesce $tokenRef.key $legacySecret.key "token") | quote }}
+                {{- end }}
+              {{- else if eq $provider "gitlab" }}
+              gitlab:
+                group: {{ $owner | quote }}
+                includeSubgroups: {{ $scm.includeSubgroups | default true }}
+                {{- with $scm.api }}
+                api: {{ . | quote }}
+                {{- end }}
+                {{- if $scm.allBranches }}
+                allBranches: true
+                {{- end }}
+                tokenRef:
+                  secretName: {{ required "clustraScm.tokenRef.secretName is required for gitlab" $tokenRef.secretName | quote }}
+                  key: {{ $tokenRef.key | default "token" | quote }}
+              {{- else if eq $provider "gitea" }}
+              gitea:
+                owner: {{ $owner | quote }}
+                api: {{ required "clustraScm.api is required for gitea" $scm.api | quote }}
+                {{- if $scm.allBranches }}
+                allBranches: true
+                {{- end }}
+                {{- if $scm.insecure }}
+                insecure: true
+                {{- end }}
+                tokenRef:
+                  secretName: {{ required "clustraScm.tokenRef.secretName is required for gitea" $tokenRef.secretName | quote }}
+                  key: {{ $tokenRef.key | default "token" | quote }}
+              {{- else if eq $provider "bitbucket" }}
+              bitbucket:
+                owner: {{ $owner | quote }}
+                user: {{ required "clustraScm.user is required for bitbucket cloud" $scm.user | quote }}
+                {{- if $scm.allBranches }}
+                allBranches: true
+                {{- end }}
+                appPasswordRef:
+                  secretName: {{ required "clustraScm.passwordRef.secretName is required for bitbucket cloud" $passwordRef.secretName | quote }}
+                  key: {{ $passwordRef.key | default "password" | quote }}
+              {{- else if eq $provider "bitbucketServer" }}
+              bitbucketServer:
+                project: {{ $owner | quote }}
+                api: {{ required "clustraScm.api is required for bitbucketServer" $scm.api | quote }}
+                {{- if $scm.allBranches }}
+                allBranches: true
+                {{- end }}
+                {{- if $scm.username }}
+                basicAuth:
+                  username: {{ $scm.username | quote }}
+                  passwordRef:
+                    secretName: {{ required "clustraScm.passwordRef.secretName is required for bitbucketServer basicAuth" $passwordRef.secretName | quote }}
+                    key: {{ $passwordRef.key | default "password" | quote }}
+                {{- else }}
+                bearerToken:
+                  tokenRef:
+                    secretName: {{ required "clustraScm.tokenRef.secretName is required for bitbucketServer bearerToken" $tokenRef.secretName | quote }}
+                    key: {{ $tokenRef.key | default "token" | quote }}
+                {{- end }}
+              {{- else if eq $provider "azureDevOps" }}
+              azureDevOps:
+                organization: {{ $owner | quote }}
+                teamProject: {{ required "clustraScm.teamProject is required for azureDevOps" $scm.teamProject | quote }}
+                {{- with $scm.api }}
+                api: {{ . | quote }}
+                {{- end }}
+                {{- if $scm.allBranches }}
+                allBranches: true
+                {{- end }}
+                accessTokenRef:
+                  secretName: {{ required "clustraScm.tokenRef.secretName is required for azureDevOps" $tokenRef.secretName | quote }}
+                  key: {{ $tokenRef.key | default "token" | quote }}
+              {{- else }}
+              {{ fail (printf "unsupported clustraScm.provider %q (use github|gitlab|gitea|bitbucket|bitbucketServer|azureDevOps)" $provider) }}
+              {{- end }}
               filters:
-                - repositoryMatch: '^team-.+'
+                - repositoryMatch: {{ $repoFilter | quote }}
               requeueAfterSeconds: {{ .Values.clustraScmRequeueSeconds | default 1800 }}
           # gen-1: one model dir per discovered repo. {{`{{ .url }}`}} from gen-0 is HTTPS.
           - git:
