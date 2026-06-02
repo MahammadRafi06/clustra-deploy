@@ -1,0 +1,39 @@
+{{- /*
+Lets the Argo CD application-controller READ the Dynamo CRDs (DynamoGraphDeployment,
+DynamoComponentDeployment, DynamoWorkerMetadata) so it can build the full resource
+tree for model deployments (DGD -> DCD -> Deployment -> RS -> Pod). Without this the
+controller can't list the operator's children, and the app tree stops at the DGD.
+
+Read-only; cluster-scoped because DGDs deploy into any team namespace. This complements
+the per-tenant AppProject namespaceResourceWhitelist (which must also permit these kinds
+for the tree to render — see clustra-tenants.yaml).
+*/ -}}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ .Release.Name }}-dynamo-tree-reader
+  labels:
+    app.kubernetes.io/part-of: argocd
+    app.kubernetes.io/component: application-controller
+    clustra.ai/addon: dynamo-tree-reader
+rules:
+  - apiGroups: ["nvidia.com"]
+    resources: ["*"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ .Release.Name }}-dynamo-tree-reader
+  labels:
+    app.kubernetes.io/part-of: argocd
+    app.kubernetes.io/component: application-controller
+    clustra.ai/addon: dynamo-tree-reader
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: {{ .Release.Name }}-dynamo-tree-reader
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "argo-cd.controller.serviceAccountName" . }}
+    namespace: {{ .Release.Namespace }}

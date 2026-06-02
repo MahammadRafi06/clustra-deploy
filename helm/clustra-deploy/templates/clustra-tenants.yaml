@@ -52,8 +52,36 @@ spec:
     - {{ toYaml . | nindent 6 | trim }}
     {{- end }}
   namespaceResourceWhitelist:
+    # The model abstraction tenants actually deploy (ai-service commits only this):
     - group: nvidia.com
       kind: DynamoGraphDeployment
+    # The namespaced resources the Dynamo operator DERIVES from a DGD. Whitelisted so
+    # Argo CD renders the full tree (DGD -> DCD -> Deployment -> RS -> Pod) and health-
+    # checks the workload — without these, appcontroller.go filters the children out of
+    # the tree. All namespaced + confined to the team namespace by `destinations`;
+    # cluster-scoped stays deny-all (empty clusterResourceWhitelist), so isolation holds.
+    - group: nvidia.com
+      kind: DynamoComponentDeployment
+    - group: nvidia.com
+      kind: DynamoWorkerMetadata
+    - group: apps
+      kind: Deployment
+    - group: apps
+      kind: ReplicaSet
+    - group: ""
+      kind: Pod
+    - group: ""
+      kind: Service
+    - group: ""
+      kind: ConfigMap
+    - group: ""
+      kind: ServiceAccount
+    # Namespaced RBAC the operator creates for the worker SAs (confined to the team
+    # namespace; cluster-scoped RBAC stays deny-all via the empty clusterResourceWhitelist).
+    - group: rbac.authorization.k8s.io
+      kind: Role
+    - group: rbac.authorization.k8s.io
+      kind: RoleBinding
     {{- range ($t.extraNamespaceResources | default list) }}
     - {{ toYaml . | nindent 6 | trim }}
     {{- end }}
