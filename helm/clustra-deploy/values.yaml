@@ -927,6 +927,19 @@ clustraDestinationServer: "https://kubernetes.default.svc"
 #       viewerGroups:   [ "tenant.acme.viewer" ]
 tenants: []
 
+# -- DANGERZONE: the privileged, admin-only GitOps project. ArgoCD applies
+# whatever an admin commits to its repo — per-team Namespaces + model-cache PV/PVC,
+# and any other cluster-scoped/privileged resource. This is the ONLY path to
+# privileged resources (tenant projects are namespaced-only). Treat repo write =
+# cluster-admin. Empty/disabled = not rendered.
+dangerzone:
+  enabled: false
+  repoURL: ""          # e.g. https://github.com/clustra-ai/dangerzone (admin-write only)
+  path: "."            # path within the repo (recursed)
+  revision: HEAD
+  adminGroups: []      # OIDC groups / Entra App Roles granted admin on this project
+                       # (role:admin always has access regardless)
+
 targetGroupBindings:
   # -- Create AWS Load Balancer Controller TargetGroupBinding resources for
   # -- target groups provisioned by the infra repository.

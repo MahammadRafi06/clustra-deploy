@@ -58,19 +58,24 @@ export function DeployModelsPage() {
                     {deployFormOpen ? (
                         <div className='deploy-models__drawer'>
                             <p className='deploy-models__panel-description'>
-                                Pick an Argo CD project and name the deployment, then run the planner. Successful runs commit generated manifests to the team
-                                repository, where Argo CD deploys them automatically.
+                                Pick an Argo CD project + namespace and name the deployment, then run the planner. Successful runs commit the generated DGD to the
+                                team repository, where Argo CD deploys it automatically.
                             </p>
 
                             <ContextSelector value={selectedTarget} onChange={setSelectedTarget} />
 
-                            {selectedTarget ? (
-                                <DefaultPage key={selectedTarget.projectName} projectName={selectedTarget.projectName} onDeploySettled={handleDeploySettled} />
+                            {selectedTarget && selectedTarget.namespace ? (
+                                <DefaultPage
+                                    key={`${selectedTarget.projectName}/${selectedTarget.namespace}`}
+                                    projectName={selectedTarget.projectName}
+                                    namespace={selectedTarget.namespace}
+                                    onDeploySettled={handleDeploySettled}
+                                />
                             ) : (
                                 <div className='deploy-models__panel deploy-models__panel--empty'>
                                     <EmptyState icon='fa fa-project-diagram'>
-                                        <h4>Choose a project to continue</h4>
-                                        <h5>The deploy form activates after you pick an Argo CD project.</h5>
+                                        <h4>Choose a project + namespace to continue</h4>
+                                        <h5>The deploy form activates after you pick an Argo CD project and one of its onboarded namespaces.</h5>
                                     </EmptyState>
                                 </div>
                             )}

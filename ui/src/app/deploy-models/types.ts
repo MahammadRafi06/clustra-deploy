@@ -38,8 +38,17 @@ export interface ProjectMetadata {
     namespace?: string;
 }
 
+export interface ProjectDestination {
+    server?: string;
+    name?: string;
+    namespace?: string;
+}
+
 export interface ProjectSpec {
     description?: string;
+    // The team's onboarded namespaces (admin-managed). Populates the deploy
+    // namespace dropdown; ai-service re-validates against these.
+    destinations?: ProjectDestination[];
 }
 
 export interface Project {
@@ -134,6 +143,8 @@ export interface DefaultRequest extends DeployFields {
     policies: DefaultPolicySelection;
     runtime_config_policy_id: string;
     overlay_key?: string;
+    // Repo-per-team flow: the deployer-chosen target namespace.
+    namespace?: string;
 }
 
 // ---------------------------------------------------------------------------

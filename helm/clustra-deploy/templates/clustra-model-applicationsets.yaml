@@ -154,16 +154,21 @@ spec:
               filters:
                 - repositoryMatch: {{ $repoFilter | quote }}
               requeueAfterSeconds: {{ .Values.clustraScmRequeueSeconds | default 1800 }}
-          # gen-1: one model dir per discovered repo. {{`{{ .url }}`}} from gen-0 is HTTPS.
+          # gen-1: one model dir per discovered repo, at <namespace>/<deployment>.
+          # {{`{{ .url }}`}} from gen-0 is HTTPS. '*/*' matches the two-level layout
+          # ai-service commits: the FIRST path segment is the target namespace, the
+          # basename is the deployment.
           - git:
               repoURL: '{{`{{ .url }}`}}'
               revision: HEAD
               directories:
-                - path: '*'
+                - path: '*/*'
               requeueAfterSeconds: {{ .Values.clustraGitRequeueSeconds | default 180 }}
   template:
     metadata:
-      name: '{{`{{ .repository }}-{{ .path.basenameNormalized }}`}}'
+      # app name = <namespace>-<deployment> (globally unique; the namespace already
+      # carries the team). Matches ai-service's namespace_app_name prediction.
+      name: '{{`{{ index .path.segments 0 }}-{{ .path.basenameNormalized }}`}}'
       namespace: {{ .Release.Namespace | quote }}
       finalizers:
         - resources-finalizer.argocd.argoproj.io
@@ -175,9 +180,9 @@ spec:
         path: '{{`{{ .path.path }}`}}'
       destination:
         server: {{ .Values.clustraDestinationServer | default "https://kubernetes.default.svc" | quote }}
-        # one shared namespace per team (the project name). Must be allowed by the
-        # team AppProject's destinations (e.g. a "<team>*" or exact "<team>" pattern).
-        namespace: '{{`{{ trimPrefix "team-" .repository | lower }}`}}'
+        # the deployer-chosen namespace = the first path segment. Must be permitted
+        # by the team AppProject's destinations (onboarded ns: <team> or <team>-*).
+        namespace: '{{`{{ index .path.segments 0 }}`}}'
       syncPolicy:
         automated:
           prune: true

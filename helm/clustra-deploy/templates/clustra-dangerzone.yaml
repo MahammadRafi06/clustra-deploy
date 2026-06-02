@@ -1,0 +1,94 @@
+{{- /*
+DANGERZONE — the platform's privileged, admin-only GitOps project.
+
+This is the single controlled home for everything that must be created at "admin
+level" on the cluster: per-team Namespaces + their model-cache PV/PVC, and any
+other cluster-scoped / privileged resource (cluster RBAC, CRDs, StorageClasses,
+operators, …). ArgoCD (already cluster-admin) applies it; NO application service
+gets cluster write. An admin commits the manifests to the dangerzone repo.
+
+Security model:
+  * Tenant AppProjects are namespaced-only (DGD). They CANNOT create cluster-scoped
+    or privileged resources — the only path to those is here.
+  * This project is admin-only: just role:admin (global) plus any groups in
+    `dangerzone.adminGroups`. No tenant group is ever bound here.
+  * prune is OFF and there is NO resources-finalizer: removing a manifest (or the
+    app) never auto-deletes a PV/Namespace. Destroying privileged infra is a
+    deliberate admin action, never a side effect.
+
+Treat WRITE access to the dangerzone repo as equivalent to cluster-admin: protect
+it with branch protection + admin-only review.
+
+Rendered only when `dangerzone.enabled`.
+*/ -}}
+{{- if .Values.dangerzone.enabled }}
+{{- $dz := .Values.dangerzone }}
+{{- if not $dz.repoURL }}{{ fail "dangerzone.enabled but dangerzone.repoURL is empty" }}{{- end }}
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: dangerzone
+  namespace: {{ .Release.Namespace | quote }}
+  labels:
+    app.kubernetes.io/managed-by: {{ .Release.Service | quote }}
+    clustra.ai/privileged: "true"
+spec:
+  description: "Clustra privileged admin GitOps — cluster-scoped + per-namespace bootstrap"
+  sourceRepos:
+    - {{ $dz.repoURL | quote }}
+  destinations:
+    - server: {{ .Values.clustraDestinationServer | default "https://kubernetes.default.svc" | quote }}
+      namespace: '*'
+  # Admin escape hatch: permitted to create ANY resource kind, cluster-scoped or
+  # namespaced. This is deliberately broad — confinement comes from the admin-only
+  # RBAC + repo write controls, not from a resource whitelist.
+  clusterResourceWhitelist:
+    - group: '*'
+      kind: '*'
+  namespaceResourceWhitelist:
+    - group: '*'
+      kind: '*'
+  roles:
+    - name: admin
+      description: "Full control of the dangerzone project (admins only)"
+      policies:
+        - p, proj:dangerzone:admin, applications, '*', dangerzone/*, allow
+      groups:
+        {{- range ($dz.adminGroups | default list) }}
+        - {{ . | quote }}
+        {{- end }}
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: dangerzone
+  namespace: {{ .Release.Namespace | quote }}
+  labels:
+    app.kubernetes.io/managed-by: {{ .Release.Service | quote }}
+    clustra.ai/privileged: "true"
+  # NOTE: intentionally NO resources-finalizer — deleting this Application must
+  # never cascade-delete the cluster's privileged infra (PVs, namespaces, …).
+spec:
+  project: dangerzone
+  source:
+    repoURL: {{ $dz.repoURL | quote }}
+    targetRevision: {{ $dz.revision | default "HEAD" | quote }}
+    path: {{ $dz.path | default "." | quote }}
+    directory:
+      recurse: true
+  destination:
+    server: {{ .Values.clustraDestinationServer | default "https://kubernetes.default.svc" | quote }}
+    namespace: default
+  syncPolicy:
+    automated:
+      # selfHeal keeps the declared admin state; prune is OFF so a removed manifest
+      # never auto-deletes privileged infra — admins delete deliberately.
+      selfHeal: true
+      prune: false
+    syncOptions:
+      - CreateNamespace=false
+      - ApplyOutOfSyncOnly=true
+    retry:
+      limit: 5
+      backoff: { duration: 15s, factor: 2, maxDuration: 5m }
+{{- end }}

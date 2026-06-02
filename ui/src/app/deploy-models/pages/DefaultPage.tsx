@@ -24,21 +24,25 @@ interface DefaultPageProps {
      */
     onDeploySettled?: () => void;
     /**
-     * The selected Argo CD project (team). Used to predict the deployment's
-     * app_name (team-<project>-<name>) for the live availability check. The
-     * parent only mounts this page once a project is chosen, so it is set.
+     * The selected Argo CD project (team). The parent only mounts this page once a
+     * project + namespace are chosen, so both are set.
      */
     projectName?: string;
+    /**
+     * The selected target namespace. Sent with the deploy and used to predict the
+     * app_name (<namespace>-<deployment>) for the live availability check.
+     */
+    namespace?: string;
 }
 
 const POLICY_OPTION_FETCH_LIMIT = 200;
 
-// The deployment name is repurposed as the Git directory AND the Argo CD
-// application suffix (team-<project>-<name>). Three independent normalizers must
-// agree on it: ai-service team_app_name(), the SCM-matrix ApplicationSet's
+// The deployment name is the Git directory basename AND the Argo CD application
+// suffix (<namespace>-<deployment>). Three independent normalizers must agree on
+// it: ai-service namespace_app_name(), the SCM-matrix ApplicationSet's
 // basenameNormalized, and the 1:1 guard's predicted app_name. They only stay in
 // lock-step when the input is already a clean RFC 1123 label with NO leading,
-// trailing, or consecutive hyphens (otherwise team_app_name collapses '--' -> '-'
+// trailing, or consecutive hyphens (otherwise normalization collapses '--' -> '-'
 // and the prediction diverges from the live app). So we require the strict form:
 // alphanumeric runs joined by single hyphens.
 const RFC1123_LABEL = /^[a-z0-9]+(-[a-z0-9]+)*$/;
@@ -49,27 +53,27 @@ const DEPLOYMENT_NAME_MAX_LENGTH = 50;
 // live DGD and do not occupy.
 const OCCUPYING_STATUSES: ReadonlySet<DeploymentStatus> = new Set<DeploymentStatus>(['committing', 'active', 'removing']);
 
-// Mirror of ai-service gitops.committer.team_app_name(project, name) — keep
+// Mirror of ai-service gitops.committer.namespace_app_name(namespace, name) — keep
 // byte-identical so the client-side availability check queries the SAME app_name
 // the backend guard will compute. Python:
-//   slug = re.sub(r'[^a-z0-9-]+', '-', f'team-{project}-{name}'.lower())
+//   slug = re.sub(r'[^a-z0-9-]+', '-', f'{namespace}-{name}'.lower())
 //   slug = re.sub(r'-+', '-', slug).strip('-')
-//   return slug[:63].rstrip('-') or f'team-{project}'
-// The normalized but UN-truncated slug. ai-service truncates this to 63 chars,
-// but the SCM-matrix ApplicationSet builds the live Application name from the
-// full directory basename — so if this exceeds 63 the recorded app_name and the
-// live Application would diverge. We use the raw length to reject such names.
-function normalizeTeamSlug(project: string, name: string): string {
-    return `team-${project}-${name}`
+//   return slug[:63].rstrip('-') or namespace
+// normalizeNamespaceSlug is the UN-truncated slug. ai-service truncates to 63, but
+// the SCM-matrix ApplicationSet builds the live Application name from the full
+// path-derived name — so if this exceeds 63 the recorded app_name and the live
+// Application would diverge. We use the raw length to reject such names.
+function normalizeNamespaceSlug(namespace: string, name: string): string {
+    return `${namespace}-${name}`
         .toLowerCase()
         .replace(/[^a-z0-9-]+/g, '-')
         .replace(/-+/g, '-')
         .replace(/^-+|-+$/g, '');
 }
 
-export function predictTeamAppName(project: string, name: string): string {
-    const slug = normalizeTeamSlug(project, name).slice(0, 63).replace(/-+$/g, '');
-    return slug || `team-${project}`;
+export function predictNamespaceAppName(namespace: string, name: string): string {
+    const slug = normalizeNamespaceSlug(namespace, name).slice(0, 63).replace(/-+$/g, '');
+    return slug || namespace;
 }
 
 type RequestPolicyOptions = Record<RequestPolicyType, SelectOption[]>;
@@ -148,7 +152,7 @@ function overlayOptions(records: ManifestOverlayRecord[]): SelectOption[] {
     });
 }
 
-export function DefaultPage({onDeploySettled, projectName}: DefaultPageProps = {}) {
+export function DefaultPage({onDeploySettled, namespace}: DefaultPageProps = {}) {
     const {values, errors, setValue, setError, validateRequired, reset} = useFormState();
     const [jobId, setJobId] = useState<string | null>(null);
     const [submitting, setSubmitting] = useState(false);
@@ -185,13 +189,13 @@ export function DefaultPage({onDeploySettled, projectName}: DefaultPageProps = {
     // it before they submit. Advisory only — see nameConflict above.
     useEffect(() => {
         const name = (values.public_model_name || '').trim();
-        if (!projectName || !name || name.length > DEPLOYMENT_NAME_MAX_LENGTH || !RFC1123_LABEL.test(name)) {
+        if (!namespace || !name || name.length > DEPLOYMENT_NAME_MAX_LENGTH || !RFC1123_LABEL.test(name)) {
             setNameConflict(null);
             setCheckingName(false);
             return;
         }
 
-        const predicted = predictTeamAppName(projectName, name);
+        const predicted = predictNamespaceAppName(namespace, name);
         let cancelled = false;
         // Drop any conflict from the PREVIOUS name immediately so a stale warning
         // never lingers (and never blocks submit) while the new check is in
@@ -225,7 +229,7 @@ export function DefaultPage({onDeploySettled, projectName}: DefaultPageProps = {
             cancelled = true;
             clearTimeout(handle);
         };
-    }, [projectName, values.public_model_name]);
+    }, [namespace, values.public_model_name]);
 
     useEffect(() => {
         let cancelled = false;
@@ -310,6 +314,7 @@ export function DefaultPage({onDeploySettled, projectName}: DefaultPageProps = {
         const request = {
             model_path: values.model_path,
             public_model_name: values.public_model_name,
+            namespace,
             total_gpus: Number(values.total_gpus),
             policies: {
                 workload: [values.workload_policy],
@@ -335,10 +340,10 @@ export function DefaultPage({onDeploySettled, projectName}: DefaultPageProps = {
             setError('public_model_name', 'Use lowercase letters, numbers and hyphens only; must start and end with a letter or number, with no double hyphens.');
             return;
         }
-        if (projectName && normalizeTeamSlug(projectName, deploymentName).length > 63) {
+        if (namespace && normalizeNamespaceSlug(namespace, deploymentName).length > 63) {
             // Over 63 the backend would truncate the app_name while the live Argo
             // Application keeps the full name — keep them identical by rejecting.
-            setError('public_model_name', 'Too long for this project — the generated application name would exceed 63 characters. Use a shorter deployment name.');
+            setError('public_model_name', 'Too long for this namespace — the generated application name would exceed 63 characters. Use a shorter deployment name.');
             return;
         }
         if (nameConflict) {

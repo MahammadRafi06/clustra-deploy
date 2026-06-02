@@ -43,21 +43,17 @@ spec:
       {{- end }}
       namespace: {{ required "tenants[].destinations[].namespace is required (use a tenant-scoped pattern, e.g. acme-*)" .namespace | quote }}
     {{- end }}
-  # ai-service deploys create a per-model Namespace + PV (cluster-scoped) and a
-  # DGD + PVC (namespaced). Whitelist exactly those; everything else is denied.
+  # Tenants are NAMESPACED-ONLY: ai-service commits just the DGD. The team
+  # Namespace + model-cache PV/PVC are privileged infra provisioned via the
+  # dangerzone project (admin GitOps), NOT by tenants — so cluster-scoped creates
+  # are denied here entirely. Everything outside this list is denied.
   clusterResourceWhitelist:
-    - group: ""
-      kind: Namespace
-    - group: ""
-      kind: PersistentVolume
     {{- range ($t.extraClusterResources | default list) }}
     - {{ toYaml . | nindent 6 | trim }}
     {{- end }}
   namespaceResourceWhitelist:
     - group: nvidia.com
       kind: DynamoGraphDeployment
-    - group: ""
-      kind: PersistentVolumeClaim
     {{- range ($t.extraNamespaceResources | default list) }}
     - {{ toYaml . | nindent 6 | trim }}
     {{- end }}
