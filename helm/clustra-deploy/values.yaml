@@ -864,28 +864,38 @@ clustraPages:
     # -- secret is reliably provisioned, or the proxy returns 500.
     required: false
 
-# -- Default git repo Clustra commits model manifests to. Used as the AppProject
-# sourceRepos default when a tenant doesn't override it.
-clustraGitopsRepoURL: ""
+# === Repo-per-team model deploy (ONE global SCM-matrix ApplicationSet) =========
+# -- GitHub org that holds the per-team repos. Each repo named `team-<name>`
+# becomes one Clustra project. Empty = the global ApplicationSet is not rendered.
+clustraGithubOrg: ""
+# -- Credential the applicationset-controller uses to DISCOVER + read team-* repos
+# org-wide (HTTPS). Prefer a GitHub App (read-only contents); secrets live in the
+# controller's release namespace. This is the READ identity — keep it separate
+# from ai-service's WRITE identity (per-repo GitHub App install tokens).
+clustraScmSecret:
+  appSecretName: ""   # GitHub App repo-creds secret (recommended)
+  secretName: ""      # OR a PAT secret
+  key: token
+# -- SCM org rescan interval (s). A GitHub webhook to the appset-controller makes
+# new repos/dirs appear in seconds; this is the safety-net poll.
+clustraScmRequeueSeconds: 1800
+# -- git directory rescan interval (s) — how fast a new/removed model dir is seen.
+clustraGitRequeueSeconds: 180
+# -- Cluster the generated Applications target.
+clustraDestinationServer: "https://kubernetes.default.svc"
 
-# -- Per-tenant ArgoCD AppProjects (the tenant-isolation boundary). Empty = none.
-# Each renders an AppProject scoping repos/clusters/namespaces + binding the
-# tenant's OIDC groups / Entra App Roles to project-scoped deployer/viewer roles.
+# -- Per-team ArgoCD AppProjects (the isolation boundary, enforced by ArgoCD at
+# sync). Empty = none. Each renders an AppProject named `<name>` (== `team-<name>`
+# repo minus prefix). sourceRepos MUST pin the exact team repo URL (never "*"),
+# and destinations MUST allow the team's shared namespace.
 # Example:
 #   tenants:
-#     - name: acme
-#       sourceRepos: [ "https://git.example.com/clustra-gitops.git" ]
+#     - name: acme                                   # repo github.com/<org>/team-acme
+#       sourceRepos: [ "https://github.com/<org>/team-acme" ]   # EXACT url, not "*"
 #       destinations:
-#         - { server: https://kubernetes.default.svc, namespace: "acme-*" }
+#         - { server: https://kubernetes.default.svc, namespace: "acme*" }  # covers ns "acme"
 #       deployerGroups: [ "tenant.acme.deployer" ]   # Entra App Role value / group ID
 #       viewerGroups:   [ "tenant.acme.viewer" ]
-#       # Optional: auto-generate one Application per model directory with the
-#       # clean-delete sync policy (prune + finalizer) baked in — the fix for the
-#       # stuck-delete / orphaned-pods root cause. Omit to manage apps yourself.
-#       models:
-#         path: "tenants/acme"          # generator globs <path>/* (one dir per model)
-#         revision: HEAD
-#         destinationNamespace: ""      # default: per-model namespace ({{.path.basenameNormalized}})
 tenants: []
 
 targetGroupBindings:

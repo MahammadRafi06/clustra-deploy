@@ -4,15 +4,17 @@ import {policyApiClient} from '../../policy-management/api/client';
 import type {ManifestOverlayRecord, PolicyRecord, RequestPolicyType, RuntimeConfigPolicyRecord} from '../../policy-management/api/types';
 import {Spinner} from '../../shared/components';
 
-import {submitDefault} from '../api';
+import {listDeployments, submitDefault} from '../api';
 import {ErrorAlert} from '../components/ErrorAlert';
 import {FieldInput} from '../components/FieldInput';
 import type {SelectOption} from '../components/FieldInput';
 import {JobRunConsole} from '../components/JobRunConsole';
+import {NoticeAlert} from '../components/NoticeAlert';
 import {useFormState} from '../hooks/useFormState';
 import {useJobPoller} from '../hooks/useJobPoller';
 import {getGitOpsStatus, isJobSettled} from '../jobState';
 import {FIELD_HELP} from '../options';
+import type {DeploymentStatus, DeploymentSummary} from '../types';
 
 interface DefaultPageProps {
     /**
@@ -21,9 +23,54 @@ interface DefaultPageProps {
      * refresh the deployments table without the user having to reload.
      */
     onDeploySettled?: () => void;
+    /**
+     * The selected Argo CD project (team). Used to predict the deployment's
+     * app_name (team-<project>-<name>) for the live availability check. The
+     * parent only mounts this page once a project is chosen, so it is set.
+     */
+    projectName?: string;
 }
 
 const POLICY_OPTION_FETCH_LIMIT = 200;
+
+// The deployment name is repurposed as the Git directory AND the Argo CD
+// application suffix (team-<project>-<name>). Three independent normalizers must
+// agree on it: ai-service team_app_name(), the SCM-matrix ApplicationSet's
+// basenameNormalized, and the 1:1 guard's predicted app_name. They only stay in
+// lock-step when the input is already a clean RFC 1123 label with NO leading,
+// trailing, or consecutive hyphens (otherwise team_app_name collapses '--' -> '-'
+// and the prediction diverges from the live app). So we require the strict form:
+// alphanumeric runs joined by single hyphens.
+const RFC1123_LABEL = /^[a-z0-9]+(-[a-z0-9]+)*$/;
+const DEPLOYMENT_NAME_MAX_LENGTH = 50;
+
+// Non-terminal deployment statuses still "occupy" their app_name (the backend
+// 1:1 guard rejects a new deploy onto any of these). 'failed'/'removed' left no
+// live DGD and do not occupy.
+const OCCUPYING_STATUSES: ReadonlySet<DeploymentStatus> = new Set<DeploymentStatus>(['committing', 'active', 'removing']);
+
+// Mirror of ai-service gitops.committer.team_app_name(project, name) — keep
+// byte-identical so the client-side availability check queries the SAME app_name
+// the backend guard will compute. Python:
+//   slug = re.sub(r'[^a-z0-9-]+', '-', f'team-{project}-{name}'.lower())
+//   slug = re.sub(r'-+', '-', slug).strip('-')
+//   return slug[:63].rstrip('-') or f'team-{project}'
+// The normalized but UN-truncated slug. ai-service truncates this to 63 chars,
+// but the SCM-matrix ApplicationSet builds the live Application name from the
+// full directory basename — so if this exceeds 63 the recorded app_name and the
+// live Application would diverge. We use the raw length to reject such names.
+function normalizeTeamSlug(project: string, name: string): string {
+    return `team-${project}-${name}`
+        .toLowerCase()
+        .replace(/[^a-z0-9-]+/g, '-')
+        .replace(/-+/g, '-')
+        .replace(/^-+|-+$/g, '');
+}
+
+export function predictTeamAppName(project: string, name: string): string {
+    const slug = normalizeTeamSlug(project, name).slice(0, 63).replace(/-+$/g, '');
+    return slug || `team-${project}`;
+}
 
 type RequestPolicyOptions = Record<RequestPolicyType, SelectOption[]>;
 
@@ -101,11 +148,17 @@ function overlayOptions(records: ManifestOverlayRecord[]): SelectOption[] {
     });
 }
 
-export function DefaultPage({onDeploySettled}: DefaultPageProps = {}) {
-    const {values, errors, setValue, validateRequired, reset} = useFormState();
+export function DefaultPage({onDeploySettled, projectName}: DefaultPageProps = {}) {
+    const {values, errors, setValue, setError, validateRequired, reset} = useFormState();
     const [jobId, setJobId] = useState<string | null>(null);
     const [submitting, setSubmitting] = useState(false);
     const [submitError, setSubmitError] = useState<unknown | null>(null);
+    // Live availability: the deployment whose app_name collides with what the
+    // user typed (null = name appears free). Best-effort + advisory — the list
+    // is visibility-scoped, so a hit is always a true collision but a miss is
+    // not a guarantee (the global backend guard remains authoritative).
+    const [nameConflict, setNameConflict] = useState<DeploymentSummary | null>(null);
+    const [checkingName, setCheckingName] = useState(false);
     const [policyOptions, setPolicyOptions] = useState<PolicyOptionState>(EMPTY_POLICY_OPTIONS);
     const [policyOptionsLoading, setPolicyOptionsLoading] = useState(true);
     const [policyOptionsError, setPolicyOptionsError] = useState<unknown | null>(null);
@@ -125,6 +178,54 @@ export function DefaultPage({onDeploySettled}: DefaultPageProps = {}) {
             onDeploySettled?.();
         }
     }, [job, onDeploySettled]);
+
+    // Live availability check for the deployment name. Debounced: once the user
+    // has typed a valid name under a selected project, look up whether the
+    // predicted app_name (team-<project>-<name>) is already occupied and surface
+    // it before they submit. Advisory only — see nameConflict above.
+    useEffect(() => {
+        const name = (values.public_model_name || '').trim();
+        if (!projectName || !name || name.length > DEPLOYMENT_NAME_MAX_LENGTH || !RFC1123_LABEL.test(name)) {
+            setNameConflict(null);
+            setCheckingName(false);
+            return;
+        }
+
+        const predicted = predictTeamAppName(projectName, name);
+        let cancelled = false;
+        // Drop any conflict from the PREVIOUS name immediately so a stale warning
+        // never lingers (and never blocks submit) while the new check is in
+        // flight — the authoritative backend guard covers the in-flight gap.
+        setNameConflict(null);
+        setCheckingName(true);
+        const handle = setTimeout(() => {
+            listDeployments({appName: predicted})
+                .then(resp => {
+                    if (cancelled) {
+                        return;
+                    }
+                    const occupying = (resp.deployments || []).find(deployment => deployment.app_name === predicted && OCCUPYING_STATUSES.has(deployment.status));
+                    setNameConflict(occupying ?? null);
+                })
+                .catch(() => {
+                    // Best-effort only — never block on a transient lookup failure;
+                    // the authoritative backend guard still runs at deploy time.
+                    if (!cancelled) {
+                        setNameConflict(null);
+                    }
+                })
+                .finally(() => {
+                    if (!cancelled) {
+                        setCheckingName(false);
+                    }
+                });
+        }, 400);
+
+        return () => {
+            cancelled = true;
+            clearTimeout(handle);
+        };
+    }, [projectName, values.public_model_name]);
 
     useEffect(() => {
         let cancelled = false;
@@ -225,6 +326,28 @@ export function DefaultPage({onDeploySettled}: DefaultPageProps = {}) {
             return;
         }
 
+        const deploymentName = (values.public_model_name || '').trim();
+        if (deploymentName.length > DEPLOYMENT_NAME_MAX_LENGTH) {
+            setError('public_model_name', `Keep the deployment name to ${DEPLOYMENT_NAME_MAX_LENGTH} characters or fewer.`);
+            return;
+        }
+        if (!RFC1123_LABEL.test(deploymentName)) {
+            setError('public_model_name', 'Use lowercase letters, numbers and hyphens only; must start and end with a letter or number, with no double hyphens.');
+            return;
+        }
+        if (projectName && normalizeTeamSlug(projectName, deploymentName).length > 63) {
+            // Over 63 the backend would truncate the app_name while the live Argo
+            // Application keeps the full name — keep them identical by rejecting.
+            setError('public_model_name', 'Too long for this project — the generated application name would exceed 63 characters. Use a shorter deployment name.');
+            return;
+        }
+        if (nameConflict) {
+            // A visible deployment already holds this app_name; the global 1:1
+            // guard would reject it, so block before submitting a doomed job.
+            setError('public_model_name', `This name is already ${nameConflict.status} in this project. Choose a different deployment name, or remove the existing one first.`);
+            return;
+        }
+
         setSubmitError(null);
         setSubmitting(true);
         resetPoller();
@@ -245,6 +368,7 @@ export function DefaultPage({onDeploySettled}: DefaultPageProps = {}) {
         resetPoller();
         setJobId(null);
         setSubmitError(null);
+        setNameConflict(null);
     }
 
     return (
@@ -258,16 +382,23 @@ export function DefaultPage({onDeploySettled}: DefaultPageProps = {}) {
             <FieldInput
                 def={{
                     key: 'public_model_name',
-                    label: 'Public Model Name',
+                    label: 'Deployment Name',
                     type: 'text',
                     required: true,
-                    placeholder: 'Qwen/Qwen3-32B-FP8',
+                    placeholder: 'qwen3-32b-chat',
                     help: FIELD_HELP.publicModelName
                 }}
                 value={values.public_model_name || ''}
                 error={errors.public_model_name}
                 onChange={handleFieldChange}
             />
+            {checkingName && <p className='deploy-models__field-hint'>Checking name availability…</p>}
+            {nameConflict && !errors.public_model_name && (
+                <NoticeAlert
+                    variant='warning'
+                    message={`A deployment named "${(values.public_model_name || '').trim()}" is already ${nameConflict.status} in this project. Each name maps to one deployment — choose a different name, or remove the existing one from the list first.`}
+                />
+            )}
             <FieldInput
                 def={{
                     key: 'total_gpus',

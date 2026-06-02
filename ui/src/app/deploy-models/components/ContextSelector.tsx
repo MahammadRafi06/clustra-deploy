@@ -1,80 +1,36 @@
 import {Select} from 'argo-ui';
-import React, {useEffect, useMemo, useRef, useState} from 'react';
+import React, {useEffect, useState} from 'react';
 
-import {listArgoApplications, listArgoProjects} from '../api';
-import type {Application, ApplicationSource, Project} from '../types';
+import {listArgoProjects} from '../api';
+import type {Project} from '../types';
 import {ErrorAlert} from './ErrorAlert';
 import {NoticeAlert} from './NoticeAlert';
 
+// Repo-per-team deploy: the user picks a PROJECT (team); the deployment name is
+// typed in the form. There is no Application to select — the global SCM-matrix
+// ApplicationSet generates it from the committed model directory.
 export interface SelectedAppTarget {
-    appName: string;
-    appNamespace: string;
     projectName: string;
-    application: Application;
 }
-
-const EMPTY_OCCUPIED: ReadonlySet<string> = new Set();
 
 interface ContextSelectorProps {
     value: SelectedAppTarget | null;
     onChange: (target: SelectedAppTarget | null) => void;
-    // app_names that already have a non-terminal deployment (1:1: one app = one
-    // model). Marked in the picker; the deploy form is gated in the parent.
-    occupiedApps?: ReadonlySet<string>;
 }
 
-function applicationKey(application: Application): string {
-    return `${application.metadata.namespace || 'argocd'}:${application.metadata.name}`;
-}
-
-function toTarget(application: Application, projectName: string): SelectedAppTarget {
-    return {
-        appName: application.metadata.name,
-        appNamespace: application.metadata.namespace || 'argocd',
-        projectName,
-        application
-    };
-}
-
-function primarySource(application: Application): ApplicationSource | undefined {
-    return application.spec.source || application.spec.sources?.[0];
-}
-
-export function ContextSelector({value, onChange, occupiedApps = EMPTY_OCCUPIED}: ContextSelectorProps) {
+export function ContextSelector({value, onChange}: ContextSelectorProps) {
     const [projects, setProjects] = useState<Project[]>([]);
-    const [projectName, setProjectName] = useState(value?.projectName || '');
-    const [applications, setApplications] = useState<Application[]>([]);
     const [projectsLoading, setProjectsLoading] = useState(true);
-    const [applicationsLoading, setApplicationsLoading] = useState(false);
     const [projectsError, setProjectsError] = useState<unknown | null>(null);
-    const [applicationsError, setApplicationsError] = useState<unknown | null>(null);
-
-    const valueRef = useRef(value);
-    useEffect(() => {
-        valueRef.current = value;
-    });
-
-    useEffect(() => {
-        if (value?.projectName && value.projectName !== projectName) {
-            setProjectName(value.projectName);
-        }
-    }, [projectName, value?.projectName]);
 
     useEffect(() => {
         let cancelled = false;
         setProjectsLoading(true);
         setProjectsError(null);
-
         listArgoProjects()
             .then(items => {
-                if (cancelled) {
-                    return;
-                }
-
-                setProjects(items);
-                if (!projectName && items.length > 0) {
-                    const defaultProject = items.find(item => item.metadata.name === 'default')?.metadata.name || items[0].metadata.name;
-                    setProjectName(defaultProject);
+                if (!cancelled) {
+                    setProjects(items);
                 }
             })
             .catch(err => {
@@ -87,169 +43,45 @@ export function ContextSelector({value, onChange, occupiedApps = EMPTY_OCCUPIED}
                     setProjectsLoading(false);
                 }
             });
-
         return () => {
             cancelled = true;
         };
     }, []);
 
-    useEffect(() => {
-        let cancelled = false;
-
-        if (!projectName) {
-            setApplications([]);
-            setApplicationsLoading(false);
-            setApplicationsError(null);
-            return;
-        }
-
-        setApplicationsLoading(true);
-        setApplicationsError(null);
-        listArgoApplications(projectName)
-            .then(items => {
-                if (cancelled) {
-                    return;
-                }
-
-                const filtered = items.filter(item => (item.spec.project || '') === projectName);
-                setApplications(filtered);
-
-                const current = valueRef.current;
-                const rehydrate =
-                    current && current.projectName === projectName ? filtered.find(item => applicationKey(item) === `${current.appNamespace}:${current.appName}`) : undefined;
-
-                if (rehydrate) {
-                    onChange(toTarget(rehydrate, projectName));
-                } else if (filtered.length === 1) {
-                    onChange(toTarget(filtered[0], projectName));
-                } else if (current) {
-                    onChange(null);
-                }
-            })
-            .catch(err => {
-                if (!cancelled) {
-                    setApplicationsError(err);
-                    setApplications([]);
-                    if (valueRef.current) {
-                        onChange(null);
-                    }
-                }
-            })
-            .finally(() => {
-                if (!cancelled) {
-                    setApplicationsLoading(false);
-                }
-            });
-
-        return () => {
-            cancelled = true;
-        };
-    }, [onChange, projectName]);
-
-    const applicationValue = value ? `${value.appNamespace}:${value.appName}` : '';
-    const selectedSource = useMemo(() => (value ? primarySource(value.application) : undefined), [value]);
-
-    function handleProjectChange(nextProjectName: string) {
-        setProjectName(nextProjectName);
-        setApplications([]);
-        setApplicationsError(null);
-        onChange(null);
-    }
-
-    function handleApplicationChange(nextApplication: string) {
-        const selectedApplication = applications.find(item => applicationKey(item) === nextApplication);
-        if (!selectedApplication || !projectName) {
-            onChange(null);
-            return;
-        }
-        onChange(toTarget(selectedApplication, projectName));
-    }
+    const projectName = value?.projectName || '';
 
     return (
         <div className='deploy-models__context'>
-            <div className='deploy-models__context-grid'>
-                <div className='argo-form-row deploy-models__field'>
-                    <label htmlFor='deploy-models-project-select'>Project</label>
-                    <div className='deploy-models__select'>
-                        <Select
-                            id='deploy-models-project-select'
-                            value={projectName}
-                            options={[
-                                {title: projectsLoading ? 'Loading projects…' : '— select project —', value: ''},
-                                ...projects.map(project => ({title: project.metadata.name, value: project.metadata.name}))
-                            ]}
-                            placeholder={projectsLoading ? 'Loading projects…' : '— select project —'}
-                            onChange={option => handleProjectChange(option.value)}
-                        />
-                    </div>
-                </div>
-
-                <div className='argo-form-row deploy-models__field'>
-                    <label htmlFor='deploy-models-application-select'>Application</label>
-                    <div className='deploy-models__select'>
-                        <Select
-                            id='deploy-models-application-select'
-                            value={applicationValue}
-                            options={[
-                                {
-                                    title: !projectName ? 'Select a project first' : applicationsLoading ? 'Loading applications…' : '— select application —',
-                                    value: ''
-                                },
-                                ...applications.map(application => ({
-                                    title: `${application.metadata.namespace || 'argocd'}/${application.metadata.name}${
-                                        occupiedApps.has(application.metadata.name) ? ' · already deployed' : ''
-                                    }`,
-                                    value: applicationKey(application)
-                                }))
-                            ]}
-                            placeholder={!projectName ? 'Select a project first' : applicationsLoading ? 'Loading applications…' : '— select application —'}
-                            onChange={option => handleApplicationChange(option.value)}
-                        />
-                    </div>
+            <div className='argo-form-row deploy-models__field'>
+                <label htmlFor='deploy-models-project-select'>Project</label>
+                <div className='deploy-models__select'>
+                    <Select
+                        id='deploy-models-project-select'
+                        value={projectName}
+                        options={[
+                            {title: projectsLoading ? 'Loading projects…' : '— select project —', value: ''},
+                            ...projects.map(project => ({title: project.metadata.name, value: project.metadata.name}))
+                        ]}
+                        placeholder={projectsLoading ? 'Loading projects…' : '— select project —'}
+                        onChange={option => onChange(option.value ? {projectName: option.value} : null)}
+                    />
                 </div>
             </div>
 
             {projectsError && <ErrorAlert error={projectsError} prefix='Unable to load Argo CD projects' />}
-            {applicationsError && <ErrorAlert error={applicationsError} prefix='Unable to load Argo CD applications' />}
 
-            {!projectsLoading && projects.length === 0 && <NoticeAlert variant='warning' message='No projects are visible to this Argo CD user.' />}
-
-            {!applicationsLoading && projectName && applications.length === 0 && !applicationsError && (
-                <NoticeAlert variant='warning' message={`No applications are currently available in project "${projectName}".`} />
+            {!projectsLoading && projects.length === 0 && !projectsError && (
+                <NoticeAlert variant='warning' message='No projects are visible to this Argo CD user.' />
             )}
 
             {value && (
                 <div className='deploy-models__context-summary'>
-                    <div className='deploy-models__context-summary-title'>Selected Target</div>
+                    <div className='deploy-models__context-summary-title'>Selected Project</div>
                     <div className='deploy-models__context-summary-grid'>
-                        <div className='deploy-models__context-summary-item'>
-                            <span className='deploy-models__context-summary-label'>Application</span>
-                            <span>
-                                {value.appNamespace}/{value.appName}
-                            </span>
-                        </div>
                         <div className='deploy-models__context-summary-item'>
                             <span className='deploy-models__context-summary-label'>Project</span>
                             <span>{value.projectName}</span>
                         </div>
-                        {selectedSource?.repoURL && (
-                            <div className='deploy-models__context-summary-item'>
-                                <span className='deploy-models__context-summary-label'>Repository</span>
-                                <span>{selectedSource.repoURL}</span>
-                            </div>
-                        )}
-                        {selectedSource?.path && (
-                            <div className='deploy-models__context-summary-item'>
-                                <span className='deploy-models__context-summary-label'>Path</span>
-                                <span>{selectedSource.path}</span>
-                            </div>
-                        )}
-                        {selectedSource?.targetRevision && (
-                            <div className='deploy-models__context-summary-item'>
-                                <span className='deploy-models__context-summary-label'>Revision</span>
-                                <span>{selectedSource.targetRevision}</span>
-                            </div>
-                        )}
                     </div>
                 </div>
             )}

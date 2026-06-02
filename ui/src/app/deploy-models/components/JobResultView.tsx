@@ -3,7 +3,7 @@ import React from 'react';
 import {Spinner} from '../../shared/components';
 
 import {formatPollRecoveryMessage, type PollRecoveryState} from '../polling';
-import {getRunStatusDescriptor, getStatusToneClass} from '../jobState';
+import {getGitOpsError, getRunStatusDescriptor, getStatusToneClass} from '../jobState';
 import type {AuditTrailResponse, JobResult} from '../types';
 import {ErrorAlert} from './ErrorAlert';
 import {NoticeAlert} from './NoticeAlert';
@@ -137,6 +137,7 @@ export function JobResultView({job, audit, auditError, auditLoading, auditRecove
     const gitopsPayload = asRecord(auditPayload?.gitops);
     const generatedFiles = asStringArray(auditPayload?.generated_files);
     const gitopsStatus = getRunStatusDescriptor(job);
+    const gitopsError = getGitOpsError(job);
 
     const runSummary = [
         {label: 'Model', value: renderValue(requestPayload?.model_path)},
@@ -214,6 +215,12 @@ export function JobResultView({job, audit, auditError, auditLoading, auditRecove
                     <span className={`deploy-models__status-pill ${getStatusToneClass(gitopsStatus.tone)}`}>{gitopsStatus.label}</span>
                 </div>
                 {gitopsSummary.length > 0 && <DetailGrid items={gitopsSummary} />}
+                {gitopsError && (gitopsError.message || gitopsError.suggested_action) && (
+                    <div className='deploy-models__result-error-block'>
+                        {gitopsError.message && <pre className='deploy-models__result-error'>{gitopsError.message}</pre>}
+                        {gitopsError.suggested_action && <div className='deploy-models__secondary-text'>{gitopsError.suggested_action}</div>}
+                    </div>
+                )}
             </div>
 
             {generatedFiles.length > 0 && (

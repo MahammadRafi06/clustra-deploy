@@ -1,79 +1,93 @@
 {{- /*
-Per-tenant ApplicationSet — generates ONE ArgoCD Application per model directory
-in the GitOps repo, with the clean-delete sync policy baked in.
+ONE global ApplicationSet for the whole platform — generates one Application per
+model directory across every team's repo, with the clean-delete sync policy
+baked in. Replaces the old per-tenant ApplicationSets.
 
-THIS IS THE FIX for the orphaned-pods / stuck-delete root cause: the hand-made
-per-model Application (`newrelease`) had NO syncPolicy, so `prune` was off and a
-`git rm` of the DGD manifest never deleted the live DGD — which forced a manual
-`kubectl delete dgd` that wedged on Karpenter-stranded pods. By generating every
-per-model Application from one template, prune + the cascade finalizer are
-present BY CONSTRUCTION; you can never again hand-create a policy-less app.
+Generator = matrix( SCM-provider(github, org, repos matching ^team-.+ ) x
+git-directories('*') ). For each team-* repo it discovers, it lists the model
+directories and stamps an Application:
+  * name      = <repo>-<dir>            (globally unique across teams)
+  * project   = <repo> minus "team-" prefix, lowercased   (== the team AppProject)
+  * source    = the team repo (HTTPS) / the model dir
+  * namespace = the team (one shared namespace per team)
+  * syncPolicy = prune + background + resources-finalizer  (the orphaned-pods fix)
 
-Lifecycle: ai-service commits a model's manifests into <models.path>/<model>/ ->
-the Application appears and syncs the DGD. Removing that directory (the delete) ->
-the Application is pruned and the DGD torn down — no manual kubectl, no wedge,
-because the delete fires promptly while the GPU node is still alive.
+HARD REQUIREMENTS baked in to avoid the verified failure modes:
+  - cloneProtocol: https  -> the discovered repoURL is HTTPS, matching the
+    AppProject sourceRepos + the GitHub App creds (SSH default would black-hole
+    every app at IsSourcePermitted).
+  - project lowercased     -> matches the (lowercase) AppProject name; ArgoCD's
+    URL binding is case-insensitive but the project NAME lookup is literal.
+  - filters ^team-.+       -> a bare "team-" (empty suffix) is never discovered.
 
-Rendered only for tenants that set a `models:` block. Requires the
-applicationset-controller (shipped with this chart).
+Isolation is enforced by ArgoCD at sync (IsSourcePermitted against the team
+AppProject's sourceRepos + IsDestinationPermitted against its destinations), so
+each team's AppProject MUST pin sourceRepos to the exact team repo URL (never the
+"*" wildcard) and allow the team namespace in destinations.
+
+Rendered only when an org is configured. The applicationset-controller reads the
+SCM token from its OWN release namespace.
 */ -}}
-{{- range $t := .Values.tenants | default list }}
-{{- with $t.models }}
-{{- $repo := .gitopsRepoURL | default $.Values.clustraGitopsRepoURL -}}
-{{- if not $repo }}{{ fail (printf "tenants[%s].models needs gitopsRepoURL or clustraGitopsRepoURL" $t.name) }}{{- end }}
-{{- $rev := .revision | default "HEAD" -}}
-{{- $glob := printf "%s/*" (.path | default $t.name) -}}
----
+{{- if .Values.clustraGithubOrg }}
+{{- $scm := .Values.clustraScmSecret | default dict }}
 apiVersion: argoproj.io/v1alpha1
 kind: ApplicationSet
 metadata:
-  name: {{ printf "%s-models" $t.name | quote }}
-  namespace: {{ $.Release.Namespace | quote }}
+  name: clustra-team-models
+  namespace: {{ .Release.Namespace | quote }}
   labels:
-    app.kubernetes.io/managed-by: {{ $.Release.Service | quote }}
-    clustra.ai/tenant: {{ $t.name | quote }}
+    app.kubernetes.io/managed-by: {{ .Release.Service | quote }}
 spec:
   goTemplate: true
   goTemplateOptions: ["missingkey=error"]
   generators:
-    - git:
-        repoURL: {{ $repo | quote }}
-        revision: {{ $rev | quote }}
-        directories:
-          - path: {{ $glob | quote }}
+    - matrix:
+        generators:
+          # gen-0: discover every team-* repo in the org (HTTPS clone URLs).
+          - scmProvider:
+              cloneProtocol: https
+              github:
+                organization: {{ .Values.clustraGithubOrg | quote }}
+                {{- if $scm.appSecretName }}
+                appSecretName: {{ $scm.appSecretName | quote }}
+                {{- else if $scm.secretName }}
+                tokenRef:
+                  secretName: {{ $scm.secretName | quote }}
+                  key: {{ $scm.key | default "token" | quote }}
+                {{- end }}
+              filters:
+                - repositoryMatch: '^team-.+'
+              requeueAfterSeconds: {{ .Values.clustraScmRequeueSeconds | default 1800 }}
+          # gen-1: one model dir per discovered repo. {{`{{ .url }}`}} from gen-0 is HTTPS.
+          - git:
+              repoURL: '{{`{{ .url }}`}}'
+              revision: HEAD
+              directories:
+                - path: '*'
+              requeueAfterSeconds: {{ .Values.clustraGitRequeueSeconds | default 180 }}
   template:
     metadata:
-      # One Application per model directory, named after it (RFC1123-normalized).
-      name: '{{ "{{.path.basenameNormalized}}" }}'
-      namespace: {{ $.Release.Namespace | quote }}
-      # Deleting the Application (i.e. the model directory disappears from git)
-      # cascades to prune its live resources instead of orphaning them.
+      name: '{{`{{ .repository }}-{{ .path.basenameNormalized }}`}}'
+      namespace: {{ .Release.Namespace | quote }}
       finalizers:
         - resources-finalizer.argocd.argoproj.io
     spec:
-      project: {{ $t.name | quote }}
+      project: '{{`{{ trimPrefix "team-" .repository | lower }}`}}'
       source:
-        repoURL: {{ $repo | quote }}
-        targetRevision: {{ $rev | quote }}
-        path: '{{ "{{.path.path}}" }}'
+        repoURL: '{{`{{ .url }}`}}'
+        targetRevision: HEAD
+        path: '{{`{{ .path.path }}`}}'
       destination:
-        server: {{ .destinationServer | default "https://kubernetes.default.svc" | quote }}
-        # Default: a per-model namespace (matches 1:1 app=model). Override with a
-        # fixed tenant namespace if you co-locate. Must fall within the tenant
-        # AppProject's allowed destinations.
-        namespace: {{ .destinationNamespace | default "{{.path.basenameNormalized}}" | quote }}
+        server: {{ .Values.clustraDestinationServer | default "https://kubernetes.default.svc" | quote }}
+        # one shared namespace per team (the project name). Must be allowed by the
+        # team AppProject's destinations (e.g. a "<team>*" or exact "<team>" pattern).
+        namespace: '{{`{{ trimPrefix "team-" .repository | lower }}`}}'
       syncPolicy:
         automated:
-          # prune: the whole point — a git-delete removes the live DGD.
           prune: true
           selfHeal: true
-          # one DGD per app dir; allow pruning the last resource on delete.
           allowEmpty: true
         syncOptions:
-          # BACKGROUND (not foreground): delete the DGD immediately and let
-          # native ownerReference GC reap DCD->Deployment->RS->pods. Foreground
-          # places blocking finalizers down the whole tree and is what wedged on
-          # the Karpenter-stranded pods during the manual delete.
           - PrunePropagationPolicy=background
           - PruneLast=true
           - CreateNamespace=false
@@ -83,5 +97,4 @@ spec:
             duration: 15s
             factor: 2
             maxDuration: 5m
-{{- end }}
 {{- end }}

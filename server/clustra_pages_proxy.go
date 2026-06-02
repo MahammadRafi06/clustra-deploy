@@ -19,6 +19,7 @@ import (
 
 	"github.com/argoproj/argo-cd/v3/pkg/apis/application/v1alpha1"
 	"github.com/argoproj/argo-cd/v3/server/extension"
+	"github.com/argoproj/argo-cd/v3/util/argo"
 	"github.com/argoproj/argo-cd/v3/util/env"
 	"github.com/argoproj/argo-cd/v3/util/rbac"
 	"github.com/argoproj/argo-cd/v3/util/session"
@@ -101,20 +102,35 @@ func (server *ArgoCDServer) newClustraPageProxyHandler(proxyConfig clustraPagePr
 		}
 
 		var selectedApp *v1alpha1.Application
+		var selectedProject string
 		if proxyConfig.requiresApplicationContext(r.URL.Path) {
-			app, statusCode, err := server.resolveSelectedApplication(r)
-			if err != nil {
-				server.log.WithFields(log.Fields{"page": proxyConfig.pageName, "path": r.URL.Path}).WithError(err).Warn("invalid clustra page application context")
-				http.Error(w, err.Error(), statusCode)
-				return
+			if r.Header.Get(extension.HeaderArgoCDApplicationName) != "" {
+				// App-scoped (legacy): a pre-existing Application is selected.
+				app, statusCode, err := server.resolveSelectedApplication(r)
+				if err != nil {
+					server.log.WithFields(log.Fields{"page": proxyConfig.pageName, "path": r.URL.Path}).WithError(err).Warn("invalid clustra page application context")
+					http.Error(w, err.Error(), statusCode)
+					return
+				}
+				selectedApp = app
+			} else {
+				// Project-scoped (repo-per-team): no Application, just a project.
+				project, statusCode, err := server.resolveSelectedProject(r)
+				if err != nil {
+					server.log.WithFields(log.Fields{"page": proxyConfig.pageName, "path": r.URL.Path}).WithError(err).Warn("invalid clustra page project context")
+					http.Error(w, err.Error(), statusCode)
+					return
+				}
+				selectedProject = project
 			}
-			selectedApp = app
 		}
 
 		clearArgoProxyHeaders(r.Header)
 		applyUserHeaders(r, server.Namespace, server.policyEnforcer.GetScopes())
 		if selectedApp != nil {
 			applyApplicationHeaders(r, selectedApp)
+		} else if selectedProject != "" {
+			r.Header.Set(extension.HeaderArgoCDProjectName, selectedProject)
 		}
 		if err := applyProxySignatureHeaders(r); err != nil {
 			server.log.WithError(err).WithField("page", proxyConfig.pageName).Error("refusing unsigned clustra page proxy request")
@@ -193,6 +209,24 @@ func (server *ArgoCDServer) resolveSelectedApplication(r *http.Request) (*v1alph
 	}
 
 	return app, 0, nil
+}
+
+// resolveSelectedProject validates a PROJECT-scoped (app-less) request: the
+// client supplies the target project and the user must be permitted to CREATE
+// applications in it. Used by the repo-per-team deploy flow where there is no
+// pre-existing Application — the project plus a typed deployment name are enough.
+func (server *ArgoCDServer) resolveSelectedProject(r *http.Request) (string, int, error) {
+	project := r.Header.Get(extension.HeaderArgoCDProjectName)
+	if project == "" {
+		return "", http.StatusBadRequest, fmt.Errorf("header %q must be provided", extension.HeaderArgoCDProjectName)
+	}
+	if !argo.IsValidProjectName(project) {
+		return "", http.StatusBadRequest, fmt.Errorf("invalid value for project name")
+	}
+	if err := server.enf.EnforceErr(r.Context().Value("claims"), rbac.ResourceApplications, rbac.ActionCreate, project+"/*"); err != nil {
+		return "", http.StatusForbidden, fmt.Errorf("project access denied")
+	}
+	return project, http.StatusOK, nil
 }
 
 func clustraPageActionForMethod(method string) string {

@@ -6,6 +6,26 @@ type StatusTone = 'success' | 'warning' | 'error' | 'info' | 'muted';
 const TERMINAL_JOB_STATUSES = new Set<JobStatus>(['success', 'failed', 'cancelled']);
 const PENDING_GITOPS_STATUSES = new Set<GitOpsStatus>(['queued', 'retrying']);
 
+// Structured GitOps failure, set at the top level of JobResult.result by the
+// service (apply_gitops_payload). Lets the UI show the actionable guard message
+// (e.g. the 1:1 "already has a deployment" rejection) instead of only the
+// generic status copy.
+export interface GitOpsError {
+    error_class?: string;
+    message?: string;
+    suggested_action?: string;
+    details?: Record<string, unknown>;
+}
+
+export function getGitOpsError(job: Pick<JobResult, 'result'> | null): GitOpsError | null {
+    const result = job?.result;
+    if (!result || typeof result !== 'object') {
+        return null;
+    }
+    const candidate = (result as Record<string, unknown>).gitops_error;
+    return candidate && typeof candidate === 'object' ? (candidate as GitOpsError) : null;
+}
+
 export function getGitOpsStatus(job: RunLike | null): GitOpsStatus | null {
     if (!job) {
         return null;
@@ -76,6 +96,11 @@ export function getStatusToneClass(tone: StatusTone): string {
 
 export function getJobStatusCopy(job: JobResult): string {
     if (getGitOpsStatus(job) === 'failed') {
+        // A validation rejection (e.g. the 1:1 guard) is NOT retried, so the
+        // "after repeated retries" copy would be misleading.
+        if (getGitOpsError(job)?.error_class === 'validation_failed') {
+            return 'Artifacts were generated, but the repo commit was rejected by a validation check.';
+        }
         return 'Artifacts were generated, but the repo commit failed after repeated retries.';
     }
     if (job.status === 'failed') {

@@ -26,8 +26,10 @@ import type {
 const BASE = '/api/ai-service';
 
 export interface ProxyContext {
-    applicationName: string;
-    applicationNamespace: string;
+    // Repo-per-team flow is project-scoped: only the project is required. The
+    // app fields are sent only for the legacy app-selected flow.
+    applicationName?: string;
+    applicationNamespace?: string;
     projectName: string;
 }
 
@@ -67,11 +69,15 @@ async function _buildApiError(resp: Response): Promise<ApiError> {
 async function _request<T>(method: string, path: string, body?: unknown, contextOverride?: ProxyContext): Promise<T> {
     const headers: Record<string, string> = body !== undefined ? {'Content-Type': 'application/json'} : {};
     const context = contextOverride ?? proxyContext;
-    if (!context?.applicationName || !context.applicationNamespace || !context.projectName) {
-        throw new Error('Missing Argo CD application context for extension request.');
+    if (!context?.projectName) {
+        throw new Error('Missing Argo CD project context for extension request.');
     }
 
-    headers['Argocd-Application-Name'] = `${context.applicationNamespace}:${context.applicationName}`;
+    // Legacy app-selected flow sends the Application header; the repo-per-team
+    // flow is project-scoped (project only) and the proxy signs it without an app.
+    if (context.applicationName && context.applicationNamespace) {
+        headers['Argocd-Application-Name'] = `${context.applicationNamespace}:${context.applicationName}`;
+    }
     headers['Argocd-Project-Name'] = context.projectName;
 
     const resp = await fetch(`${BASE}${path}`, {
