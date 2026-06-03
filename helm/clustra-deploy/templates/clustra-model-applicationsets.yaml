@@ -10,7 +10,10 @@ directories and stamps an Application:
   * project   = <repo> minus "team-" prefix, lowercased   (== the team AppProject)
   * source    = the team repo (HTTPS) / the model dir
   * namespace = the team (one shared namespace per team)
-  * syncPolicy = prune + background + resources-finalizer  (the orphaned-pods fix)
+  * syncPolicy = automated prune/selfHeal + PrunePropagationPolicy=background
+  * finalizer  = resources-finalizer.argocd.argoproj.io/background  (the REAL
+                 stuck-delete fix: makes Application DELETION cascade in the
+                 background so no foregroundDeletion wedges on Dynamo worker pods)
 
 PROVIDER-AGNOSTIC: the gen-0 SCM provider is selected by `clustraScm.provider`
 (github | gitlab | gitea | bitbucket | bitbucketServer | azureDevOps). Only the
@@ -171,7 +174,15 @@ spec:
       name: '{{`{{ index .path.segments 0 }}-{{ .path.basenameNormalized }}`}}'
       namespace: {{ .Release.Namespace | quote }}
       finalizers:
-        - resources-finalizer.argocd.argoproj.io
+        # MUST be the /background variant. When a deployment is removed the
+        # ApplicationSet DELETES this Application, and that cascade defaults to
+        # FOREGROUND (controller/appcontroller.go:1290 — background only if the
+        # app carries BackgroundPropagationPolicyFinalizer). Foreground stamps a
+        # `foregroundDeletion` finalizer on the whole DGD tree, which then wedges
+        # forever on the Dynamo operator's un-updatable worker pods. NOTE: the
+        # `PrunePropagationPolicy=background` syncOption below does NOT cover this
+        # path — it only governs in-sync pruning, not Application deletion.
+        - resources-finalizer.argocd.argoproj.io/background
     spec:
       project: '{{`{{ trimPrefix "team-" .repository | lower }}`}}'
       source:
